@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- List View -->
+    <record id="partner_contract_view_list" model="ir.ui.view">
+        <field name="name">partner.contract.view.list</field>
+        <field name="model">partner.contract</field>
+        <field name="arch" type="xml">
+            <list decoration-muted="state == 'cancelled'">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="contract_type" optional="show"/>
+                <field name="fee_type"/>
+                <field name="fee_amount" widget="monetary"/>
+                <field name="billing_period"/>
+                <field name="date_start" optional="show"/>
+                <field name="date_end" optional="show"/>
+                <field name="next_billing_date" optional="show"/>
+                <field name="amount_due" widget="monetary" optional="show"/>
+                <field name="payment_status" widget="badge"
+                       decoration-success="payment_status == 'paid'"
+                       decoration-danger="payment_status == 'unpaid'"
+                       decoration-info="payment_status == 'no_invoice'"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'running'"
+                       decoration-warning="state == 'expired'"
+                       decoration-danger="state == 'cancelled'"/>
+                <field name="currency_id" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="partner_contract_view_form" model="ir.ui.view">
+        <field name="name">partner.contract.view.form</field>
+        <field name="model">partner.contract</field>
+        <field name="arch" type="xml">
+            <form string="Kontrak">
+                <header>
+                    <button name="action_confirm" type="object"
+                            string="Konfirmasi" class="btn-primary"
+                            invisible="state != 'draft'"/>
+                    <button name="action_create_invoice" type="object"
+                            string="Buat Tagihan" class="btn-primary"
+                            invisible="state != 'running'"/>
+                    <button name="action_expire" type="object"
+                            string="Akhiri Kontrak"
+                            invisible="state != 'running'"
+                            confirm="Akhiri kontrak ini?"/>
+                    <button name="action_cancel" type="object"
+                            string="Batalkan"
+                            invisible="state not in ('draft', 'running')"
+                            confirm="Batalkan kontrak ini?"/>
+                    <button name="action_set_to_draft" type="object"
+                            string="Set ke Draft"
+                            invisible="state != 'cancelled'"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,running,expired"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_invoices" type="object"
+                                class="oe_stat_button" icon="fa-file-text-o"
+                                invisible="invoice_count == 0">
+                            <field name="invoice_count" widget="statinfo"
+                                   string="Tagihan"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Informasi Kontrak">
+                            <field name="partner_id"
+                                   readonly="state != 'draft'"/>
+                            <field name="contract_type"
+                                   readonly="state != 'draft'"/>
+                            <field name="date_start"
+                                   readonly="state != 'draft'"/>
+                            <field name="date_end"/>
+                            <field name="company_id"
+                                   groups="base.group_multi_company"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                        <group string="Biaya &amp; Penagihan">
+                            <field name="fee_type" widget="radio"
+                                   options="{'horizontal': true}"/>
+                            <field name="fixed_amount" widget="monetary"
+                                   invisible="fee_type != 'flat'"
+                                   required="fee_type == 'flat'"/>
+                            <field name="percentage"
+                                   invisible="fee_type != 'percentage'"
+                                   required="fee_type == 'percentage'"/>
+                            <field name="base_amount" widget="monetary"
+                                   invisible="fee_type != 'percentage'"/>
+                            <field name="fee_amount" widget="monetary"/>
+                            <field name="billing_period" widget="radio"
+                                   options="{'horizontal': true}"/>
+                            <field name="next_billing_date"/>
+                            <field name="payment_status" widget="badge"
+                                   decoration-success="payment_status == 'paid'"
+                                   decoration-danger="payment_status == 'unpaid'"/>
+                            <field name="amount_invoiced" widget="monetary"/>
+                            <field name="amount_due" widget="monetary"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Tagihan" name="invoices">
+                            <field name="invoice_ids" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="invoice_date"/>
+                                    <field name="invoice_date_due"/>
+                                    <field name="amount_total"
+                                           widget="monetary"/>
+                                    <field name="amount_residual"
+                                           widget="monetary"/>
+                                    <field name="payment_state" widget="badge"
+                                           decoration-success="payment_state in ('paid', 'in_payment')"
+                                           decoration-warning="payment_state == 'partial'"
+                                           decoration-danger="payment_state == 'not_paid'"/>
+                                    <field name="state" widget="badge"/>
+                                    <field name="currency_id"
+                                           column_invisible="1"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Catatan" name="notes">
+                            <field name="notes"
+                                   placeholder="Catatan internal kontrak..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="partner_contract_view_search" model="ir.ui.view">
+        <field name="name">partner.contract.view.search</field>
+        <field name="model">partner.contract</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <filter name="filter_running" string="Berjalan"
+                        domain="[('state', '=', 'running')]"/>
+                <filter name="filter_draft" string="Draft"
+                        domain="[('state', '=', 'draft')]"/>
+                <separator/>
+                <filter name="filter_unpaid" string="Belum Lunas"
+                        domain="[('payment_status', '=', 'unpaid')]"/>
+                <filter name="filter_paid" string="Lunas"
+                        domain="[('payment_status', '=', 'paid')]"/>
+                <filter name="filter_no_invoice" string="Belum Ada Tagihan"
+                        domain="[('payment_status', '=', 'no_invoice')]"/>
+                <separator/>
+                <filter name="filter_mitra" string="Mitra"
+                        domain="[('contract_type', '=', 'mitra')]"/>
+                <filter name="filter_tenant" string="Tenant"
+                        domain="[('contract_type', '=', 'tenant')]"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_partner" string="Mitra / Tenant"
+                            context="{'group_by': 'partner_id'}"/>
+                    <filter name="group_payment_status"
+                            string="Status Pembayaran"
+                            context="{'group_by': 'payment_status'}"/>
+                    <filter name="group_state" string="Status"
+                            context="{'group_by': 'state'}"/>
+                    <filter name="group_fee_type" string="Jenis Biaya"
+                            context="{'group_by': 'fee_type'}"/>
+                    <filter name="group_billing_period"
+                            string="Periode Penagihan"
+                            context="{'group_by': 'billing_period'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action: Daftar Kontrak -->
+    <record id="action_partner_contract" model="ir.actions.act_window">
+        <field name="name">Daftar Kontrak</field>
+        <field name="res_model">partner.contract</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="partner_contract_view_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Daftarkan kontrak mitra / tenant pertama Anda
+            </p>
+            <p>
+                Tentukan biaya flat atau persentase, lalu pilih periode
+                penagihan bulanan atau tahunan.
+            </p>
+        </field>
+    </record>
+
+    <!-- Action: Status Pembayaran Kontrak (grouped) -->
+    <record id="action_partner_contract_payment_status"
+            model="ir.actions.act_window">
+        <field name="name">Status Pembayaran Kontrak</field>
+        <field name="res_model">partner.contract</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="partner_contract_view_search"/>
+        <field name="context">{'search_default_group_payment_status': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Belum ada kontrak terdaftar
+            </p>
+            <p>
+                Kontrak dikelompokkan berdasarkan status pembayaran
+                tagihannya: Lunas, Belum Lunas, atau Belum Ada Tagihan.
+            </p>
+        </field>
+    </record>
+
+</odoo>
