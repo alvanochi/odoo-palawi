@@ -1,0 +1,478 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<templates xml:space="preserve">
+
+    <t t-name="pos_performance_dashboard.Dashboard">
+        <div class="o_pos_dashboard o_action h-100 overflow-auto">
+
+            <!-- ================= TOP BAR ================= -->
+            <div class="o_pos_topbar d-flex flex-wrap align-items-center gap-2 px-4 py-2">
+                <div class="o_pos_breadcrumb">
+                    <a href="#" class="o_pos_crumb"
+                       t-att-class="{'o_pos_crumb_active': !store}"
+                       t-on-click.prevent="() => this.backToAllStores()">All Stores</a>
+                    <t t-if="store">
+                        <span class="mx-1 text-muted">/</span>
+                        <span class="o_pos_crumb o_pos_crumb_active"
+                              t-esc="store.name"/>
+                    </t>
+                </div>
+
+                <div class="ms-auto d-flex align-items-center gap-2">
+                    <!-- Period selector -->
+                    <div class="o_pos_dd">
+                        <button class="o_pos_pill" t-on-click="() => this.togglePeriodMenu()">
+                            <i class="fa fa-clock-o me-1"/>
+                            <span t-esc="periodLabel"/>
+                            <i class="fa fa-caret-down ms-2"/>
+                        </button>
+                        <div class="o_pos_dd_menu" t-if="state.showPeriodMenu">
+                            <button t-foreach="periods" t-as="period" t-key="period.key"
+                                    class="o_pos_dd_item"
+                                    t-att-class="{'active': state.period === period.key}"
+                                    t-on-click="() => this.setPeriod(period.key)">
+                                <t t-esc="period.label"/>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Date selector -->
+                    <div class="o_pos_dd">
+                        <button class="o_pos_pill" t-on-click="() => this.toggleDateMenu()">
+                            <i class="fa fa-calendar me-1"/>
+                            <span t-esc="dateLabel"/>
+                            <i class="fa fa-caret-down ms-2"/>
+                        </button>
+                        <div class="o_pos_dd_menu p-3" t-if="state.showDateMenu">
+                            <label class="small text-muted mb-1">From</label>
+                            <input type="date" class="form-control form-control-sm mb-2"
+                                   t-att-value="state.dateFrom"
+                                   t-on-change="(ev) => this.onDateChange('dateFrom', ev)"/>
+                            <label class="small text-muted mb-1">To</label>
+                            <input type="date" class="form-control form-control-sm"
+                                   t-att-value="state.dateTo"
+                                   t-on-change="(ev) => this.onDateChange('dateTo', ev)"/>
+                        </div>
+                    </div>
+
+                    <button class="o_pos_pill" t-on-click="() => this.onRefresh()">
+                        <i class="fa fa-refresh"/>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ================= LOADING ================= -->
+            <div t-if="state.loading" class="text-center p-5">
+                <i class="fa fa-circle-o-notch fa-spin fa-2x text-primary"/>
+                <div class="mt-2 text-muted">Loading data...</div>
+            </div>
+
+            <t t-else="">
+            <div class="px-4 pb-4">
+
+                <!-- ================= HERO CARD ================= -->
+                <div class="o_pos_card o_pos_hero d-flex align-items-center p-3 mb-3">
+                    <div class="o_pos_hero_icon me-3">
+                        <i class="fa fa-shopping-bag"/>
+                    </div>
+                    <div>
+                        <div class="o_pos_hero_title">
+                            <t t-if="store"><t t-esc="store.name"/></t>
+                            <t t-else="">All Stores</t>
+                        </div>
+                        <div class="text-muted small">
+                            <t t-if="store"><t t-esc="store.company"/></t>
+                            <t t-else=""><t t-esc="stores.length"/> point of sale</t>
+                        </div>
+                    </div>
+                    <div class="ms-auto d-flex text-end gap-4">
+                        <div>
+                            <div class="o_pos_hero_value" t-esc="formatCurrency(kpi.total_sales)"/>
+                            <div class="o_pos_micro_label">Total Sales</div>
+                        </div>
+                        <div>
+                            <div class="o_pos_hero_value" t-esc="formatNumber(kpi.total_orders)"/>
+                            <div class="o_pos_micro_label">Orders</div>
+                        </div>
+                        <div>
+                            <div class="o_pos_hero_value"
+                                 t-att-class="kpi.target_achievement >= 100 ? 'text-success' : 'text-danger'">
+                                <t t-esc="formatNumber(kpi.target_achievement)"/>%
+                            </div>
+                            <div class="o_pos_micro_label">vs Target</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= KPI ROW ================= -->
+                <div class="row g-3 mb-3">
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <div class="o_pos_card o_pos_kpi o_pos_kpi_clickable o_pos_bd_blue h-100"
+                             t-on-click="() => this.openOrders([], 'POS Orders')">
+                            <div class="o_pos_kpi_label">Total Sales</div>
+                            <div class="o_pos_kpi_value" t-esc="formatCurrency(kpi.total_sales)"/>
+                            <div class="o_pos_kpi_sub">
+                                <span class="o_pos_badge"
+                                      t-att-class="growthClass(kpi.growth)"
+                                      t-esc="formatSigned(kpi.growth)"/>
+                                growth
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <div class="o_pos_card o_pos_kpi o_pos_kpi_clickable o_pos_bd_purple h-100"
+                             t-on-click="() => this.openOrders([], 'POS Orders')">
+                            <div class="o_pos_kpi_label">Total Orders</div>
+                            <div class="o_pos_kpi_value" t-esc="formatNumber(kpi.total_orders)"/>
+                            <div class="o_pos_kpi_sub">completed</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <div class="o_pos_card o_pos_kpi o_pos_bd_teal h-100">
+                            <div class="o_pos_kpi_label">Avg Order</div>
+                            <div class="o_pos_kpi_value" t-esc="formatCurrency(kpi.average_order)"/>
+                            <div class="o_pos_kpi_sub">per transaction</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <div class="o_pos_card o_pos_kpi o_pos_bd_red h-100">
+                            <div class="o_pos_kpi_label">vs Target</div>
+                            <div class="o_pos_kpi_value"
+                                 t-att-class="kpi.target_achievement >= 100 ? 'text-success' : 'text-danger'">
+                                <t t-esc="formatNumber(kpi.target_achievement)"/>%
+                            </div>
+                            <div class="o_pos_kpi_sub">of daily goal</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <div class="o_pos_card o_pos_kpi o_pos_kpi_clickable o_pos_bd_orange h-100"
+                             t-on-click="() => this.openOutOfStock()">
+                            <div class="o_pos_kpi_label">Out of Stock</div>
+                            <div class="o_pos_kpi_value text-danger" t-esc="outOfStock.count"/>
+                            <div class="o_pos_kpi_sub">products need restock</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <div class="o_pos_card o_pos_kpi o_pos_bd_green h-100">
+                            <div class="o_pos_kpi_label">MoM Growth</div>
+                            <div class="o_pos_kpi_value"
+                                 t-att-class="growthClass(kpi.mom_growth)"
+                                 t-esc="formatSigned(kpi.mom_growth)"/>
+                            <div class="o_pos_kpi_sub">month over month</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= SALES CHART + PAYMENT SPLIT ================= -->
+                <div class="row g-3 mb-3">
+                    <div class="col-12 col-xl-8">
+                        <div class="o_pos_card h-100">
+                            <div class="o_pos_card_head d-flex align-items-center">
+                                <span t-esc="salesChartTitle"/>
+                                <div class="ms-auto btn-group btn-group-sm">
+                                    <button class="o_pos_toggle"
+                                            t-att-class="{'active': state.chartMode === 'hourly'}"
+                                            t-on-click="() => this.setChartMode('hourly')">Hourly</button>
+                                    <button class="o_pos_toggle"
+                                            t-att-class="{'active': state.chartMode === 'daily'}"
+                                            t-on-click="() => this.setChartMode('daily')">Daily</button>
+                                </div>
+                            </div>
+                            <div class="p-3" style="height: 300px;">
+                                <canvas t-ref="salesChart"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-xl-4">
+                        <div class="o_pos_card h-100">
+                            <div class="o_pos_card_head">Payment Split</div>
+                            <div class="p-3">
+                                <div t-foreach="paymentMethods" t-as="method"
+                                     t-key="method.id" class="d-flex align-items-center mb-3">
+                                    <span class="o_pos_dot me-2"
+                                          t-attf-style="background-color: {{ rankColor(method_index) }}"/>
+                                    <span class="text-truncate" t-esc="method.name"/>
+                                    <div class="ms-auto d-flex align-items-center gap-2">
+                                        <div class="o_pos_bar">
+                                            <div class="o_pos_bar_fill"
+                                                 t-attf-style="width: {{ barWidth(method.percentage) }}%;
+                                                               background-color: {{ rankColor(method_index) }}"/>
+                                        </div>
+                                        <small class="text-muted"
+                                               t-esc="formatNumber(method.percentage) + '%'"/>
+                                        <span class="fw-bold" t-esc="formatCurrency(method.amount)"/>
+                                    </div>
+                                </div>
+                                <div t-if="!paymentMethods.length" class="text-muted">
+                                    No payment recorded for this period.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============ TOP PRODUCTS / CASHIERS / SESSION &amp; STOCK ============ -->
+                <div class="row g-3 mb-3">
+                    <div class="col-12 col-lg-4">
+                        <div class="o_pos_card h-100">
+                            <div class="o_pos_card_head d-flex align-items-center">
+                                <span>Top Products</span>
+                                <span class="o_pos_chip ms-auto">By revenue</span>
+                            </div>
+                            <div class="p-3">
+                                <div t-foreach="topProducts" t-as="product" t-key="product.id"
+                                     class="o_pos_line o_pos_row_clickable d-flex align-items-center"
+                                     t-on-click="() => this.openRecord('product.product', product.id, product.name)">
+                                    <span class="o_pos_rank me-2"
+                                          t-attf-style="background-color: {{ rankColor(product_index) }}1A;
+                                                        color: {{ rankColor(product_index) }}"
+                                          t-esc="product_index + 1"/>
+                                    <span class="text-truncate" t-esc="product.name"/>
+                                    <span class="ms-auto fw-bold"
+                                          t-esc="formatCurrency(product.amount)"/>
+                                </div>
+                                <div t-if="!topProducts.length" class="text-muted">No sales yet.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-lg-4">
+                        <div class="o_pos_card h-100">
+                            <div class="o_pos_card_head">Cashiers</div>
+                            <div class="p-3">
+                                <div t-foreach="cashiers" t-as="cashier" t-key="cashier.id"
+                                     class="o_pos_line o_pos_row_clickable d-flex align-items-center"
+                                     t-on-click="() => this.openOrders([['user_id', '=', cashier.id]], cashier.name)">
+                                    <span class="o_pos_avatar me-2" t-esc="cashier.initial"/>
+                                    <div class="me-2">
+                                        <div class="fw-bold text-truncate" t-esc="cashier.name"/>
+                                        <small class="text-muted">
+                                            <t t-esc="cashier.count"/> orders
+                                        </small>
+                                    </div>
+                                    <div class="ms-auto d-flex align-items-center gap-2">
+                                        <div class="o_pos_bar o_pos_bar_wide">
+                                            <div class="o_pos_bar_fill"
+                                                 t-attf-style="width: {{ barWidth(cashier.share) }}%;
+                                                               background-color: #4C6FFF"/>
+                                        </div>
+                                        <span class="fw-bold"
+                                              t-esc="formatCurrency(cashier.amount)"/>
+                                    </div>
+                                </div>
+                                <div t-if="!cashiers.length" class="text-muted">No cashier activity.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-lg-4">
+                        <div class="o_pos_card h-100">
+                            <div class="o_pos_card_head">Session &amp; Stock</div>
+                            <div class="p-3">
+                                <div class="o_pos_kv o_pos_row_clickable"
+                                     t-on-click="() => this.openRecord('pos.session', sessionStock.session_id, sessionStock.session_name)">
+                                    <span>Session Status</span>
+                                    <span class="ms-auto fw-bold"
+                                          t-att-class="sessionStock.state === 'opened' ? 'text-success' : 'text-danger'">
+                                        <i class="fa fa-circle me-1" style="font-size: 7px;"/>
+                                        <t t-esc="sessionStock.state"/>
+                                    </span>
+                                </div>
+                                <div class="o_pos_kv">
+                                    <span>Duration</span>
+                                    <span class="ms-auto fw-bold" t-esc="sessionStock.duration"/>
+                                </div>
+                                <div class="o_pos_kv">
+                                    <span>Cash Difference</span>
+                                    <span class="ms-auto fw-bold"
+                                          t-att-class="sessionStock.cash_difference ? 'text-danger' : 'text-success'"
+                                          t-esc="formatCurrency(sessionStock.cash_difference)"/>
+                                </div>
+                                <div class="o_pos_kv">
+                                    <span>Stock Sold</span>
+                                    <span class="ms-auto fw-bold">
+                                        <t t-esc="formatNumber(sessionStock.stock_sold)"/> units
+                                    </span>
+                                </div>
+                                <div class="o_pos_kv">
+                                    <span>Avg Order Value</span>
+                                    <span class="ms-auto fw-bold"
+                                          t-esc="formatCurrency(sessionStock.average_order)"/>
+                                </div>
+                                <div class="o_pos_kv border-0">
+                                    <span>Total Revenue</span>
+                                    <span class="ms-auto fw-bold"
+                                          t-esc="formatCurrency(sessionStock.total_revenue)"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= STORES (All Stores view only) ================= -->
+                <div t-if="!store" class="o_pos_card mb-3">
+                    <div class="o_pos_card_head d-flex align-items-center">
+                        <span>Stores</span>
+                        <input type="text" class="form-control form-control-sm w-auto ms-auto"
+                               placeholder="Search store or company..."
+                               t-att-value="state.storeSearch"
+                               t-on-input="(ev) => this.state.storeSearch = ev.target.value"/>
+                    </div>
+                    <div class="p-3">
+                        <div class="row g-3">
+                            <div t-foreach="visibleStores" t-as="store_row" t-key="store_row.id"
+                                 class="col-12 col-md-6 col-xl-4">
+                                <div class="o_pos_store_card o_pos_row_clickable p-3"
+                                     t-on-click="() => this.selectStore(store_row.id)">
+                                    <div class="d-flex align-items-start">
+                                        <div>
+                                            <div class="fw-bold" t-esc="store_row.name"/>
+                                            <small class="text-muted" t-esc="store_row.company"/>
+                                        </div>
+                                        <span t-if="store_row.session"
+                                              class="o_pos_chip o_pos_chip_green ms-auto"
+                                              t-esc="store_row.session"/>
+                                    </div>
+                                    <div class="o_pos_kpi_value mt-2"
+                                         t-esc="formatCurrency(store_row.sales)"/>
+                                    <small class="text-muted">
+                                        <t t-esc="store_row.orders"/> orders
+                                    </small>
+                                    <div t-if="store_row.target" class="o_pos_bar mt-2 w-100">
+                                        <div class="o_pos_bar_fill"
+                                             t-attf-style="width: {{ barWidth(store_row.achievement) }}%;
+                                                           background-color: {{ store_row.achievement >= 100 ? '#22C55E' : '#4C6FFF' }}"/>
+                                    </div>
+                                    <small t-if="store_row.target" class="text-muted">
+                                        <t t-esc="store_row.achievement"/>% of
+                                        <t t-esc="formatCurrency(store_row.target)"/>
+                                    </small>
+                                </div>
+                            </div>
+                            <div t-if="!visibleStores.length" class="text-muted p-2">
+                                No store matches your search.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= CATEGORY / CUSTOMERS / STORE CHART ================= -->
+                <div class="row g-3 mb-3">
+                    <div class="col-12 col-lg-4">
+                        <div class="o_pos_card h-100">
+                            <div class="o_pos_card_head">Sales by Category</div>
+                            <div class="p-3" style="height: 280px;">
+                                <canvas t-ref="categoryChart"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-4">
+                        <div class="o_pos_card h-100">
+                            <div class="o_pos_card_head">Top Customers</div>
+                            <div class="p-3">
+                                <div t-foreach="topCustomers" t-as="customer" t-key="customer.id"
+                                     class="o_pos_line o_pos_row_clickable d-flex align-items-center"
+                                     t-on-click="() => this.openRecord('res.partner', customer.id, customer.name)">
+                                    <span class="text-truncate" t-esc="customer.name"/>
+                                    <small class="text-muted ms-2">
+                                        <t t-esc="customer.count"/> orders
+                                    </small>
+                                    <span class="ms-auto fw-bold"
+                                          t-esc="formatCurrency(customer.amount)"/>
+                                </div>
+                                <div t-if="!topCustomers.length" class="text-muted">
+                                    No customer assigned to orders.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-4">
+                        <div class="o_pos_card h-100">
+                            <div class="o_pos_card_head">Sales by Store vs Target</div>
+                            <div class="p-3" style="height: 280px;">
+                                <canvas t-ref="storeChart"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= SESSIONS / OUT OF STOCK ================= -->
+                <div class="row g-3">
+                    <div class="col-12 col-lg-7">
+                        <div class="o_pos_card h-100">
+                            <div class="o_pos_card_head d-flex align-items-center">
+                                <span>Recent Sessions</span>
+                                <button class="o_pos_chip ms-auto"
+                                        t-on-click="() => this.openSessions()">View all</button>
+                            </div>
+                            <table class="table table-sm table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Session</th>
+                                        <th>Store</th>
+                                        <th>Opened</th>
+                                        <th>Status</th>
+                                        <th class="text-end">Orders</th>
+                                        <th class="text-end">Sales</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="recentSessions" t-as="session" t-key="session.id"
+                                        class="o_pos_row_clickable"
+                                        t-on-click="() => this.openRecord('pos.session', session.id, session.name)">
+                                        <td t-esc="session.name"/>
+                                        <td t-esc="session.config"/>
+                                        <td t-esc="session.start_at"/>
+                                        <td>
+                                            <span class="o_pos_chip"
+                                                  t-att-class="session.state === 'closed' ? '' : 'o_pos_chip_green'"
+                                                  t-esc="session.state"/>
+                                        </td>
+                                        <td class="text-end" t-esc="session.orders"/>
+                                        <td class="text-end" t-esc="formatCurrency(session.sales)"/>
+                                    </tr>
+                                    <tr t-if="!recentSessions.length">
+                                        <td colspan="6" class="text-muted">No session yet.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-5">
+                        <div class="o_pos_card h-100">
+                            <div class="o_pos_card_head d-flex align-items-center">
+                                <span>Out of Stock</span>
+                                <button class="o_pos_chip ms-auto"
+                                        t-on-click="() => this.openOutOfStock()">View all</button>
+                            </div>
+                            <table class="table table-sm table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Barcode</th>
+                                        <th class="text-end">On Hand</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="outOfStock.products" t-as="product"
+                                        t-key="product.id" class="o_pos_row_clickable"
+                                        t-on-click="() => this.openRecord('product.product', product.id, product.name)">
+                                        <td t-esc="product.name"/>
+                                        <td t-esc="product.barcode"/>
+                                        <td class="text-end text-danger"
+                                            t-esc="formatNumber(product.qty)"/>
+                                    </tr>
+                                    <tr t-if="!outOfStock.products.length">
+                                        <td colspan="3" class="text-muted">All products in stock.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            </t>
+        </div>
+    </t>
+
+</templates>

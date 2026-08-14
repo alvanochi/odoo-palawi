@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="action_pos_performance_dashboard" model="ir.actions.client">
+        <field name="name">POS Performance</field>
+        <field name="tag">pos_performance_dashboard</field>
+    </record>
+
+    <menuitem id="menu_pos_performance_dashboard"
+              name="Performance"
+              parent="point_of_sale.menu_point_root"
+              action="action_pos_performance_dashboard"
+              sequence="2"
+              groups="point_of_sale.group_pos_manager"/>
+
+</odoo>

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Target penjualan harian per outlet -->
+    <record id="pos_config_view_form_sales_target" model="ir.ui.view">
+        <field name="name">pos.config.form.sales.target</field>
+        <field name="model">pos.config</field>
+        <field name="inherit_id" ref="point_of_sale.pos_config_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//setting[@id='other_devices']" position="before">
+                <setting id="pos_daily_sales_target"
+                         string="Target Penjualan Harian"
+                         help="Target penjualan per hari untuk outlet ini,
+                               dipakai pada POS Performance Dashboard">
+                    <field name="daily_sales_target" widget="monetary"/>
+                </setting>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_pos_config_tree_sales_target" model="ir.ui.view">
+        <field name="name">pos.config.list.sales.target</field>
+        <field name="model">pos.config</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_config_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='last_session_closing_cash']"
+                   position="after">
+                <field name="daily_sales_target" widget="monetary"
+                       optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Inherit Restaurant Floor Form View -->
+    <record id="view_restaurant_floor_form_inherit" model="ir.ui.view">
+        <field name="name">restaurant.floor.form.inherit</field>
+        <field name="model">restaurant.floor</field>
+        <field name="inherit_id" ref="pos_restaurant.view_restaurant_floor_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='background_color']" position="after">
+                <field name="floor_type"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

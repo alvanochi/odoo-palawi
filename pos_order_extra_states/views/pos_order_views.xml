@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        pos.order.state tidak disentuh sama sekali. Progres dapur ditampilkan
+        lewat kolom kitchen_state di sebelahnya, sehingga staf tetap melihat
+        semuanya dalam satu layar tanpa modul ini perlu mem-bypass pengaman
+        write() bawaan Odoo.
+    -->
+
+    <record id="view_pos_pos_form_kitchen" model="ir.ui.view">
+        <field name="name">pos.order.form.kitchen</field>
+        <field name="model">pos.order</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_pos_form"/>
+        <field name="arch" type="xml">
+            <!-- Status masak per hidangan, tepat di baris pesanannya.
+                 Tidak ada ringkasan di tingkat order: satu-satunya sumber
+                 kebenaran adalah baris, jadi tidak ada salinan yang bisa
+                 berbeda isi. -->
+            <xpath expr="//field[@name='lines']/list/field[@name='qty']" position="after">
+                <field name="kitchen_state" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_pos_order_filter_kitchen" model="ir.ui.view">
+        <field name="name">pos.order.search.kitchen</field>
+        <field name="model">pos.order</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_order_filter"/>
+        <field name="arch" type="xml">
+            <!--
+                Disaring lewat baris. Semantiknya "ada minimal satu hidangan
+                berstatus ini", yang memang yang dicari dapur. Baris reward
+                lahir 'served' sehingga tidak pernah menahan pesanan di
+                filter Belum Dimasak.
+            -->
+            <xpath expr="//search" position="inside">
+                <separator/>
+                <filter name="kitchen_pending" string="Has Pending Dish"
+                        domain="[('lines.kitchen_state', '=', 'pending')]"/>
+                <filter name="kitchen_cooking" string="Has Dish Cooking"
+                        domain="[('lines.kitchen_state', '=', 'cooking')]"/>
+                <filter name="kitchen_ready" string="Has Dish Ready"
+                        domain="[('lines.kitchen_state', '=', 'ready')]"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Product template form: place the field at the very bottom of the
+         General Information page. The product variant form inherits this
+         view, so the field shows up there as well. -->
+    <record id="product_template_form_view_estimated_time"
+            model="ir.ui.view">
+        <field name="name">product.template.form.estimated.time</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='general_information']" position="inside">
+                <group name="estimated_time_group" string="Estimated Time">
+                    <label for="estimated_time"/>
+                    <div class="o_row">
+                        <field name="estimated_time" class="oe_inline"/>
+                        <span>minutes</span>
+                    </div>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Product template list: optional column -->
+    <record id="product_template_tree_view_estimated_time"
+            model="ir.ui.view">
+        <field name="name">product.template.list.estimated.time</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_tree_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='list_price']" position="after">
+                <field name="estimated_time" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
