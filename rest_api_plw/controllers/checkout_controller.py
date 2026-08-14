@@ -8,6 +8,7 @@ from ..domain.use_cases.get_active_tables import GetActiveTablesUseCase
 from ..domain.use_cases.process_checkout import ProcessCheckoutUseCase
 from ..domain.use_cases.save_payment_evidence import SavePaymentEvidenceUseCase
 from ..domain.use_cases.pay_order import PayOrderUseCase
+from ..domain.use_cases.refund_order import RefundOrderUseCase
 from ..domain.use_cases.move_bill_table import MoveBillTableUseCase
 
 
@@ -124,12 +125,21 @@ class CheckoutController(http.Controller):
             }
             return request.make_json_response(err_payload, status=400, headers=_cors_headers())
 
+        if not isinstance(body, dict):
+            err_payload = {
+                "success": False,
+                "message": "Request body must be a JSON object",
+                "status": 400
+            }
+            return request.make_json_response(err_payload, status=400, headers=_cors_headers())
+
         order_id_or_ref = body.get("order_id") or body.get("pos_reference")
+        payment_method_id = body.get("payment_method_id")
 
         repo = CheckoutRepository(request.env)
         use_case = PayOrderUseCase(repo)
 
-        result = use_case.execute(order_id_or_ref)
+        result = use_case.execute(order_id_or_ref, payment_method_id=payment_method_id)
 
         if not result.get("success", False):
             # mark_order_as_paid writes payment, picking and bill state, so a
@@ -141,6 +151,57 @@ class CheckoutController(http.Controller):
                 "status": result.get("status", 400)
             }
             return request.make_json_response(err_payload, status=result.get("status", 400), headers=_cors_headers())
+
+        return request.make_json_response(result, status=200, headers=_cors_headers())
+
+
+    @http.route("/api/pos/order/refund", type="http", auth="none", methods=["POST", "OPTIONS"], csrf=False)
+    @require_api_key_plw
+    def refund_order(self, **kw):
+        if request.httprequest.method == "OPTIONS":
+            return http.Response(status=204, headers=_cors_headers())
+
+        try:
+            body = json.loads(request.httprequest.data)
+        except Exception:
+            err_payload = {
+                "success": False,
+                "message": "Invalid JSON request body",
+                "status": 400
+            }
+            return request.make_json_response(err_payload, status=400, headers=_cors_headers())
+
+        if not isinstance(body, dict):
+            err_payload = {
+                "success": False,
+                "message": "Request body must be a JSON object",
+                "status": 400
+            }
+            return request.make_json_response(err_payload, status=400, headers=_cors_headers())
+
+        order_id_or_ref = body.get("order_id") or body.get("pos_reference")
+        payment_method_id = body.get("payment_method_id")
+        reason = body.get("reason")
+
+        repo = CheckoutRepository(request.env)
+        use_case = RefundOrderUseCase(repo)
+        result = use_case.execute(
+            order_id_or_ref=order_id_or_ref,
+            payment_method_id=payment_method_id,
+            reason=reason,
+        )
+
+        if not result.get("success", False):
+            # Refund writes a negative POS order, a negative payment, and a
+            # return picking. They must either all survive or all roll back.
+            request.env.cr.rollback()
+            err_payload = {
+                "success": False,
+                "message": result.get("error", "Error"),
+                "status": result.get("status", 400)
+            }
+            return request.make_json_response(
+                err_payload, status=result.get("status", 400), headers=_cors_headers())
 
         return request.make_json_response(result, status=200, headers=_cors_headers())
 

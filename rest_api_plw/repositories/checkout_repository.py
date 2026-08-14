@@ -651,20 +651,104 @@ class CheckoutRepository:
         })
         return evidence.id
 
-    def mark_order_as_paid(self, order_id_or_ref):
+    def _resolve_payment_method(self, order, payment_method_id=None, required=False):
+        """Resolve a payment method and ensure it belongs to this POS config."""
+        pos_config = order.session_id.config_id
+
+        if payment_method_id in (None, "", False):
+            if required:
+                raise UserError("Missing required parameter 'payment_method_id'")
+            payment_method = pos_config.payment_method_ids[:1]
+            if not payment_method:
+                raise UserError(
+                    f"POS '{pos_config.name}' has no configured payment method"
+                )
+            return payment_method
+
+        try:
+            payment_method_id = int(payment_method_id)
+        except (TypeError, ValueError):
+            raise UserError("Invalid 'payment_method_id', must be an integer")
+
+        payment_method = self.env["pos.payment.method"].sudo().browse(payment_method_id)
+        if not payment_method.exists():
+            raise UserError(f"Payment Method ID {payment_method_id} does not exist")
+        if payment_method not in pos_config.payment_method_ids:
+            raise UserError(
+                f"Payment method '{payment_method.name}' is not available on POS '{pos_config.name}'"
+            )
+        return payment_method
+
+    def _create_pos_stock_picking(self, order):
+        """Create/complete POS stock movement immediately for an order.
+
+        The custom checkout contract moves stock at mark_paid time even when
+        the POS config is set to update stock at session closing. Refunds must
+        mirror that behaviour, so this intentionally calls the stock helper
+        directly instead of pos.order._create_order_picking(), which may defer
+        the movement until session closing.
+        """
+        company = order.company_id
+        pos_config = order.session_id.config_id
+        picking_type = pos_config.picking_type_id
+        if not picking_type:
+            return self.env["stock.picking"]
+
+        partner = order.partner_id
+        if partner and partner.property_stock_customer:
+            destination_id = partner.property_stock_customer.id
+        elif not picking_type.default_location_dest_id:
+            destination_id = (
+                self.env["stock.warehouse"]
+                .sudo()
+                .with_company(company)
+                ._get_partner_locations()[0]
+                .id
+            )
+        else:
+            destination_id = picking_type.default_location_dest_id.id
+
+        if not destination_id:
+            return self.env["stock.picking"]
+
+        pickings = (
+            self.env["stock.picking"]
+            .sudo()
+            .with_company(company)
+            ._create_picking_from_pos_order_lines(
+                destination_id, order.lines, picking_type, order.partner_id
+            )
+        )
+        all_pickings = pickings | pickings.backorder_ids
+        all_pickings.write({
+            "pos_session_id": order.session_id.id,
+            "pos_order_id": order.id,
+            "origin": order.name,
+        })
+        return pickings
+
+    def mark_order_as_paid(self, order_id_or_ref, payment_method_id=None):
         """Second phase of checkout: money confirmed, so settle the order.
 
-        Registers the payment, releases the stock and closes the bill. Safe to
-        call twice: an order already paid returns immediately, so a payment
-        gateway retrying its callback cannot double-deduct stock.
+        Registers the selected payment, releases the stock and closes the bill.
+        Safe to call twice: an order already paid returns its existing payment
+        without creating duplicate payment or stock movements.
         """
         order = self._find_order(order_id_or_ref)
 
         if order.state != "draft":
-            return True
+            existing_payment = order.payment_ids[:1]
+            return {
+                "id": existing_payment.id if existing_payment else None,
+                "payment_method_id": existing_payment.payment_method_id.id if existing_payment else None,
+                "payment_method_name": existing_payment.payment_method_id.name if existing_payment else None,
+                "amount": existing_payment.amount if existing_payment else order.amount_paid,
+            }
 
         company = order.company_id
-        pos_config = order.session_id.config_id
+        payment_method = self._resolve_payment_method(
+            order, payment_method_id=payment_method_id, required=False
+        )
 
         # 1. Settle the order. Native pos.order.write() draws the receipt
         # number from the sequence here, because state flips to 'paid'.
@@ -673,38 +757,17 @@ class CheckoutRepository:
             "amount_paid": order.amount_total,
         })
 
-        # 2. Register the payment so the session's cash balances
-        payment_method = pos_config.payment_method_ids[:1]
-        if payment_method:
-            self.env["pos.payment"].sudo().with_company(company).create({
-                "pos_order_id": order.id,
-                "amount": order.amount_total,
-                "payment_method_id": payment_method.id,
-                "payment_date": fields.Datetime.now(),
-            })
+        # 2. Register the chosen payment method so the POS session balances
+        # and any later refund can refer to the real method used.
+        payment = self.env["pos.payment"].sudo().with_company(company).create({
+            "pos_order_id": order.id,
+            "amount": order.amount_total,
+            "payment_method_id": payment_method.id,
+            "payment_date": fields.Datetime.now(),
+        })
 
-        # 3. Force real-time inventory deduction (create stock.picking)
-        picking_type = pos_config.picking_type_id
-        if picking_type:
-            partner = order.partner_id
-            if partner and partner.property_stock_customer:
-                destination_id = partner.property_stock_customer.id
-            elif not picking_type.default_location_dest_id:
-                destination_id = self.env["stock.warehouse"].sudo().with_company(company)._get_partner_locations()[0].id
-            else:
-                destination_id = picking_type.default_location_dest_id.id
-
-            if destination_id:
-                pickings = self.env["stock.picking"].sudo().with_company(company)._create_picking_from_pos_order_lines(
-                    destination_id, order.lines, picking_type, order.partner_id
-                )
-                pickings.write({
-                    "pos_session_id": order.session_id.id,
-                    "pos_order_id": order.id,
-                    "origin": order.name,
-                })
-                for picking in pickings:
-                    picking._action_done()
+        # 3. Force real-time inventory deduction (create stock.picking).
+        self._create_pos_stock_picking(order)
 
         # 4. Close the bill fronting this order
         bills = self.env["poskas.bill"].sudo().with_company(company).search([
@@ -713,7 +776,103 @@ class CheckoutRepository:
         if bills:
             bills.write({"state": "paid"})
 
-        return True
+        return {
+            "id": payment.id,
+            "payment_method_id": payment_method.id,
+            "payment_method_name": payment_method.name,
+            "amount": payment.amount,
+        }
+
+    def refund_order(self, order_id_or_ref, payment_method_id, reason=None):
+        """Fully refund the remaining refundable quantity of a paid order.
+
+        Odoo represents a POS refund as a new negative pos.order whose lines
+        point back to the original lines through refunded_orderline_id. The
+        negative order is then paid with a negative pos.payment using the
+        payment method selected by the caller, and its negative stock lines
+        generate the return picking.
+
+        This endpoint intentionally performs a full remaining refund. Partial
+        item refunds need reward/loyalty proration rules and are kept out of
+        this first API contract to avoid over-refunding discounted orders.
+        """
+        order = self._find_order(order_id_or_ref)
+
+        if order.state != "paid":
+            raise UserError(
+                f"POS Order '{order.name}' must be in state 'paid' to be refunded; current state is '{order.state}'"
+            )
+        if not order.session_id or order.session_id.state != "opened":
+            raise UserError(
+                f"POS session '{order.session_id.name if order.session_id else '-'}' must still be open to refund this paid order"
+            )
+        if not order.has_refundable_lines:
+            raise UserError(f"POS Order '{order.name}' has no refundable quantity remaining")
+
+        payment_method = self._resolve_payment_method(
+            order, payment_method_id=payment_method_id, required=True
+        )
+        company = order.company_id
+
+        # Native Odoo refund helper copies all remaining refundable quantities
+        # and links every negative line back to its original order line. It
+        # initially chooses pos.config.current_session_id; below we force the
+        # exact original still-open session to keep this API deterministic.
+        refund_orders = order.sudo().with_company(company)._refund()
+        refund_order = refund_orders[:1]
+        if not refund_order or not refund_order.exists():
+            raise UserError("Odoo did not create a refund order")
+        if not refund_order.lines:
+            raise UserError(f"POS Order '{order.name}' has no refundable lines remaining")
+
+        # The native helper uses pos.config.current_session_id. This API is
+        # intentionally stricter: for a paid-but-not-posted order we keep the
+        # refund inside the exact same still-open session as the original.
+        if refund_order.session_id != order.session_id:
+            refund_order.write({"session_id": order.session_id.id})
+
+        if reason and "general_note" in refund_order._fields:
+            note = str(reason).strip()
+            if note:
+                refund_order.general_note = f"Refund reason: {note}"
+
+        # amount_total is negative on a refund order. A negative payment means
+        # money leaves the selected POS payment method.
+        refund_order.add_payment({
+            "name": f"Refund {order.name}",
+            "pos_order_id": refund_order.id,
+            "amount": refund_order.amount_total,
+            "payment_method_id": payment_method.id,
+            "payment_date": fields.Datetime.now(),
+        })
+        refund_order.action_pos_order_paid()
+
+        # Negative POS lines create a return picking. Call the stock helper
+        # directly so the return is immediate, matching this module's mark_paid
+        # behaviour even when the POS config normally updates stock at closing.
+        self._create_pos_stock_picking(refund_order)
+        refund_order._compute_total_cost_in_real_time()
+
+        payment = refund_order.payment_ids[:1]
+        return {
+            "original_order_id": order.id,
+            "original_order_name": order.name,
+            "refund_order_id": refund_order.id,
+            "refund_order_name": refund_order.name,
+            "refund_pos_reference": refund_order.pos_reference or None,
+            "state": refund_order.state,
+            "amount_total": refund_order.amount_total,
+            "amount_paid": refund_order.amount_paid,
+            "session_id": refund_order.session_id.id,
+            "payment": {
+                "id": payment.id if payment else None,
+                "payment_method_id": payment_method.id,
+                "payment_method_name": payment_method.name,
+                "amount": payment.amount if payment else refund_order.amount_total,
+            },
+            "picking_ids": refund_order.picking_ids.ids,
+            "reason": str(reason).strip() if reason else None,
+        }
 
     def move_bill_table(self, config_pos_id, bill_id, raw_table_id):
         # 1. Lookup and validate the open bill

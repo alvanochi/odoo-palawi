@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'REST API Palawi (PLW)',
-    'version': '1.0.0',
+    'version': '1.1.0',
     'summary': 'Palawi Odoo REST API using Clean Architecture',
     'description': """
         Clean Architecture implementation of Odoo REST APIs for the Palawi Project.
@@ -12,6 +12,7 @@
         - POST /api/loyalty/promotions -> Loyalty program matches
         - POST /api/auth/otp/request   -> Request OTP for employee
         - POST /api/auth/otp/verify    -> Verify OTP and complete login
+        - POST /api/pos/order/refund    -> Refund a paid POS order with selected payment method
     """,
     'category': 'Technical',
     'author': 'HKR',
