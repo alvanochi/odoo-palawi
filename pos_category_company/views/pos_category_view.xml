@@ -1,0 +1,26 @@
+<odoo>
+    <record id="view_pos_category_form_company" model="ir.ui.view">
+        <field name="name">pos.category.form.company</field>
+        <field name="model">pos.category</field>
+        <field name="inherit_id" ref="point_of_sale.product_pos_category_form_view"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//field[@name='parent_id']" position="after">
+                <field name="company_id"
+                       groups="base.group_multi_company"
+                       options="{'no_create': True}"/>
+                <field name="pos_ids"
+                       widget="many2many_tags"
+                       options="{'no_create': True}"
+                       placeholder="Select allowed POS configurations..."/>
+            </xpath>
+
+        </field>
+    </record>
+
+
+    <!-- Override POS Category action to filter list view by active company -->
+    <record id="point_of_sale.product_pos_category_action" model="ir.actions.act_window">
+        <field name="domain">['|', ('company_id', '=', False), ('company_id', 'in', allowed_company_ids)]</field>
+    </record>
+</odoo>
