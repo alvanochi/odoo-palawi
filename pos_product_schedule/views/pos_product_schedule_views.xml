@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- List View -->
+    <record id="pos_product_schedule_view_list" model="ir.ui.view">
+        <field name="name">pos.product.schedule.view.list</field>
+        <field name="model">pos.product.schedule</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="time_from" widget="float_time"/>
+                <field name="time_to" widget="float_time"/>
+                <field name="mon" optional="hide"/>
+                <field name="tue" optional="hide"/>
+                <field name="wed" optional="hide"/>
+                <field name="thu" optional="hide"/>
+                <field name="fri" optional="hide"/>
+                <field name="sat" optional="hide"/>
+                <field name="sun" optional="hide"/>
+                <field name="tz" optional="hide"/>
+                <field name="product_count"/>
+                <field name="last_applied" optional="hide"/>
+                <field name="is_open_now" widget="boolean_toggle" readonly="1"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="pos_product_schedule_view_form" model="ir.ui.view">
+        <field name="name">pos.product.schedule.view.form</field>
+        <field name="model">pos.product.schedule</field>
+        <field name="arch" type="xml">
+            <form string="POS Product Schedule">
+                <header>
+                    <button name="action_apply_now" type="object"
+                            string="Apply Now" class="btn-primary"
+                            help="Immediately sync POS availability with this
+                                  schedule, without waiting for the scheduler."/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="Archived"
+                            bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_products" type="object"
+                                class="oe_stat_button" icon="fa-cubes"
+                                invisible="product_count == 0">
+                            <field name="product_count" widget="statinfo"
+                                   string="Products"/>
+                        </button>
+                        <button name="action_view_triggers" type="object"
+                                class="oe_stat_button" icon="fa-clock-o"
+                                string="Triggers"
+                                groups="base.group_system"/>
+                    </div>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1>
+                            <field name="name"
+                                   placeholder="e.g. Breakfast Menu"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Opening Hours">
+                            <label for="time_from" string="Hours"/>
+                            <div class="o_row">
+                                <field name="time_from" widget="float_time"/>
+                                <span class="mx-2">to</span>
+                                <field name="time_to" widget="float_time"/>
+                            </div>
+                            <field name="tz"/>
+                            <field name="is_open_now" readonly="1"/>
+                            <field name="next_show" readonly="1"/>
+                            <field name="next_hide" readonly="1"/>
+                            <field name="last_applied"/>
+                        </group>
+                        <group string="Active Days">
+                            <field name="mon"/>
+                            <field name="tue"/>
+                            <field name="wed"/>
+                            <field name="thu"/>
+                            <field name="fri"/>
+                            <field name="sat"/>
+                            <field name="sun"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group>
+                            <field name="company_id"
+                                   groups="base.group_multi_company"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                    </group>
+                    <div class="alert alert-info" role="alert">
+                        The products below are automatically
+                        <b>shown</b> in the POS during the opening hours and
+                        <b>hidden</b> outside of them. When the end time is
+                        earlier than the start time (for example 22:00 to
+                        02:00), the schedule is treated as crossing midnight.
+                        Saving this form applies the schedule right away and
+                        refreshes the two scheduled actions that fire daily at
+                        the start and end time shown above.
+                        An already open POS session keeps its cached product
+                        list until the cashier refreshes it.
+                    </div>
+                    <notebook>
+                        <page string="Products" name="products">
+                            <field name="product_ids" widget="many2many">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="barcode"/>
+                                    <field name="default_code"
+                                           optional="show"/>
+                                    <field name="list_price"
+                                           widget="monetary"/>
+                                    <field name="available_in_pos"
+                                           widget="boolean_toggle"
+                                           readonly="1"
+                                           string="Available in POS"/>
+                                    <field name="currency_id"
+                                           column_invisible="1"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="pos_product_schedule_view_search" model="ir.ui.view">
+        <field name="name">pos.product.schedule.view.search</field>
+        <field name="model">pos.product.schedule</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="product_ids" string="Product"/>
+                <filter name="filter_active" string="Active"
+                        domain="[('active', '=', True)]"/>
+                <filter name="filter_archived" string="Archived"
+                        domain="[('active', '=', False)]"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_tz" string="Timezone"
+                            context="{'group_by': 'tz'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_pos_product_schedule" model="ir.actions.act_window">
+        <field name="name">Product Schedules</field>
+        <field name="res_model">pos.product.schedule</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="pos_product_schedule_view_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first POS product schedule
+            </p>
+            <p>
+                For example, show the breakfast menu only between 09:00 and
+                12:00. Pick the products, set the hours and days, and the
+                rest is automatic.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menu under Point of Sale > Configuration -->
+    <menuitem id="menu_pos_product_schedule"
+              name="Product Schedules"
+              parent="point_of_sale.menu_point_config_product"
+              action="action_pos_product_schedule"
+              sequence="25"
+              groups="point_of_sale.group_pos_manager"/>
+
+</odoo>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Safety net only. The real work is triggered by the two scheduled
+         actions each schedule creates for itself, firing at its start and
+         end time. This hourly job re-checks the state in case a trigger
+         was deleted, disabled, or missed while the server was down.
+         Not marked noupdate so upgrades can correct its interval. -->
+    <record id="ir_cron_pos_product_schedule" model="ir.cron">
+        <field name="name">POS: Product Schedules Safety Check</field>
+        <field name="model_id" ref="model_pos_product_schedule"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_apply_schedules()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">hours</field>
+        <field name="active" eval="True"/>
+    </record>
+</odoo>
