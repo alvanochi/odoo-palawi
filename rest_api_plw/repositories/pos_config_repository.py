@@ -193,3 +193,21 @@ class PosConfigRepository:
             "stale_session_ids": [sid for sid in sessions.ids if sid != chosen.id],
             "timezone": tz_name,
         }
+
+    def resolve_active_session_record(self, pos_config_id, require_today=False,
+                                      tz_name='UTC'):
+        """Return record yang sama persis dengan endpoint sessions/active.
+
+        Checkout dan KDS harus memakai resolver yang sama. Sebelumnya checkout
+        mempunyai search sendiri sehingga dua endpoint dapat memilih session
+        berbeda saat ada lebih dari satu session berstatus opened.
+        """
+        result = self.find_active_session(
+            pos_config_id=pos_config_id,
+            require_today=require_today,
+            tz_name=tz_name,
+        )
+        session_data = result.get('session') if result.get('can_create_order') else None
+        if not session_data:
+            return self.env['pos.session']
+        return self.env['pos.session'].sudo().browse(session_data['id']).exists()

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'REST API Palawi (PLW)',
-    'version': '1.1.0',
+    'version': '1.2.0',
     'summary': 'Palawi Odoo REST API using Clean Architecture',
     'description': """
         Clean Architecture implementation of Odoo REST APIs for the Palawi Project.
@@ -23,7 +23,7 @@
     # Dengan dependensi, mencabut modul dapur akan ikut mencabut seluruh API
     # ini -- yang sudah terjadi sekali dan mematikan semua endpoint sekaligus.
     'depends': [
-        'base', 'hr', 'point_of_sale', 'pos_restaurant', 'pos_category_company', 'loyalty', 'pos_loyalty', 'product_estimated_time',
+        'base', 'hr', 'bus', 'point_of_sale', 'pos_restaurant', 'pos_category_company', 'loyalty', 'pos_loyalty', 'product_estimated_time',
     ],
     'data': [
         'security/ir.model.access.csv',

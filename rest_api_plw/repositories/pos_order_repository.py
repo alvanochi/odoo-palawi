@@ -54,7 +54,13 @@ class PosOrderRepository:
             coupon_id=line.coupon_id.id if getattr(line, 'coupon_id', False) else None,
             # getattr: field ini datang dari pos_order_extra_states, jadi API
             # tetap jalan (mengirim null) bila modul itu belum terpasang.
-            kitchen_state=getattr(line, 'kitchen_state', None) or None,
+            # Record lama dapat masih NULL ketika addon kitchen dipasang pada
+            # database yang sudah berisi order. Semantiknya sama dengan default
+            # model: belum pernah dimasak berarti pending.
+            kitchen_state=(
+                getattr(line, 'kitchen_state', None)
+                or ('served' if bool(getattr(line, 'is_reward_line', False)) else 'pending')
+            ) if 'kitchen_state' in line._fields else None,
             cooking_started_at=self._iso(getattr(line, 'cooking_started_at', None)),
             ready_at=self._iso(getattr(line, 'ready_at', None)),
             ready_source=getattr(line, 'ready_source', None) or None,
@@ -192,7 +198,19 @@ class PosOrderRepository:
         # that module is absent the filter is simply dropped, so this endpoint
         # keeps serving orders instead of failing with a raw SQL error.
         if kitchen_states and 'kitchen_state' in self.env["pos.order.line"]._fields:
-            domain.append(("lines.kitchen_state", "in", kitchen_states))
+            # NULL dari baris historis dibaca sebagai pending oleh model/API.
+            # Domain harus mempunyai arti yang sama, kalau tidak order lama
+            # kadang hilang walaupun serialisasinya menyebut pending.
+            if 'pending' in kitchen_states:
+                domain.extend([
+                    ('lines.is_reward_line', '=', False),
+                    '|',
+                    ('lines.kitchen_state', '=', False),
+                    ('lines.kitchen_state', 'in', kitchen_states),
+                ])
+            else:
+                domain.append(('lines.is_reward_line', '=', False))
+                domain.append(("lines.kitchen_state", "in", kitchen_states))
         if table_id:
             domain.append(("table_id", "=", table_id))
 
@@ -227,4 +245,3 @@ class PosOrderRepository:
 
         line.set_kitchen_state(target, source)
         return self._order_entity(order.with_company(order.company_id))
-

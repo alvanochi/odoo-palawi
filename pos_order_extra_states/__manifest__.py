@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'POS Order Kitchen States',
-    'version': '18.0.2.1.0',
+    'version': '18.0.2.2.0',
     'category': 'Point of Sale',
     'summary': 'Status memasak per hidangan pada baris POS Order '
                '(pending -> cooking -> ready -> served)',
@@ -48,7 +48,10 @@ dari durasi masak yang sebenarnya.
     # status dapur. Tanpa dependensi ini modul memuat dengan baik selama
     # pos_loyalty kebetulan terpasang, lalu menggagalkan registry di database
     # yang tidak memasangnya.
-    'depends': ['point_of_sale', 'pos_loyalty'],
+    # bus menyediakan transport WebSocket bawaan Odoo. Modul ini hanya
+    # menerbitkan invalidation event; data order lengkap tetap dibaca lewat
+    # REST agar reconnect atau event yang terlewat tidak merusak antrean KDS.
+    'depends': ['point_of_sale', 'pos_loyalty', 'bus'],
     'data': [
         'views/pos_order_views.xml',
     ],

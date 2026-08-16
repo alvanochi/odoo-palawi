@@ -6,6 +6,7 @@ from odoo import fields
 from odoo.exceptions import UserError
 from ..domain.entities.checkout import CheckoutResultEntity
 from ..domain.services.reward_calculator import compute_discount_amount
+from .pos_config_repository import PosConfigRepository
 
 class TableOccupiedException(Exception):
     def __init__(self, message, existing_bill_id):
@@ -261,13 +262,13 @@ class CheckoutRepository:
 
         company = pos_config.company_id
 
-        # 2. Check/resolve active POS session.
-        # The newest one wins, matching /api/pos/sessions/active, because a
-        # cashier may have left an earlier session open.
-        session = self.env["pos.session"].sudo().with_company(company).search([
-            ("config_id", "=", pos_config.id),
-            ("state", "=", "opened")
-        ], order="start_at desc, id desc", limit=1)
+        # 2. Check/resolve active POS session melalui resolver yang juga dipakai
+        # /api/pos/sessions/active dan endpoint KDS. Satu POS config tidak boleh
+        # menghasilkan session id berbeda tergantung endpoint yang dipanggil.
+        timezone = self.env['ir.config_parameter'].sudo().get_param(
+            'api_pos_timezone') or 'Asia/Jakarta'
+        session = PosConfigRepository(self.env).resolve_active_session_record(
+            pos_config.id, require_today=False, tz_name=timezone)
 
         if not session:
             # Opening a session on the client's behalf hides the fact that the
