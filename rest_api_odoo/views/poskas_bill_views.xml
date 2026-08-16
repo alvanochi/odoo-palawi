@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- POSKAS Bill Tree View -->
+    <record id="view_poskas_bill_tree" model="ir.ui.view">
+        <field name="name">poskas.bill.tree</field>
+        <field name="model">poskas.bill</field>
+        <field name="arch" type="xml">
+            <list string="Bills" default_order="id desc" decoration-info="state == 'open'" decoration-muted="state == 'cancel'">
+                <field name="name" decoration-bf="1"/>
+                <field name="create_date" string="Tanggal"/>
+                <field name="config_id"/>
+                <field name="table_display" string="Meja"/>
+                <field name="name_waiters" string="Nama Waiters"/>
+                <field name="amount_total" sum="Total Amount"/>
+                <field name="is_dp" string="DP?" widget="boolean_toggle"/>
+                <field name="dp_amount" string="DP"/>
+                <field name="amount_due" string="Sisa"/>
+                <field name="type_order" string="Tipe Order"/>
+
+                <field name="state" widget="badge" decoration-info="state == 'open'" decoration-success="state == 'paid'" decoration-danger="state == 'cancel'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- POSKAS Bill Form View -->
+    <record id="view_poskas_bill_form" model="ir.ui.view">
+        <field name="name">poskas.bill.form</field>
+        <field name="model">poskas.bill</field>
+        <field name="arch" type="xml">
+            <form string="Bill">
+                <header>
+                    <field name="state" widget="statusbar" statusbar_visible="open,paid"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Draft Bill"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="config_id" options="{'no_create': True}"/>
+                            <field name="table_display" options="{'no_create': True}"/>
+                        </group>
+                        <group>
+                            <field name="create_date" string="Tanggal" readonly="1"/>
+                            <field name="state" readonly="1"/>
+                            <field name="type_order" string="Tipe Order"/> 
+                            <field name="name_waiters" string="Nama Waiters"/>
+                            <field name="name_customer" string="Nama Customer"/>
+                        </group>
+                        <group>
+                            <group>
+                                <field name="is_dp" string="DP?"/>
+                                <field name="dp_amount" string="DP"/>
+                            </group>
+                            <group>
+                                <field name="amount_due" string="Sisa"/>
+                            </group>
+                          </group>
+                    </group>
+                    <notebook>
+                        <page string="Lines" name="lines">
+                            <field name="line_ids" nolabel="1">
+                                <list string="Bill Lines" editable="bottom">
+                                    <field name="product_id"/>
+                                    <field name="qty"/>
+                                    <field name="price_unit"/>
+                                    <field name="discount_percent"/>
+                                    <field name="note"/>
+                                    <field name="subtotal" sum="Subtotal"/>
+                                </list>
+                            </field>
+                            <group class="oe_subtotal_footer" colspan="2">
+                                <field name="amount_total" class="oe_subtotal_footer_separator h3"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- POSKAS Bill Search View -->
+    <record id="view_poskas_bill_search" model="ir.ui.view">
+        <field name="name">poskas.bill.search</field>
+        <field name="model">poskas.bill</field>
+        <field name="arch" type="xml">
+            <search string="Search Bills">
+                <field name="name"/>
+                <field name="config_id"/>
+                <field name="table_display" string="Meja"/>
+                <field name="name_waiters" string="Nama Waiters"/>
+                <field name="name_customer" string="Nama Customer"/>
+                <field name="company_id"/>
+                <filter string="Open" name="open" domain="[('state', '=', 'open')]"/>
+                <filter string="Paid" name="paid" domain="[('state', '=', 'paid')]"/>
+                <filter string="Cancelled" name="cancelled" domain="[('state', '=', 'cancel')]"/>
+                <separator/>
+                <group expand="0" string="Group By">
+                    <filter string="Point of Sale" name="config" domain="[]" context="{'group_by': 'config_id'}"/>
+                    <filter string="Meja" name="table" domain="[]" context="{'group_by': 'table_display'}"/>
+                    <filter string="Status" name="status" domain="[]" context="{'group_by': 'state'}"/>
+                    <filter string="Company" name="company" domain="[]" context="{'group_by': 'company_id'}"/>
+                    <filter string="Tipe Order" name="type_order" domain="[]" context="{'group_by': 'type_order'}"/>
+                </group>
+
+            </search>
+        </field>
+    </record>
+
+    <!-- POSKAS Bill Action -->
+    <record id="action_poskas_bill" model="ir.actions.act_window">
+        <field name="name">Bills</field>
+        <field name="res_model">poskas.bill</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_empty_folder">
+                No bills found
+            </p><p>
+                Create a new bill.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menu Item under Point of Sale > Orders -->
+    <menuitem 
+        id="menu_poskas_bill" 
+        name="Bills" 
+        parent="point_of_sale.menu_point_of_sale" 
+        action="action_poskas_bill" 
+        sequence="5" 
+        groups="point_of_sale.group_pos_manager,point_of_sale.group_pos_user"/>
+
+</odoo>

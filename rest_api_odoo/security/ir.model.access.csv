@@ -1,0 +1,9 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_connection_api_user,access.connection.api.user,model_connection_api,,1,1,1,1
+access_connection_api_param_user,access.connection.api.param.user,model_connection_api_param,,1,1,1,1
+access_poskas_bill_manager,access.poskas.bill.manager,model_poskas_bill,point_of_sale.group_pos_manager,1,1,1,1
+access_poskas_bill_user,access.poskas.bill.user,model_poskas_bill,point_of_sale.group_pos_user,1,1,1,1
+access_poskas_bill_line_manager,access.poskas.bill.line.manager,model_poskas_bill_line,point_of_sale.group_pos_manager,1,1,1,1
+access_poskas_bill_line_user,access.poskas.bill.line.user,model_poskas_bill_line,point_of_sale.group_pos_user,1,1,1,1
+access_pos_cash_movement_manager,access.pos.cash.movement.manager,model_pos_cash_movement,point_of_sale.group_pos_manager,1,1,1,1
+access_pos_cash_movement_user,access.pos.cash.movement.user,model_pos_cash_movement,point_of_sale.group_pos_user,1,1,1,1

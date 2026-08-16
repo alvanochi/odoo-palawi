@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- =========================
+         VIEW: connection.api (FORM)
+         ========================= -->
+    <record id="connection_api_view_form" model="ir.ui.view">
+        <field name="name">connection.api.view.form</field>
+        <field name="model">connection.api</field>
+        <field name="arch" type="xml">
+            <form string="REST API Config">
+                <sheet>
+                    <!-- HEADER / MAIN GROUP -->
+                    <group>
+                        <group string="Resource">
+                            <field name="model_id" string="Model"/>
+                        </group>
+                        <group string="Methods">
+                            <field name="is_get"/>
+                            <field name="is_post"/>
+                            <field name="is_put"/>
+                            <field name="is_delete"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Fields">
+                            <group>
+                                <field name="get_field_ids"
+                                       widget="many2many_tags"
+                                       domain="[('model_id', '=', model_id)]"/>
+                                <field name="post_field_ids"
+                                       widget="many2many_tags"
+                                       domain="[('model_id', '=', model_id)]"/>
+                            </group>
+
+                            <group string="Required by Model (info)">
+                                <field name="required_field_ids"
+                                       widget="many2many_tags"
+                                       readonly="1"
+                                       domain="[('model_id', '=', model_id)]"/>
+                                <!-- Pakai separator sebagai teks info, bukan <label> -->
+                                <separator string="Fields di atas adalah field required dari model dan wajib ada di POST/PUT Fields."/>
+                            </group>
+                        </page>
+
+                        <page string="Query Params">
+                            <field name="param_ids"/>
+                        </page>
+                    </notebook>
+
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- =========================
+         VIEW: connection.api (list/LIST)
+         ========================= -->
+    <record id="connection_api_view_list" model="ir.ui.view">
+        <field name="name">connection.api.view.list</field>
+        <field name="model">connection.api</field>
+        <field name="arch" type="xml">
+            <!-- Di XML biasanya <tree>, tapi kalau kamu memang pakai <list> di Odoo 18 dan sudah jalan, biarkan -->
+            <list string="REST API Config">
+                <field name="model_id" string="Model"/>
+                <field name="is_get"/>
+                <field name="is_post"/>
+                <field name="is_put"/>
+                <field name="is_delete"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- =======================================
+         VIEW: connection.api.param (list & FORM)
+         ======================================= -->
+    <record id="connection_api_param_view_list" model="ir.ui.view">
+        <field name="name">connection.api.param.view.list</field>
+        <field name="model">connection.api.param</field>
+        <field name="arch" type="xml">
+            <list string="Query Params">
+                <field name="name"/>
+                <field name="field_id" string="Odoo Field"/>
+                <field name="related_field_id" string="Related Field"/>
+                <field name="field_name" invisible="1"/>
+                <field name="operator"/>
+                <field name="value_type"/>
+                <field name="method"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="connection_api_param_view_form" model="ir.ui.view">
+        <field name="name">connection.api.param.view.form</field>
+        <field name="model">connection.api.param</field>
+        <field name="arch" type="xml">
+            <form string="Query Param">
+                <sheet>
+                    <group>
+                        <field name="api_id" invisible="1"/>
+                        <field name="name"/>
+                        <field name="field_id" string="Odoo Field"/>
+                        <field name="related_field_id" string="Related Field (optional)"/>
+                        <field name="operator"/>
+                        <field name="value_type"/>
+                        <field name="method"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- =========================
+         ACTION
+         ========================= -->
+    <record id="rest_api_root_action" model="ir.actions.act_window">
+        <field name="name">Rest API Records</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">connection.api</field>
+        <!-- di backend pakai 'list,form'; di UI Odoo 18 bisa muncul "List,Form" -->
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create!
+            </p>
+        </field>
+    </record>
+
+    <!-- =========================
+         MENUS
+         ========================= -->
+    <menuitem id="rest_api_root"
+              name="Rest API"
+              sequence="10"
+              web_icon="rest_api_odoo,static/description/icon.png"/>
+
+    <menuitem id="rest_api_details_root"
+              name="Rest API"
+              parent="rest_api_root"
+              action="rest_api_root_action"
+              sequence="10"/>
+
+</odoo>

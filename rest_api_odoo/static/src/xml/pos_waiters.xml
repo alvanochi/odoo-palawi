@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="your_module.OrderlineInheritWaiters"
+       t-inherit="point_of_sale.Orderline"
+       t-inherit-mode="extension">
+
+        <xpath expr="//div[hasclass('product-name')]" position="after">
+            <div t-if="props.line.name_waiters"
+                 class="info waiters-info">
+
+                <i class="fa fa-user" aria-hidden="true"/>
+                Waiter:
+                <t t-esc="props.line.name_waiters"/>
+
+            </div>
+        </xpath>
+
+    </t>
+
+</templates>
