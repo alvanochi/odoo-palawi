@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_profit_share_computation_search" model="ir.ui.view">
+        <field name="name">profit.share.computation.search</field>
+        <field name="model">profit.share.computation</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="revision"/>
+                <field name="company_id"/>
+                <field name="date_from"/>
+                <field name="date_to"/>
+                <filter string="Draft" name="draft" domain="[('state','=','draft')]"/>
+                <filter string="Unpaid Workflow" name="unpaid_workflow" domain="[('state','in',['confirmed','approved'])]"/>
+                <filter string="Paid" name="paid" domain="[('state','=','paid')]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Company" name="group_company" context="{'group_by':'company_id'}"/>
+                    <filter string="Period Type" name="group_period_type" context="{'group_by':'period_type'}"/>
+                    <filter string="State" name="group_state" context="{'group_by':'state'}"/>
+                    <filter string="Month" name="group_month" context="{'group_by':'date_from:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_profit_share_computation_list" model="ir.ui.view">
+        <field name="name">profit.share.computation.list</field>
+        <field name="model">profit.share.computation</field>
+        <field name="arch" type="xml">
+            <list decoration-info="state == 'draft'" decoration-success="state == 'paid'" decoration-danger="state == 'cancelled'" decoration-warning="state in ['confirmed','approved']">
+                <field name="name"/>
+                <field name="revision"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="period_type"/>
+                <field name="date_from"/>
+                <field name="date_to"/>
+                <field name="recipient_count"/>
+                <field name="line_count"/>
+                <field name="total_share_amount" sum="Total Share"/>
+                <field name="unpaid_share_amount" sum="Unpaid"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_profit_share_computation_form" model="ir.ui.view">
+        <field name="name">profit.share.computation.form</field>
+        <field name="model">profit.share.computation</field>
+        <field name="arch" type="xml">
+            <form string="Profit Sharing Computation">
+                <header>
+                    <button name="action_recompute" type="object" string="Recompute" class="btn-secondary" invisible="state != 'draft'" groups="profit_sharing.group_profit_share_user"/>
+                    <button name="action_confirm" type="object" string="Confirm" class="btn-primary" invisible="state != 'draft'" groups="profit_sharing.group_profit_share_manager"/>
+                    <button name="action_approve" type="object" string="Approve" class="btn-primary" invisible="state != 'confirmed' or not approval_required" groups="profit_sharing.group_profit_share_approver"/>
+                    <button name="action_mark_paid" type="object" string="Mark All Paid" class="btn-success" invisible="(approval_required and state != 'approved') or (not approval_required and state != 'confirmed')" groups="profit_sharing.group_profit_share_payment"/>
+                    <button name="action_cancel" type="object" string="Cancel" invisible="state not in ['draft','confirmed','approved']" groups="profit_sharing.group_profit_share_manager"/>
+                    <button name="action_create_correction" type="object" string="Create Correction" class="btn-secondary" invisible="state != 'cancelled'" groups="profit_sharing.group_profit_share_manager"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,approved,paid,cancelled"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                        <div class="text-muted">Revision <field name="revision" readonly="1" class="oe_inline"/></div>
+                    </div>
+                    <group>
+                        <group string="Period">
+                            <field name="company_id" readonly="state != 'draft'"/>
+                            <field name="period_type" readonly="state != 'draft'"/>
+                            <field name="date_from" readonly="state != 'draft'"/>
+                            <field name="date_to" readonly="state != 'draft'"/>
+                            <field name="approval_required" readonly="1"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                        <group string="Summary">
+                            <field name="recipient_count" readonly="1"/>
+                            <field name="line_count" readonly="1"/>
+                            <field name="total_share_amount" readonly="1"/>
+                            <field name="paid_share_amount" readonly="1"/>
+                            <field name="unpaid_share_amount" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Share Lines">
+                            <field name="line_ids" readonly="1">
+                                <list create="0" delete="0">
+                                    <field name="recipient_id"/>
+                                    <field name="share_type_id"/>
+                                    <field name="rule_id"/>
+                                    <field name="source_type"/>
+                                    <field name="base_amount" sum="Base"/>
+                                    <field name="computation_type"/>
+                                    <field name="percentage_applied" invisible="computation_type != 'percentage'"/>
+                                    <field name="flat_amount_applied" invisible="computation_type != 'flat'"/>
+                                    <field name="share_amount" sum="Share"/>
+                                    <field name="payment_state" widget="badge"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Audit">
+                            <group>
+                                <group>
+                                    <field name="confirmed_by_id" readonly="1"/>
+                                    <field name="confirmed_at" readonly="1"/>
+                                    <field name="approved_by_id" readonly="1"/>
+                                    <field name="approved_at" readonly="1"/>
+                                    <field name="last_computed_at" readonly="1"/>
+                                </group>
+                                <group>
+                                    <field name="paid_by_id" readonly="1"/>
+                                    <field name="paid_at" readonly="1"/>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_profit_share_computation" model="ir.actions.act_window">
+        <field name="name">Computation Batches</field>
+        <field name="res_model">profit.share.computation</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_profit_share_computation_search"/>
+    </record>
+</odoo>

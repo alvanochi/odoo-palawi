@@ -1,0 +1,14 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_profit_share_type_user,profit.share.type user,model_profit_share_type,profit_sharing.group_profit_share_user,1,0,0,0
+access_profit_share_type_manager,profit.share.type manager,model_profit_share_type,profit_sharing.group_profit_share_manager,1,1,1,1
+access_profit_share_rule_user,profit.share.rule user,model_profit_share_rule,profit_sharing.group_profit_share_user,1,1,1,0
+access_profit_share_rule_manager,profit.share.rule manager,model_profit_share_rule,profit_sharing.group_profit_share_manager,1,1,1,1
+access_profit_share_computation_user,profit.share.computation user,model_profit_share_computation,profit_sharing.group_profit_share_user,1,1,1,0
+access_profit_share_computation_manager,profit.share.computation manager,model_profit_share_computation,profit_sharing.group_profit_share_manager,1,1,1,1
+access_profit_share_computation_portal,profit.share.computation portal,model_profit_share_computation,base.group_portal,1,0,0,0
+access_profit_share_line_user,profit.share.line user,model_profit_share_line,profit_sharing.group_profit_share_user,1,0,0,0
+access_profit_share_line_payment,profit.share.line payment,model_profit_share_line,profit_sharing.group_profit_share_payment,1,1,0,0
+access_profit_share_line_manager,profit.share.line manager,model_profit_share_line,profit_sharing.group_profit_share_manager,1,1,0,0
+access_profit_share_line_portal,profit.share.line portal,model_profit_share_line,base.group_portal,1,0,0,0
+access_profit_share_compute_wizard_user,profit.share.compute.wizard user,model_profit_share_compute_wizard,profit_sharing.group_profit_share_user,1,1,1,1
+access_profit_share_settings_manager,profit.share.settings manager,model_profit_share_settings,profit_sharing.group_profit_share_manager,1,1,1,1

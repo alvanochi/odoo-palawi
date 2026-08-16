@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="profit_share_type_mitra" model="profit.share.type">
+        <field name="name">Partner</field>
+        <field name="code">PARTNER</field>
+        <field name="sequence">10</field>
+    </record>
+    <record id="profit_share_type_staff" model="profit.share.type">
+        <field name="name">Staff</field>
+        <field name="code">STAFF</field>
+        <field name="sequence">20</field>
+    </record>
+</odoo>

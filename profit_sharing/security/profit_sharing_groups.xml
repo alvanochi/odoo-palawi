@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="module_category_profit_sharing" model="ir.module.category">
+        <field name="name">Profit Sharing</field>
+        <field name="sequence">35</field>
+    </record>
+
+    <record id="group_profit_share_user" model="res.groups">
+        <field name="name">User</field>
+        <field name="category_id" ref="profit_sharing.module_category_profit_sharing"/>
+    </record>
+
+    <record id="group_profit_share_approver" model="res.groups">
+        <field name="name">Approver</field>
+        <field name="category_id" ref="profit_sharing.module_category_profit_sharing"/>
+        <field name="implied_ids" eval="[(4, ref('profit_sharing.group_profit_share_user'))]"/>
+    </record>
+
+    <record id="group_profit_share_payment" model="res.groups">
+        <field name="name">Payment Officer</field>
+        <field name="category_id" ref="profit_sharing.module_category_profit_sharing"/>
+        <field name="implied_ids" eval="[(4, ref('profit_sharing.group_profit_share_user'))]"/>
+    </record>
+
+    <record id="group_profit_share_manager" model="res.groups">
+        <field name="name">Manager</field>
+        <field name="category_id" ref="profit_sharing.module_category_profit_sharing"/>
+        <field name="implied_ids" eval="[(4, ref('profit_sharing.group_profit_share_approver')), (4, ref('profit_sharing.group_profit_share_payment'))]"/>
+    </record>
+
+    <!-- Give Odoo Settings administrators access immediately after installation.
+         Finance/operations users can still be assigned the Profit Sharing roles explicitly. -->
+    <record id="base.group_system" model="res.groups">
+        <field name="implied_ids" eval="[(4, ref('profit_sharing.group_profit_share_manager'))]"/>
+    </record>
+</odoo>

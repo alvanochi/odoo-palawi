@@ -1,0 +1,50 @@
+.o_profit_share_dashboard {
+    overflow: auto;
+    height: 100%;
+
+    .o_ps_kpi {
+        border-radius: 0.75rem;
+    }
+
+    .o_ps_filter_bar {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+    }
+
+    .o_ps_bar_track {
+        height: 0.65rem;
+        background: var(--gray-200, #e9ecef);
+        border-radius: 999px;
+        overflow: hidden;
+    }
+
+    .o_ps_bar {
+        height: 100%;
+        border-radius: inherit;
+        transition: width 0.2s ease;
+    }
+
+    .o_ps_bar_revenue {
+        background: #0d6efd;
+    }
+
+    .o_ps_bar_profit {
+        background: #198754;
+    }
+
+    .o_ps_bar_share {
+        background: #6f42c1;
+    }
+
+    .o_ps_legend {
+        width: 4rem;
+        flex: 0 0 4rem;
+        font-size: 0.75rem;
+        color: var(--gray-600, #6c757d);
+    }
+
+    .o_ps_clickable {
+        cursor: pointer;
+    }
+}

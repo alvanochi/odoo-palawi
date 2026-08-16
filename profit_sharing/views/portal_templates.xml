@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="portal_my_home_profit_sharing" inherit_id="portal.portal_my_home" priority="30">
+        <xpath expr="//div[@id='portal_common_category']" position="inside">
+            <t t-call="portal.portal_docs_entry">
+                <t t-set="title">Profit &amp; Fee Sharing</t>
+                <t t-set="text">View your sharing history, calculation basis, and payment status.</t>
+                <t t-set="url" t-value="'/my/profit-sharing'"/>
+                <t t-set="placeholder_count" t-value="'profit_share_count'"/>
+            </t>
+        </xpath>
+    </template>
+
+    <template id="portal_breadcrumbs_profit_sharing" inherit_id="portal.portal_breadcrumbs" priority="30">
+        <xpath expr="//ol" position="inside">
+            <li t-if="page_name == 'profit_sharing'" class="breadcrumb-item active">Profit Sharing</li>
+        </xpath>
+    </template>
+
+    <template id="portal_my_profit_sharing" name="My Profit Sharing">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="True"/>
+            <t t-call="portal.portal_searchbar">
+                <t t-set="title">Profit &amp; Fee Sharing</t>
+            </t>
+
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-md-4">
+                    <div class="card h-100 shadow-sm border-0">
+                        <div class="card-body">
+                            <div class="text-muted small">Current Month Sharing</div>
+                            <t t-if="month_totals">
+                                <div t-foreach="month_totals" t-as="total" class="fs-3 fw-bold">
+                                    <span t-out="format_amount(total['amount'], total['currency'])"/>
+                                </div>
+                            </t>
+                            <div t-else="" class="fs-3 fw-bold text-muted">—</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="card h-100 shadow-sm border-0">
+                        <div class="card-body">
+                            <div class="text-muted small">Year-to-Date Sharing</div>
+                            <t t-if="year_totals">
+                                <div t-foreach="year_totals" t-as="total" class="fs-3 fw-bold">
+                                    <span t-out="format_amount(total['amount'], total['currency'])"/>
+                                </div>
+                            </t>
+                            <div t-else="" class="fs-3 fw-bold text-muted">—</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="card h-100 shadow-sm border-0">
+                        <div class="card-body">
+                            <div class="text-muted small">Latest Payment Status</div>
+                            <t t-if="latest_line">
+                                <span t-attf-class="badge rounded-pill #{'text-bg-success' if latest_line.payment_state == 'paid' else 'text-bg-warning'}" t-out="latest_line.payment_state.title()"/>
+                                <div class="small text-muted mt-2">
+                                    <span t-out="latest_line.effective_date_from"/> — <span t-out="latest_line.effective_date_to"/>
+                                </div>
+                            </t>
+                            <span t-else="" class="text-muted">No data available</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div t-if="not lines" class="alert alert-info">No profit-sharing calculation results are available for this account yet.</div>
+            <t t-else="">
+                <t t-call="portal.portal_table">
+                    <thead>
+                        <tr>
+                            <th>Period</th>
+                            <th>Rule</th>
+                            <th>Type</th>
+                            <th>Source</th>
+                            <th class="text-end">Base Amount</th>
+                            <th class="text-end">Rate / Flat</th>
+                            <th class="text-end">Share Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="lines" t-as="line">
+                            <td><span t-out="line.effective_date_from"/> — <span t-out="line.effective_date_to"/></td>
+                            <td t-out="line.rule_name or '—'"/>
+                            <td t-out="line.share_type_name or '—'"/>
+                            <td><t t-if="line.source_type == 'pos_revenue'">POS Revenue</t><t t-else="">Net Profit</t></td>
+                            <td class="text-end" t-out="format_amount(line.base_amount, line.currency_id)"/>
+                            <td class="text-end">
+                                <t t-if="line.computation_type == 'percentage'"><span t-out="line.percentage_applied"/>%</t>
+                                <t t-else="" t-out="format_amount(line.flat_amount_applied, line.currency_id)"/>
+                            </td>
+                            <td class="text-end fw-semibold" t-out="format_amount(line.share_amount, line.currency_id)"/>
+                            <td>
+                                <span t-attf-class="badge rounded-pill #{'text-bg-success' if line.payment_state == 'paid' else 'text-bg-warning'}" t-out="line.payment_state.title()"/>
+                            </td>
+                        </tr>
+                    </tbody>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_profit_share_line_search" model="ir.ui.view">
+        <field name="name">profit.share.line.search</field>
+        <field name="model">profit.share.line</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="recipient_id"/>
+                <field name="share_type_id"/>
+                <field name="rule_id"/>
+                <field name="computation_id"/>
+                <field name="company_id"/>
+                <filter string="Unpaid" name="unpaid" domain="[('payment_state','=','unpaid')]"/>
+                <filter string="Paid" name="paid" domain="[('payment_state','=','paid')]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Recipient" name="group_recipient" context="{'group_by':'recipient_id'}"/>
+                    <filter string="Share Type" name="group_share_type" context="{'group_by':'share_type_id'}"/>
+                    <filter string="Batch" name="group_batch" context="{'group_by':'computation_id'}"/>
+                    <filter string="Payment State" name="group_payment" context="{'group_by':'payment_state'}"/>
+                    <filter string="Company" name="group_company" context="{'group_by':'company_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_profit_share_line_list" model="ir.ui.view">
+        <field name="name">profit.share.line.list</field>
+        <field name="model">profit.share.line</field>
+        <field name="arch" type="xml">
+            <list create="0" delete="0" decoration-success="payment_state == 'paid'" decoration-warning="payment_state == 'unpaid'">
+                <field name="computation_state" column_invisible="1"/>
+                <field name="approval_required" column_invisible="1"/>
+                <field name="computation_id"/>
+                <field name="recipient_id"/>
+                <field name="share_type_id"/>
+                <field name="rule_id" optional="show"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="source_type"/>
+                <field name="effective_date_from"/>
+                <field name="effective_date_to"/>
+                <field name="base_amount" sum="Base Amount"/>
+                <field name="computation_type"/>
+                <field name="percentage_applied" invisible="computation_type != 'percentage'" optional="show"/>
+                <field name="flat_amount_applied" invisible="computation_type != 'flat'" optional="show"/>
+                <field name="share_amount" sum="Share Amount"/>
+                <field name="payment_state" widget="badge"/>
+                <field name="payment_move_id" optional="hide"/>
+                <button name="action_mark_paid" type="object" string="Mark Paid" icon="fa-check" invisible="payment_state == 'paid' or (approval_required and computation_state != 'approved') or (not approval_required and computation_state != 'confirmed')" groups="profit_sharing.group_profit_share_payment"/>
+                <button name="action_mark_unpaid" type="object" string="Reopen" icon="fa-undo" invisible="payment_state == 'unpaid'" groups="profit_sharing.group_profit_share_payment"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_profit_share_line_form" model="ir.ui.view">
+        <field name="name">profit.share.line.form</field>
+        <field name="model">profit.share.line</field>
+        <field name="arch" type="xml">
+            <form string="Profit Sharing Line" create="0" delete="0">
+                <header>
+                    <field name="computation_state" invisible="1"/>
+                    <field name="approval_required" invisible="1"/>
+                    <button name="action_mark_paid" type="object" string="Mark Paid" class="btn-primary" invisible="payment_state == 'paid' or (approval_required and computation_state != 'approved') or (not approval_required and computation_state != 'confirmed')" groups="profit_sharing.group_profit_share_payment"/>
+                    <button name="action_mark_unpaid" type="object" string="Reopen as Unpaid" invisible="payment_state == 'unpaid'" groups="profit_sharing.group_profit_share_payment"/>
+                    <field name="payment_state" widget="statusbar" statusbar_visible="unpaid,paid"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Audit Snapshot">
+                            <field name="computation_id" readonly="1"/>
+                            <field name="rule_id" readonly="1"/>
+                            <field name="share_type_id" readonly="1"/>
+                            <field name="recipient_id" readonly="1"/>
+                            <field name="company_id" readonly="1"/>
+                            <field name="source_type" readonly="1"/>
+                            <field name="effective_date_from" readonly="1"/>
+                            <field name="effective_date_to" readonly="1"/>
+                            <field name="priority_applied" readonly="1"/>
+                        </group>
+                        <group string="Calculation">
+                            <field name="currency_id" invisible="1"/>
+                            <field name="base_amount" readonly="1"/>
+                            <field name="computation_type" readonly="1"/>
+                            <field name="rate_applied" readonly="1"/>
+                            <field name="percentage_applied" readonly="1" invisible="computation_type != 'percentage'"/>
+                            <field name="flat_amount_applied" readonly="1" invisible="computation_type != 'flat'"/>
+                            <field name="share_amount" readonly="1"/>
+                            <field name="payment_move_id" groups="profit_sharing.group_profit_share_payment" readonly="(approval_required and computation_state != 'approved' and computation_state != 'paid') or (not approval_required and computation_state != 'confirmed' and computation_state != 'paid')"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_profit_share_line_pivot" model="ir.ui.view">
+        <field name="name">profit.share.line.pivot</field>
+        <field name="model">profit.share.line</field>
+        <field name="arch" type="xml">
+            <pivot string="Profit Sharing Analysis">
+                <field name="recipient_id" type="row"/>
+                <field name="share_type_id" type="col"/>
+                <field name="share_amount" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_profit_share_line_graph" model="ir.ui.view">
+        <field name="name">profit.share.line.graph</field>
+        <field name="model">profit.share.line</field>
+        <field name="arch" type="xml">
+            <graph string="Profit Sharing Analysis" type="bar">
+                <field name="share_type_id"/>
+                <field name="share_amount" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="action_profit_share_line" model="ir.actions.act_window">
+        <field name="name">Share Lines</field>
+        <field name="res_model">profit.share.line</field>
+        <field name="view_mode">list,form,pivot,graph</field>
+        <field name="search_view_id" ref="view_profit_share_line_search"/>
+    </record>
+</odoo>

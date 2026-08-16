@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="rule_profit_share_rule_company" model="ir.rule">
+        <field name="name">Profit Share Rule: allowed companies</field>
+        <field name="model_id" ref="model_profit_share_rule"/>
+        <field name="groups" eval="[(4, ref('profit_sharing.group_profit_share_user'))]"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="rule_profit_share_computation_company" model="ir.rule">
+        <field name="name">Profit Share Computation: allowed companies</field>
+        <field name="model_id" ref="model_profit_share_computation"/>
+        <field name="groups" eval="[(4, ref('profit_sharing.group_profit_share_user'))]"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="rule_profit_share_line_company" model="ir.rule">
+        <field name="name">Profit Share Line: allowed companies</field>
+        <field name="model_id" ref="model_profit_share_line"/>
+        <field name="groups" eval="[(4, ref('profit_sharing.group_profit_share_user'))]"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="rule_profit_share_line_portal" model="ir.rule">
+        <field name="name">Portal: own profit sharing lines</field>
+        <field name="model_id" ref="model_profit_share_line"/>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+        <field name="domain_force">[('recipient_id', '=', user.partner_id.id), ('computation_id.state', 'in', ['confirmed', 'approved', 'paid'])]</field>
+    </record>
+
+    <record id="rule_profit_share_computation_portal" model="ir.rule">
+        <field name="name">Portal: batches containing own share lines</field>
+        <field name="model_id" ref="model_profit_share_computation"/>
+        <field name="groups" eval="[(4, ref('base.group_portal'))]"/>
+        <field name="domain_force">[('line_ids.recipient_id', '=', user.partner_id.id), ('state', 'in', ['confirmed', 'approved', 'paid'])]</field>
+    </record>
+</odoo>

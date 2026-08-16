@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="profit_sharing.ProfitSharingDashboard">
+        <div class="o_profit_share_dashboard p-3 p-lg-4">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                <div>
+                    <h2 class="mb-0">Profit &amp; Fee Sharing</h2>
+                    <div class="text-muted">Monitor POS revenue, net profit, sharing amounts, and payment status.</div>
+                </div>
+                <button class="btn btn-primary" t-on-click="applyFilters" t-att-disabled="state.loading">Refresh</button>
+            </div>
+
+            <div class="o_ps_filter_bar card border-0 shadow-sm mb-3">
+                <div class="card-body">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-6 col-md-2">
+                            <label class="form-label small text-muted">From</label>
+                            <input type="date" class="form-control" name="date_from" t-att-value="state.filters.date_from" t-on-change="onFilterChange"/>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <label class="form-label small text-muted">To</label>
+                            <input type="date" class="form-control" name="date_to" t-att-value="state.filters.date_to" t-on-change="onFilterChange"/>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <label class="form-label small text-muted">Company</label>
+                            <select class="form-select" name="company_id" t-on-change="onFilterChange">
+                                <option value="" t-att-selected="!state.filters.company_id">All</option>
+                                <t t-if="state.data" t-foreach="state.data.options.companies" t-as="company" t-key="company.id">
+                                    <option t-att-value="company.id" t-att-selected="sameId(company.id, state.filters.company_id)" t-out="company.name"/>
+                                </t>
+                            </select>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <label class="form-label small text-muted">Share Type</label>
+                            <select class="form-select" name="share_type_id" t-on-change="onFilterChange">
+                                <option value="" t-att-selected="!state.filters.share_type_id">All</option>
+                                <t t-if="state.data" t-foreach="state.data.options.share_types" t-as="shareType" t-key="shareType.id">
+                                    <option t-att-value="shareType.id" t-att-selected="sameId(shareType.id, state.filters.share_type_id)" t-out="shareType.name"/>
+                                </t>
+                            </select>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <label class="form-label small text-muted">Recipient</label>
+                            <select class="form-select" name="recipient_id" t-on-change="onFilterChange">
+                                <option value="" t-att-selected="!state.filters.recipient_id">All</option>
+                                <t t-if="state.data" t-foreach="state.data.options.recipients" t-as="recipient" t-key="recipient.id">
+                                    <option t-att-value="recipient.id" t-att-selected="sameId(recipient.id, state.filters.recipient_id)" t-out="recipient.name"/>
+                                </t>
+                            </select>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <label class="form-label small text-muted">Payment</label>
+                            <select class="form-select" name="payment_state" t-on-change="onFilterChange">
+                                <option value="all" t-att-selected="state.filters.payment_state === 'all'">All</option>
+                                <option value="unpaid" t-att-selected="state.filters.payment_state === 'unpaid'">Unpaid</option>
+                                <option value="paid" t-att-selected="state.filters.payment_state === 'paid'">Paid</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-2 d-flex gap-2">
+                        <button class="btn btn-sm btn-primary" t-on-click="applyFilters">Apply Filters</button>
+                        <button class="btn btn-sm btn-outline-secondary" t-on-click="resetFilters">Reset</button>
+                    </div>
+                </div>
+            </div>
+
+            <div t-if="state.loading" class="d-flex justify-content-center py-5">
+                <div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div>
+            </div>
+
+            <t t-if="!state.loading and state.data">
+                <div class="row g-3 mb-3">
+                    <div class="col-12 col-md-6 col-xl-3">
+                        <div class="o_ps_kpi card border-0 shadow-sm h-100"><div class="card-body">
+                            <div class="text-muted small">POS Revenue</div>
+                            <div class="fs-4 fw-bold" t-out="formatMoney(state.data.kpis.pos_revenue)"/>
+                        </div></div>
+                    </div>
+                    <div class="col-12 col-md-6 col-xl-3">
+                        <div class="o_ps_kpi card border-0 shadow-sm h-100"><div class="card-body">
+                            <div class="text-muted small">Net Profit</div>
+                            <div class="fs-4 fw-bold" t-out="formatMoney(state.data.kpis.net_profit)"/>
+                        </div></div>
+                    </div>
+                    <div class="col-12 col-md-6 col-xl-3">
+                        <div class="o_ps_kpi card border-0 shadow-sm h-100"><div class="card-body">
+                            <div class="text-muted small">Total Sharing</div>
+                            <div class="fs-4 fw-bold" t-out="formatMoney(state.data.kpis.total_share)"/>
+                            <div class="small mt-1"><span class="text-success">Paid <t t-out="formatMoney(state.data.kpis.paid_share)"/></span> · <span class="text-warning">Unpaid <t t-out="formatMoney(state.data.kpis.unpaid_share)"/></span></div>
+                        </div></div>
+                    </div>
+                    <div class="col-12 col-md-6 col-xl-3">
+                        <div class="o_ps_kpi card border-0 shadow-sm h-100"><div class="card-body">
+                            <div class="text-muted small">Active Recipients</div>
+                            <div class="fs-4 fw-bold" t-out="state.data.kpis.active_recipient_count"/>
+                        </div></div>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-12 col-xl-8">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-transparent border-0 fw-semibold">Monthly Trend (max. 12 months)</div>
+                            <div class="card-body">
+                                <div t-if="!state.data.trend.length" class="text-muted">No trend data available.</div>
+                                <div t-foreach="state.data.trend" t-as="item" t-key="item.label" class="o_ps_trend_row mb-3">
+                                    <div class="small fw-semibold mb-1" t-out="item.label"/>
+                                    <div class="d-flex align-items-center gap-2 mb-1"><span class="o_ps_legend">Revenue</span><div class="o_ps_bar_track flex-grow-1"><div class="o_ps_bar o_ps_bar_revenue" t-att-style="'width:' + trendWidth(item.pos_revenue, 'pos_revenue') + '%'"/></div><span class="small text-nowrap" t-out="formatMoney(item.pos_revenue)"/></div>
+                                    <div class="d-flex align-items-center gap-2 mb-1"><span class="o_ps_legend">Profit</span><div class="o_ps_bar_track flex-grow-1"><div class="o_ps_bar o_ps_bar_profit" t-att-style="'width:' + trendWidth(item.net_profit, 'net_profit') + '%'"/></div><span class="small text-nowrap" t-out="formatMoney(item.net_profit)"/></div>
+                                    <div class="d-flex align-items-center gap-2"><span class="o_ps_legend">Sharing</span><div class="o_ps_bar_track flex-grow-1"><div class="o_ps_bar o_ps_bar_share" t-att-style="'width:' + trendWidth(item.share_amount, 'share_amount') + '%'"/></div><span class="small text-nowrap" t-out="formatMoney(item.share_amount)"/></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-xl-4">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-transparent border-0 fw-semibold">Breakdown Share Type</div>
+                            <div class="card-body">
+                                <div t-if="!state.data.share_type_breakdown.length" class="text-muted">No data available.</div>
+                                <div t-foreach="state.data.share_type_breakdown" t-as="item" t-key="item.id" class="mb-3">
+                                    <div class="d-flex justify-content-between small mb-1"><span t-out="item.name"/><strong t-out="formatMoney(item.amount)"/></div>
+                                    <div class="o_ps_bar_track"><div class="o_ps_bar o_ps_bar_share" t-att-style="'width:' + breakdownWidth(item.amount) + '%'"/></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-12 col-xl-6">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-transparent border-0 fw-semibold">Top Recipients</div>
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0 align-middle">
+                                    <thead><tr><th>Recipient</th><th>Type</th><th class="text-end">Total</th><th class="text-end">Unpaid</th></tr></thead>
+                                    <tbody>
+                                        <tr t-foreach="state.data.top_recipients" t-as="item" t-key="item.id">
+                                            <td t-out="item.name"/><td t-out="item.share_type"/><td class="text-end" t-out="formatMoney(item.amount)"/><td class="text-end" t-out="formatMoney(item.unpaid)"/>
+                                        </tr>
+                                        <tr t-if="!state.data.top_recipients.length"><td colspan="4" class="text-muted text-center py-3">No data available.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-xl-6">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-transparent border-0 fw-semibold">Latest Computation Batches</div>
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0 align-middle">
+                                    <thead><tr><th>Batch</th><th>Period</th><th>Status</th><th class="text-end">Sharing</th></tr></thead>
+                                    <tbody>
+                                        <tr t-foreach="state.data.recent_batches" t-as="batch" t-key="batch.id" class="o_ps_clickable" t-on-click="() => openBatch(batch.id)">
+                                            <td><strong t-out="batch.name"/><span t-if="batch.revision &gt; 1" class="badge text-bg-secondary ms-1">Rev <t t-out="batch.revision"/></span><div class="small text-muted" t-out="batch.company"/></td>
+                                            <td><span t-out="batch.date_from"/> — <span t-out="batch.date_to"/></td>
+                                            <td><span class="badge text-bg-light" t-out="batch.state"/></td>
+                                            <td class="text-end" t-out="formatMoney(batch.total_share)"/>
+                                        </tr>
+                                        <tr t-if="!state.data.recent_batches.length"><td colspan="4" class="text-muted text-center py-3">No computation batches available.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+</templates>

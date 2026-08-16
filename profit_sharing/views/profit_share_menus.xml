@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_profit_share_root" name="Profit Sharing" sequence="35" groups="profit_sharing.group_profit_share_user"/>
+    <menuitem id="menu_profit_share_dashboard" name="Dashboard" parent="menu_profit_share_root" action="action_profit_share_dashboard" sequence="10"/>
+    <menuitem id="menu_profit_share_compute_now" name="Calculate Now" parent="menu_profit_share_root" action="action_profit_share_compute_wizard" sequence="20"/>
+    <menuitem id="menu_profit_share_computations" name="Computation Batches" parent="menu_profit_share_root" action="action_profit_share_computation" sequence="30"/>
+    <menuitem id="menu_profit_share_lines" name="Share Lines" parent="menu_profit_share_root" action="action_profit_share_line" sequence="40"/>
+
+    <menuitem id="menu_profit_share_configuration" name="Configuration" parent="menu_profit_share_root" sequence="90" groups="profit_sharing.group_profit_share_user"/>
+    <menuitem id="menu_profit_share_rules" name="Sharing Rules" parent="menu_profit_share_configuration" action="action_profit_share_rule" sequence="10"/>
+    <menuitem id="menu_profit_share_types" name="Share Types" parent="menu_profit_share_configuration" action="action_profit_share_type" sequence="20" groups="profit_sharing.group_profit_share_manager"/>
+    <menuitem id="menu_profit_share_settings" name="Settings" parent="menu_profit_share_configuration" action="action_profit_share_settings" sequence="30" groups="profit_sharing.group_profit_share_manager"/>
+</odoo>
