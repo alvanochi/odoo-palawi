@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="foom_attendance_session_view_list" model="ir.ui.view">
+        <field name="name">foom.attendance.session.list</field>
+        <field name="model">foom.attendance.session</field>
+        <field name="arch" type="xml">
+            <list string="Sesi Absensi" create="false">
+                <field name="employee_id"/>
+                <field name="create_date" string="Login"/>
+                <field name="last_seen"/>
+                <field name="expire_at"/>
+                <field name="punch_count"/>
+                <field name="ip" optional="show"/>
+                <field name="user_agent" optional="hide"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'active'"
+                       decoration-muted="state != 'active'"/>
+                <button name="action_revoke" type="object" string="Cabut" icon="fa-ban"
+                        invisible="state != 'active'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="foom_attendance_session_view_search" model="ir.ui.view">
+        <field name="name">foom.attendance.session.search</field>
+        <field name="model">foom.attendance.session</field>
+        <field name="arch" type="xml">
+            <search string="Sesi Absensi">
+                <field name="employee_id"/>
+                <field name="ip"/>
+                <filter name="filter_active" string="Aktif" domain="[('state', '=', 'active')]"/>
+                <filter name="filter_revoked" string="Dicabut" domain="[('revoked', '=', True)]"/>
+                <group expand="0" string="Kelompokkan">
+                    <filter name="group_employee" string="Employee"
+                            context="{'group_by': 'employee_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="foom_attendance_session_action" model="ir.actions.act_window">
+        <field name="name">Sesi Absensi</field>
+        <field name="res_model">foom.attendance.session</field>
+        <field name="view_mode">list</field>
+        <field name="context">{'search_default_filter_active': 1}</field>
+    </record>
+
+</odoo>

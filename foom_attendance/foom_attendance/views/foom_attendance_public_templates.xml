@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="public_page" name="Foom Attendance — Public">&lt;!DOCTYPE html&gt;
+        <html lang="id">
+            <head>
+                <meta charset="utf-8"/>
+                <meta name="viewport"
+                      content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"/>
+                <meta name="robots" content="noindex, nofollow"/>
+                <meta name="theme-color" content="#0f172a"/>
+                <title>Absensi</title>
+                <!-- favicon inline: tanpa ini browser meminta /favicon.ico dan
+                     dapat 404 di setiap kali halaman dibuka -->
+                <link rel="icon" href="data:image/svg+xml,&#37;3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'&#37;3E&#37;3Ccircle cx='16' cy='16' r='15' fill='&#37;230f172a'/&#37;3E&#37;3Cpath d='M16 8v8.5l5.5 3' stroke='&#37;23ffffff' stroke-width='2.5' fill='none' stroke-linecap='round'/&#37;3E&#37;3C/svg&#37;3E"/>
+                <link rel="stylesheet" type="text/css"
+                      href="/foom_attendance/static/src/css/attendance.css"/>
+            </head>
+            <body>
+                <div id="fa-app"
+                     t-att-data-require-photo="'1' if require_photo else '0'"
+                     t-att-data-max-accuracy="max_accuracy">
+
+                    <!-- ============ LOGIN ============ -->
+                    <section id="fa-login" class="fa-screen">
+                        <div class="fa-card">
+                            <div class="fa-brand">
+                                <div class="fa-logo">&#9201;</div>
+                                <h1 t-esc="company_name"/>
+                                <p class="fa-muted">Absensi Karyawan</p>
+                            </div>
+                            <form id="fa-login-form" autocomplete="off">
+                                <label class="fa-label" for="fa-code">Kode Karyawan</label>
+                                <input id="fa-code" name="code" type="text" inputmode="text"
+                                       autocapitalize="characters" autocomplete="username"
+                                       class="fa-input" placeholder="mis. F102345" required="required"/>
+
+                                <label class="fa-label" for="fa-pin">PIN</label>
+                                <input id="fa-pin" name="pin" type="password" inputmode="numeric"
+                                       pattern="[0-9]*" autocomplete="current-password"
+                                       class="fa-input" placeholder="&#8226;&#8226;&#8226;&#8226;"
+                                       required="required"/>
+
+                                <label class="fa-check">
+                                    <input id="fa-remember" type="checkbox" checked="checked"/>
+                                    <span>Ingat perangkat ini</span>
+                                </label>
+
+                                <button type="submit" class="fa-btn fa-btn-primary" id="fa-login-btn">
+                                    Masuk
+                                </button>
+                            </form>
+                            <div class="fa-alert" id="fa-login-error" hidden="hidden"></div>
+                        </div>
+                        <p class="fa-foot">Butuh akses lokasi (GPS) dan koneksi HTTPS.</p>
+                    </section>
+
+                    <!-- ============ HOME ============ -->
+                    <section id="fa-home" class="fa-screen" hidden="hidden">
+                        <header class="fa-header">
+                            <img id="fa-avatar" class="fa-avatar" alt=""/>
+                            <div class="fa-ident">
+                                <strong id="fa-name"></strong>
+                                <span id="fa-job" class="fa-muted"></span>
+                            </div>
+                            <button id="fa-logout" class="fa-icon-btn" title="Keluar">&#9096;</button>
+                        </header>
+
+                        <div class="fa-clock">
+                            <div id="fa-time" class="fa-time">--:--</div>
+                            <div id="fa-date" class="fa-muted"></div>
+                        </div>
+
+                        <div class="fa-card fa-status">
+                            <div class="fa-row">
+                                <span class="fa-muted">Status</span>
+                                <span id="fa-state" class="fa-pill">&#8212;</span>
+                            </div>
+                            <div class="fa-row">
+                                <span class="fa-muted">Shift</span>
+                                <span id="fa-shift">&#8212;</span>
+                            </div>
+                            <div class="fa-row">
+                                <span class="fa-muted">Lokasi</span>
+                                <span id="fa-location">&#8212;</span>
+                            </div>
+                            <div class="fa-row">
+                                <span class="fa-muted">Jarak</span>
+                                <span id="fa-distance">mengukur&#8230;</span>
+                            </div>
+                        </div>
+
+                        <div class="fa-alert" id="fa-geo-warn" hidden="hidden"></div>
+
+                        <div class="fa-extra" id="fa-extra" hidden="hidden">
+                            <label class="fa-label" for="fa-note">Alasan / catatan</label>
+                            <input id="fa-note" class="fa-input" type="text" maxlength="250"
+                                   placeholder="mis. kunjungan klien di Bekasi"/>
+                        </div>
+
+                        <div class="fa-extra" id="fa-photo-box" hidden="hidden">
+                            <label class="fa-label">Foto selfie</label>
+                            <div class="fa-cam-frame">
+                                <video id="fa-cam" class="fa-cam" playsinline="playsinline"
+                                       autoplay="autoplay" muted="muted"></video>
+                                <img id="fa-photo-preview" class="fa-cam" alt="" hidden="hidden"/>
+                                <div class="fa-cam-idle" id="fa-cam-idle">Menyalakan kamera&#8230;</div>
+                            </div>
+                            <div class="fa-cam-actions">
+                                <button type="button" id="fa-shoot" class="fa-btn fa-btn-ghost">
+                                    Ambil Foto
+                                </button>
+                                <button type="button" id="fa-retake" class="fa-btn fa-btn-ghost"
+                                        hidden="hidden">Ulangi</button>
+                            </div>
+                            <div class="fa-alert" id="fa-cam-error" hidden="hidden"></div>
+                        </div>
+
+                        <button id="fa-punch" class="fa-btn fa-btn-big" disabled="disabled">
+                            Memuat&#8230;
+                        </button>
+
+                        <div class="fa-alert" id="fa-msg" hidden="hidden"></div>
+
+                        <div class="fa-card">
+                            <div class="fa-card-title">Hari ini</div>
+                            <ul id="fa-today" class="fa-list">
+                                <li class="fa-muted">Belum ada catatan.</li>
+                            </ul>
+                        </div>
+
+                        <p class="fa-foot">
+                            Waktu yang dicatat adalah waktu server, bukan jam perangkat.
+                        </p>
+                    </section>
+                </div>
+
+                <script type="text/javascript"
+                        src="/foom_attendance/static/src/js/attendance.js"></script>
+            </body>
+        </html>
+    </template>
+
+    <template id="public_disabled" name="Foom Attendance — Disabled">&lt;!DOCTYPE html&gt;
+        <html lang="id">
+            <head>
+                <meta charset="utf-8"/>
+                <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                <meta name="robots" content="noindex, nofollow"/>
+                <title>Absensi</title>
+                <!-- favicon inline: tanpa ini browser meminta /favicon.ico dan
+                     dapat 404 di setiap kali halaman dibuka -->
+                <link rel="icon" href="data:image/svg+xml,&#37;3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'&#37;3E&#37;3Ccircle cx='16' cy='16' r='15' fill='&#37;230f172a'/&#37;3E&#37;3Cpath d='M16 8v8.5l5.5 3' stroke='&#37;23ffffff' stroke-width='2.5' fill='none' stroke-linecap='round'/&#37;3E&#37;3C/svg&#37;3E"/>
+                <link rel="stylesheet" type="text/css"
+                      href="/foom_attendance/static/src/css/attendance.css"/>
+            </head>
+            <body>
+                <section class="fa-screen">
+                    <div class="fa-card">
+                        <h1>Absensi dinonaktifkan</h1>
+                        <p class="fa-muted">
+                            Halaman absensi publik sedang dimatikan oleh administrator.
+                        </p>
+                    </div>
+                </section>
+            </body>
+        </html>
+    </template>
+
+</odoo>

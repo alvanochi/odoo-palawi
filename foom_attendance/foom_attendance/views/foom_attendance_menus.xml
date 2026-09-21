@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="foom_attendance_open_public_page" model="ir.actions.act_url">
+        <field name="name">Buka Halaman Absensi Publik</field>
+        <field name="url">/foom/attendance</field>
+        <field name="target">new</field>
+    </record>
+
+    <menuitem id="menu_foom_attendance_root"
+              name="Absensi Publik"
+              parent="hr_attendance.menu_hr_attendance_root"
+              sequence="40"
+              groups="hr_attendance.group_hr_attendance_officer"/>
+
+    <menuitem id="menu_foom_attendance_open_page"
+              name="Buka Halaman Absensi"
+              parent="menu_foom_attendance_root"
+              action="foom_attendance_open_public_page"
+              sequence="5"/>
+
+    <menuitem id="menu_foom_attendance_roster"
+              name="Roster"
+              parent="menu_foom_attendance_root"
+              action="foom_attendance_roster_action"
+              sequence="10"/>
+
+    <menuitem id="menu_foom_attendance_roster_generate"
+              name="Generate Roster"
+              parent="menu_foom_attendance_root"
+              action="foom_attendance_roster_generate_action"
+              sequence="15"/>
+
+    <menuitem id="menu_foom_attendance_shift"
+              name="Shift"
+              parent="menu_foom_attendance_root"
+              action="foom_attendance_shift_action"
+              sequence="20"/>
+
+    <menuitem id="menu_foom_attendance_location"
+              name="Lokasi &amp; Geofence"
+              parent="menu_foom_attendance_root"
+              action="foom_attendance_location_action"
+              sequence="25"/>
+
+    <menuitem id="menu_foom_attendance_session"
+              name="Sesi Perangkat"
+              parent="menu_foom_attendance_root"
+              action="foom_attendance_session_action"
+              sequence="30"
+              groups="hr_attendance.group_hr_attendance_manager"/>
+
+</odoo>

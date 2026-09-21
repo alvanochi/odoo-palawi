@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="foom_attendance_shift_view_list" model="ir.ui.view">
+        <field name="name">foom.attendance.shift.list</field>
+        <field name="model">foom.attendance.shift</field>
+        <field name="arch" type="xml">
+            <list string="Shift">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code" optional="show"/>
+                <field name="time_from" widget="float_time"/>
+                <field name="time_to" widget="float_time"/>
+                <field name="duration_hours" widget="float_time" string="Durasi"/>
+                <field name="is_overnight" string="Lintas Hari"/>
+                <field name="grace_in_minutes" string="Toleransi"/>
+                <field name="default_location_id" optional="show"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="foom_attendance_shift_view_form" model="ir.ui.view">
+        <field name="name">foom.attendance.shift.form</field>
+        <field name="model">foom.attendance.shift</field>
+        <field name="arch" type="xml">
+            <form string="Shift">
+                <sheet>
+                    <widget name="web_ribbon" title="Diarsipkan" bg_color="text-bg-danger"
+                            invisible="active"/>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="mis. Shift Pagi"/></h1>
+                    </div>
+                    <group>
+                        <group string="Jam Kerja">
+                            <field name="code"/>
+                            <field name="time_from" widget="float_time"/>
+                            <field name="time_to" widget="float_time"/>
+                            <field name="is_overnight" readonly="1"/>
+                            <field name="duration_hours" widget="float_time" readonly="1"/>
+                            <field name="active" invisible="1"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group string="Toleransi &amp; Jendela">
+                            <field name="grace_in_minutes"/>
+                            <field name="grace_out_minutes"/>
+                            <field name="early_in_window_minutes"/>
+                            <field name="late_out_window_minutes"/>
+                            <field name="enforce_window"/>
+                        </group>
+                    </group>
+                    <group string="Lokasi">
+                        <field name="location_ids" widget="many2many_tags"
+                               options="{'no_create': True}"/>
+                        <field name="default_location_id" options="{'no_create': True}"/>
+                    </group>
+                    <div class="text-muted">
+                        Kalau <b>Lokasi yang Diizinkan</b> berisi lebih dari satu titik,
+                        sistem memakai lokasi terdekat dari posisi employee saat menekan tombol.
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="foom_attendance_shift_action" model="ir.actions.act_window">
+        <field name="name">Shift</field>
+        <field name="res_model">foom.attendance.shift</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Buat shift pertama</p>
+            <p>Shift menentukan jam masuk/pulang, toleransi telat, dan lokasi mana
+               saja yang sah untuk absensi.</p>
+        </field>
+    </record>
+
+</odoo>

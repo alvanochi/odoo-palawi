@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+      Nilai awal parameter. `noupdate="1"` supaya upgrade modul tidak menimpa
+      pilihan administrator.
+
+      Odoo MENGHAPUS baris ir.config_parameter ketika sebuah checkbox di layar
+      Settings dimatikan atau angka diisi 0. Karena itu "parameter tidak ada"
+      selalu berarti mati/nol (lihat models/utils.py DEFAULTS), dan nilai awal
+      yang menyala harus di-seed di sini, bukan dijadikan default di kode.
+    -->
+    <data noupdate="1">
+
+        <record id="param_public_enabled" model="ir.config_parameter">
+            <field name="key">foom_attendance.public_enabled</field>
+            <field name="value">1</field>
+        </record>
+
+        <record id="param_require_reason_outside" model="ir.config_parameter">
+            <field name="key">foom_attendance.require_reason_outside</field>
+            <field name="value">1</field>
+        </record>
+
+        <record id="param_allow_without_roster" model="ir.config_parameter">
+            <field name="key">foom_attendance.allow_without_roster</field>
+            <field name="value">1</field>
+        </record>
+
+        <record id="param_single_clock_in_per_day" model="ir.config_parameter">
+            <field name="key">foom_attendance.single_clock_in_per_day</field>
+            <field name="value">1</field>
+        </record>
+
+        <record id="param_max_gps_accuracy_m" model="ir.config_parameter">
+            <field name="key">foom_attendance.max_gps_accuracy_m</field>
+            <field name="value">100</field>
+        </record>
+
+        <record id="param_min_punch_interval_sec" model="ir.config_parameter">
+            <field name="key">foom_attendance.min_punch_interval_sec</field>
+            <field name="value">60</field>
+        </record>
+
+        <record id="param_default_radius_m" model="ir.config_parameter">
+            <field name="key">foom_attendance.default_radius_m</field>
+            <field name="value">150</field>
+        </record>
+
+        <record id="param_default_geofence_policy" model="ir.config_parameter">
+            <field name="key">foom_attendance.default_geofence_policy</field>
+            <field name="value">block</field>
+        </record>
+
+        <record id="param_session_minutes" model="ir.config_parameter">
+            <field name="key">foom_attendance.session_minutes</field>
+            <field name="value">720</field>
+        </record>
+
+    </data>
+</odoo>

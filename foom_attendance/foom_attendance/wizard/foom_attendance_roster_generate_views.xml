@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="foom_attendance_roster_generate_view_form" model="ir.ui.view">
+        <field name="name">foom.attendance.roster.generate.form</field>
+        <field name="model">foom.attendance.roster.generate</field>
+        <field name="arch" type="xml">
+            <form string="Generate Roster">
+                <group>
+                    <group>
+                        <field name="employee_ids" widget="many2many_tags"
+                               options="{'no_create': True}"/>
+                        <field name="shift_id" options="{'no_create': True}"/>
+                        <field name="location_id" options="{'no_create': True}"/>
+                    </group>
+                    <group>
+                        <field name="date_from"/>
+                        <field name="date_to"/>
+                        <field name="weekday_ids"/>
+                        <field name="mark_rest_as_day_off"/>
+                        <field name="overwrite"/>
+                    </group>
+                </group>
+                <div class="text-muted">
+                    Hari kerja diisi indeks dipisah koma — 0 Senin, 1 Selasa, 2 Rabu,
+                    3 Kamis, 4 Jumat, 5 Sabtu, 6 Minggu.
+                </div>
+                <footer>
+                    <button name="action_generate" type="object" string="Generate"
+                            class="btn-primary" data-hotkey="q"/>
+                    <button string="Batal" class="btn-secondary" special="cancel"
+                            data-hotkey="x"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="foom_attendance_roster_generate_action" model="ir.actions.act_window">
+        <field name="name">Generate Roster</field>
+        <field name="res_model">foom.attendance.roster.generate</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+</odoo>

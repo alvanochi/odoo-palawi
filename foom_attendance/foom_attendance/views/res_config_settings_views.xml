@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="res_config_settings_view_form_foom_attendance" model="ir.ui.view">
+        <field name="name">res.config.settings.form.foom.attendance</field>
+        <field name="model">res.config.settings</field>
+        <field name="priority" eval="90"/>
+        <field name="inherit_id" ref="hr_attendance.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//app[@name='hr_attendance']" position="inside">
+                <block title="Absensi Publik (Foom)" name="foom_attendance_block">
+
+                    <setting string="Halaman Absensi Publik"
+                             help="Aktifkan halaman /foom/attendance supaya employee bisa clock in/out dari HP tanpa login Odoo.">
+                        <field name="foom_att_public_enabled"/>
+                        <div class="mt-2" invisible="not foom_att_public_enabled">
+                            <field name="foom_att_public_url" widget="url" readonly="1"
+                                   class="oe_inline"/>
+                        </div>
+                    </setting>
+
+                    <setting string="Geofence Default"
+                             help="Dipakai kalau lokasi atau employee tidak menetapkan kebijakan sendiri."
+                             invisible="not foom_att_public_enabled">
+                        <field name="foom_att_default_geofence_policy" class="w-75"/>
+                        <div class="mt-2">
+                            <span class="me-2">Radius default</span>
+                            <field name="foom_att_default_radius_m" class="text-center"
+                                   style="width: 6ch;"/>
+                            <span class="ms-2">meter</span>
+                        </div>
+                        <div class="mt-2">
+                            <span class="me-2">Akurasi GPS maksimum</span>
+                            <field name="foom_att_max_gps_accuracy_m" class="text-center"
+                                   style="width: 6ch;"/>
+                            <span class="ms-2">meter (0 = tidak dicek)</span>
+                        </div>
+                    </setting>
+
+                    <setting string="Satu Absensi per Hari"
+                             help="Sekali clock in lalu clock out, hari kerja itu terkunci. Shift lintas hari dihitung satu hari."
+                             invisible="not foom_att_public_enabled">
+                        <field name="foom_att_single_clock_in_per_day"/>
+                    </setting>
+
+                    <setting string="Bukti Tambahan"
+                             help="Foto diambil langsung dari kamera depan, bukan dipilih dari galeri. Kalau kamera gagal, absensi tetap masuk tapi ditandai."
+                             invisible="not foom_att_public_enabled">
+                        <field name="foom_att_require_photo"/>
+                        <div class="mt-2">
+                            <field name="foom_att_require_reason_outside" class="oe_inline"/>
+                            <span class="ms-2">Wajib alasan bila di luar radius</span>
+                        </div>
+                        <div class="mt-2">
+                            <field name="foom_att_allow_without_roster" class="oe_inline"/>
+                            <span class="ms-2">Izinkan absen tanpa jadwal shift</span>
+                        </div>
+                    </setting>
+
+                    <setting string="Sesi &amp; Keamanan"
+                             help="Batas umur sesi bertoken dan proteksi terhadap tebakan PIN."
+                             invisible="not foom_att_public_enabled">
+                        <div>
+                            <span class="me-2">Umur sesi</span>
+                            <field name="foom_att_session_minutes" class="text-center"
+                                   style="width: 6ch;"/>
+                            <span class="ms-2">menit</span>
+                        </div>
+                        <div class="mt-2">
+                            <span class="me-2">Kunci setelah</span>
+                            <field name="foom_att_pin_max_attempts" class="text-center"
+                                   style="width: 4ch;"/>
+                            <span class="mx-2">kali salah, selama</span>
+                            <field name="foom_att_pin_lockout_minutes" class="text-center"
+                                   style="width: 4ch;"/>
+                            <span class="ms-2">menit</span>
+                        </div>
+                        <div class="mt-2">
+                            <span class="me-2">Batas per IP</span>
+                            <field name="foom_att_ip_max_attempts" class="text-center"
+                                   style="width: 4ch;"/>
+                            <span class="mx-2">percobaan per</span>
+                            <field name="foom_att_ip_window_minutes" class="text-center"
+                                   style="width: 4ch;"/>
+                            <span class="ms-2">menit</span>
+                        </div>
+                        <div class="mt-2">
+                            <span class="me-2">Jeda minimum antar punch</span>
+                            <field name="foom_att_min_punch_interval_sec" class="text-center"
+                                   style="width: 5ch;"/>
+                            <span class="ms-2">detik</span>
+                        </div>
+                    </setting>
+
+                </block>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

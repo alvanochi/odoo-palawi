@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="hr_employee_view_form_foom_attendance" model="ir.ui.view">
+        <field name="name">hr.employee.form.foom.attendance</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+            <!-- Odoo 18 menolak `groups_id` pada record view turunan
+                 ("Inherited view cannot have 'Groups' define on the record").
+                 Pembatasan grup harus ditulis sebagai atribut `groups` di
+                 dalam arch, pada elemen yang mau disembunyikan. -->
+            <xpath expr="//notebook" position="inside">
+                <page string="Absensi Publik" name="foom_attendance"
+                      groups="hr.group_hr_user">
+                    <group>
+                        <group string="Akses">
+                            <field name="foom_att_enabled"/>
+                            <field name="foom_att_code" placeholder="mis. F102345"/>
+                            <field name="foom_att_pin_isset" string="PIN sudah diatur"/>
+                            <field name="foom_att_pin_set" password="True"
+                                   placeholder="ketik PIN baru lalu simpan"/>
+                            <field name="foom_att_locked_until" readonly="1"
+                                   invisible="not foom_att_locked_until"/>
+                            <field name="foom_att_pin_hash" invisible="1"/>
+                        </group>
+                        <group string="Jadwal &amp; Lokasi">
+                            <field name="foom_att_shift_id" options="{'no_create': True}"/>
+                            <field name="foom_att_location_id" options="{'no_create': True}"/>
+                            <field name="foom_att_geofence_policy"/>
+                        </group>
+                    </group>
+                    <div class="mt-2">
+                        <button name="action_foom_generate_code" type="object"
+                                string="Buat Kode Otomatis" class="btn-secondary"
+                                invisible="foom_att_code"/>
+                        <button name="action_foom_reset_lock" type="object"
+                                string="Buka Kunci" class="btn-secondary"
+                                invisible="not foom_att_locked_until"/>
+                        <button name="action_foom_revoke_sessions" type="object"
+                                string="Cabut Semua Sesi" class="btn-secondary"/>
+                    </div>
+                    <separator string="Roster"/>
+                    <field name="foom_att_roster_ids" context="{'default_employee_id': id}">
+                        <list editable="bottom">
+                            <field name="date"/>
+                            <field name="shift_id" required="not day_off"/>
+                            <field name="location_id"/>
+                            <field name="day_off"/>
+                            <field name="note"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="hr_employee_view_list_foom_attendance" model="ir.ui.view">
+        <field name="name">hr.employee.list.foom.attendance</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_tree"/>
+        <field name="arch" type="xml">
+            <field name="job_id" position="after">
+                <field name="foom_att_code" optional="hide" string="Kode Absensi"
+                       groups="hr.group_hr_user"/>
+                <field name="foom_att_shift_id" optional="hide" string="Shift Default"
+                       groups="hr.group_hr_user"/>
+                <field name="foom_att_location_id" optional="hide" string="Lokasi Default"
+                       groups="hr.group_hr_user"/>
+            </field>
+        </field>
+    </record>
+
+</odoo>

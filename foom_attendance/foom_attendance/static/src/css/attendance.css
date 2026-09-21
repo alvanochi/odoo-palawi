@@ -1,0 +1,241 @@
+/* Foom Attendance — halaman publik. Mobile first, tanpa framework. */
+
+:root {
+    --fa-bg: #0f172a;
+    --fa-bg-soft: #1e293b;
+    --fa-card: #ffffff;
+    --fa-text: #0f172a;
+    --fa-muted: #64748b;
+    --fa-line: #e2e8f0;
+    --fa-primary: #2563eb;
+    --fa-in: #16a34a;
+    --fa-out: #dc2626;
+    --fa-warn-bg: #fef3c7;
+    --fa-warn-fg: #92400e;
+    --fa-danger-bg: #fee2e2;
+    --fa-danger-fg: #991b1b;
+    --fa-ok-bg: #dcfce7;
+    --fa-ok-fg: #166534;
+    --fa-radius: 14px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--fa-bg);
+    color: var(--fa-text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-text-size-adjust: 100%;
+}
+
+#fa-app {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 16px 16px calc(32px + env(safe-area-inset-bottom, 0px));
+    min-height: 100vh;
+}
+
+.fa-screen { display: block; }
+[hidden] { display: none !important; }
+
+.fa-card {
+    background: var(--fa-card);
+    border-radius: var(--fa-radius);
+    padding: 18px;
+    margin-bottom: 14px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .18);
+}
+
+.fa-card-title {
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 10px;
+}
+
+.fa-brand { text-align: center; margin-bottom: 18px; }
+.fa-logo { font-size: 40px; line-height: 1; }
+.fa-brand h1 { font-size: 20px; margin: 8px 0 2px; }
+
+.fa-muted { color: var(--fa-muted); font-size: 13px; }
+
+.fa-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--fa-muted);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    margin: 12px 0 6px;
+}
+
+.fa-input {
+    width: 100%;
+    padding: 13px 14px;
+    font-size: 16px;
+    border: 1px solid var(--fa-line);
+    border-radius: 10px;
+    background: #f8fafc;
+    color: var(--fa-text);
+}
+.fa-input:focus {
+    outline: none;
+    border-color: var(--fa-primary);
+    background: #fff;
+}
+
+.fa-file { width: 100%; font-size: 14px; margin-top: 4px; }
+
+.fa-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 14px 0 4px;
+    font-size: 14px;
+    color: var(--fa-muted);
+}
+
+.fa-btn {
+    width: 100%;
+    border: 0;
+    border-radius: 12px;
+    padding: 15px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #fff;
+    background: var(--fa-primary);
+    cursor: pointer;
+    margin-top: 16px;
+}
+.fa-btn:disabled { opacity: .5; cursor: not-allowed; }
+.fa-btn-big { padding: 20px; font-size: 19px; margin: 4px 0 14px; }
+.fa-btn-in { background: var(--fa-in); }
+.fa-btn-out { background: var(--fa-out); }
+
+.fa-icon-btn {
+    border: 0;
+    background: transparent;
+    color: #cbd5e1;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 6px;
+}
+
+.fa-alert {
+    border-radius: 10px;
+    padding: 11px 13px;
+    font-size: 13.5px;
+    margin-bottom: 12px;
+    background: var(--fa-bg-soft);
+    color: #e2e8f0;
+}
+.fa-alert-warn { background: var(--fa-warn-bg); color: var(--fa-warn-fg); }
+.fa-alert-danger { background: var(--fa-danger-bg); color: var(--fa-danger-fg); }
+.fa-alert-ok { background: var(--fa-ok-bg); color: var(--fa-ok-fg); }
+
+.fa-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #f1f5f9;
+    margin-bottom: 10px;
+}
+.fa-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--fa-bg-soft);
+}
+.fa-ident { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.fa-ident strong { font-size: 16px; }
+.fa-ident .fa-muted { color: #94a3b8; }
+
+.fa-clock { text-align: center; color: #f8fafc; margin: 10px 0 18px; }
+.fa-time { font-size: 44px; font-weight: 700; letter-spacing: .02em; font-variant-numeric: tabular-nums; }
+.fa-clock .fa-muted { color: #94a3b8; }
+
+.fa-status .fa-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 7px 0;
+    font-size: 14px;
+    border-bottom: 1px solid var(--fa-line);
+}
+.fa-status .fa-row:last-child { border-bottom: 0; }
+.fa-status .fa-row > span:last-child { text-align: right; font-weight: 500; }
+
+.fa-pill {
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    background: #e2e8f0;
+    color: var(--fa-muted);
+}
+.fa-pill-in { background: var(--fa-ok-bg); color: var(--fa-ok-fg); }
+.fa-pill-out { background: #e2e8f0; color: var(--fa-muted); }
+
+.fa-extra { margin-bottom: 12px; }
+.fa-extra .fa-label { color: #94a3b8; }
+
+.fa-cam-frame {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    max-height: 320px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--fa-bg-soft);
+}
+.fa-cam {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* cermin, supaya terasa seperti melihat cermin bukan orang lain */
+    transform: scaleX(-1);
+}
+.fa-cam-idle {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+    font-size: 13px;
+    text-align: center;
+    padding: 12px;
+}
+.fa-cam-actions { display: flex; gap: 10px; }
+.fa-btn-ghost {
+    background: transparent;
+    border: 1px solid #475569;
+    color: #e2e8f0;
+    padding: 11px;
+    font-size: 15px;
+    margin-top: 10px;
+}
+.fa-btn-done { background: #475569; }
+
+.fa-list { list-style: none; margin: 0; padding: 0; }
+.fa-list li {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 14px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--fa-line);
+}
+.fa-list li:last-child { border-bottom: 0; }
+
+.fa-foot {
+    text-align: center;
+    color: #64748b;
+    font-size: 12px;
+    margin: 18px 0 0;
+}

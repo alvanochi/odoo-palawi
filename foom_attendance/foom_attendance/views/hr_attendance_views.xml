@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_attendance_tree_foom" model="ir.ui.view">
+        <field name="name">hr.attendance.list.foom</field>
+        <field name="model">hr.attendance</field>
+        <field name="inherit_id" ref="hr_attendance.view_attendance_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="inside">
+                <field name="foom_work_date" optional="show" string="Hari Kerja"/>
+                <field name="foom_shift_id" optional="show"/>
+                <field name="foom_in_location_id" optional="show" string="Lokasi"/>
+                <field name="foom_in_geo_checked" optional="hide" string="Posisi Terukur"/>
+                <field name="foom_in_distance_m" optional="hide" string="Jarak Masuk (m)"/>
+                <field name="foom_out_distance_m" optional="hide" string="Jarak Pulang (m)"/>
+                <field name="foom_late_minutes" optional="show" string="Telat (m)"/>
+                <field name="foom_early_leave_minutes" optional="hide" string="Pulang Cepat (m)"/>
+                <field name="foom_outside" optional="show" string="Di Luar Radius"
+                       widget="boolean_toggle" readonly="1"/>
+                <field name="foom_photo_missing" optional="show" string="Foto Tidak Ada"
+                       widget="boolean_toggle" readonly="1"/>
+                <field name="foom_in_photo_status" optional="hide" string="Status Foto"/>
+                <field name="foom_source" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="hr_attendance_view_form_foom" model="ir.ui.view">
+        <field name="name">hr.attendance.form.foom</field>
+        <field name="model">hr.attendance</field>
+        <field name="inherit_id" ref="hr_attendance.hr_attendance_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <separator string="Foom Attendance"/>
+                <group>
+                    <group string="Jadwal">
+                        <field name="foom_source"/>
+                        <field name="foom_work_date"/>
+                        <field name="foom_shift_id"/>
+                        <field name="foom_roster_id"/>
+                        <field name="foom_planned_in"/>
+                        <field name="foom_planned_out"/>
+                        <field name="foom_late_minutes"/>
+                        <field name="foom_early_leave_minutes"/>
+                        <field name="foom_off_schedule"/>
+                    </group>
+                    <group string="Geofence">
+                        <field name="foom_outside" invisible="1"/>
+                        <field name="foom_in_location_id"/>
+                        <field name="foom_in_geo_checked"/>
+                        <field name="foom_in_distance_m" invisible="not foom_in_geo_checked"/>
+                        <field name="foom_in_accuracy_m" invisible="not foom_in_geo_checked"/>
+                        <field name="foom_in_outside"/>
+                        <field name="foom_out_location_id"/>
+                        <field name="foom_out_geo_checked"/>
+                        <field name="foom_out_distance_m" invisible="not foom_out_geo_checked"/>
+                        <field name="foom_out_accuracy_m" invisible="not foom_out_geo_checked"/>
+                        <field name="foom_out_outside"/>
+                    </group>
+                </group>
+                <group>
+                    <group string="Masuk">
+                        <field name="foom_in_note"/>
+                        <field name="foom_in_map_url" widget="url" string="Peta"
+                               invisible="not foom_in_map_url"/>
+                        <field name="foom_in_photo_status"/>
+                        <field name="foom_in_photo" widget="image" class="oe_avatar"
+                               invisible="not foom_in_photo"/>
+                    </group>
+                    <group string="Pulang">
+                        <field name="foom_out_note"/>
+                        <field name="foom_out_map_url" widget="url" string="Peta"
+                               invisible="not foom_out_map_url"/>
+                        <field name="foom_out_photo_status"/>
+                        <field name="foom_out_photo" widget="image" class="oe_avatar"
+                               invisible="not foom_out_photo"/>
+                    </group>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="hr_attendance_view_filter_foom" model="ir.ui.view">
+        <field name="name">hr.attendance.search.foom</field>
+        <field name="model">hr.attendance</field>
+        <field name="inherit_id" ref="hr_attendance.hr_attendance_view_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <separator/>
+                <filter name="foom_filter_outside" string="Di luar radius"
+                        domain="[('foom_outside', '=', True)]"/>
+                <filter name="foom_filter_late" string="Telat"
+                        domain="[('foom_late_minutes', '&gt;', 0)]"/>
+                <filter name="foom_filter_early" string="Pulang cepat"
+                        domain="[('foom_early_leave_minutes', '&gt;', 0)]"/>
+                <filter name="foom_filter_no_photo" string="Foto tidak ada"
+                        domain="[('foom_photo_missing', '=', True)]"/>
+                <filter name="foom_filter_public" string="Dari halaman publik"
+                        domain="[('foom_source', '=', 'public')]"/>
+                <separator/>
+                <filter name="foom_group_work_date" string="Hari Kerja"
+                        context="{'group_by': 'foom_work_date'}"/>
+                <filter name="foom_group_shift" string="Shift"
+                        context="{'group_by': 'foom_shift_id'}"/>
+                <filter name="foom_group_location" string="Lokasi Masuk"
+                        context="{'group_by': 'foom_in_location_id'}"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
