@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Product template form: checkbox ditaruh di tab "Point of Sale" bawaan
+         Odoo, tepat di sebelah POS Category, karena ini keputusan dapur,
+         bukan pengaturan umum produk. Form varian mewarisi view ini juga. -->
+    <record id="product_template_form_view_is_kitchen" model="ir.ui.view">
+        <field name="name">product.template.form.is.kitchen</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="point_of_sale.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='pos']/field[@name='pos_categ_ids']" position="after">
+                <field name="is_kitchen"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Product template list: kolom opsional, tersembunyi secara default -->
+    <record id="product_template_tree_view_is_kitchen" model="ir.ui.view">
+        <field name="name">product.template.list.is.kitchen</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_tree_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='list_price']" position="after">
+                <field name="is_kitchen" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

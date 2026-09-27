@@ -6,7 +6,7 @@ class PosOrderLineEntity:
                  estimated_time, attributes, customer_note, note,
                  is_reward_line, reward_id, coupon_id,
                  kitchen_state=None, cooking_started_at=None,
-                 ready_at=None, ready_source=None):
+                 ready_at=None, ready_source=None, is_kitchen=True):
         self.id = id
         self.product_id = product_id
         self.product_tmpl_id = product_tmpl_id
@@ -24,6 +24,11 @@ class PosOrderLineEntity:
         self.is_reward_line = is_reward_line
         self.reward_id = reward_id
         self.coupon_id = coupon_id
+        # Dari checkbox 'Is Kitchen' pada produk. False berarti baris ini
+        # tidak perlu disiapkan dapur (mis. air mineral kemasan) -- baris
+        # tetap tercantum di sini untuk keperluan lain (struk, rekonsiliasi),
+        # tapi dikecualikan dari waktu masak dan ringkasan status dapur.
+        self.is_kitchen = is_kitchen
         # Status memasak per hidangan; None bila modul dapur belum terpasang
         self.kitchen_state = kitchen_state
         self.cooking_started_at = cooking_started_at
@@ -49,6 +54,7 @@ class PosOrderLineEntity:
             "is_reward_line": self.is_reward_line,
             "reward_id": self.reward_id,
             "coupon_id": self.coupon_id,
+            "is_kitchen": self.is_kitchen,
             "kitchen_state": self.kitchen_state,
             "cooking_started_at": self.cooking_started_at,
             "ready_at": self.ready_at,
