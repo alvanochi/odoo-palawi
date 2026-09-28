@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_company_form_inherit_pos_config" model="ir.ui.view">
+        <field name="name">res.company.form.inherit.pos.config</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="POS API Configuration" name="pos_api_config">
+                    <group>
+                        <group string="POS Store Configuration">
+                            <field name="pos_config_id"/>
+                            <field name="pos_config_name"/>
+                            <field name="store_name"/>
+                        </group>
+                        <group string="Server &amp; Database Settings">
+                            <field name="server_domain"/>
+                            <field name="db_name"/>
+                            <field name="db_user"/>
+                            <field name="db_pass" password="True"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="App Colors &amp; Branding">
+                            <field name="primary_color" widget="color"/>
+                            <field name="secondary_color" widget="color"/>
+                            <field name="logo_uri"/>
+                        </group>
+                        <group string="Offline Mode &amp; Safety">
+                            <field name="offline_mode"/>
+                            <field name="offline_mode_pin" password="True"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Receipt Layout">
+                            <field name="receipt_title"/>
+                            <field name="receipt_address"/>
+                        </group>
+                        <group string="WiFi Settings">
+                            <field name="wifi_name"/>
+                            <field name="wifi_pass" password="True"/>
+                            <field name="wifi_profiles_json"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Social Media Channels">
+                            <field name="soc_ig"/>
+                            <field name="soc_tiktok"/>
+                            <field name="soc_fb"/>
+                        </group>
+                        <group string="Hardware &amp; Integrations">
+                            <field name="qris_submerchant_id"/>
+                            <field name="pos_discount_product_id"/>
+                            <field name="ip_printer_external"/>
+                            <field name="printer_paper_width"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>
