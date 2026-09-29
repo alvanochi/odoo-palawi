@@ -1,0 +1,16 @@
+<odoo>
+  <data>
+    <record id="pos_config_form_inherit_qris" model="ir.ui.view">
+      <field name="name">pos.config.form.inherit.qris</field>
+      <field name="model">pos.config</field>
+      <field name="inherit_id" ref="point_of_sale.pos_config_view_form"/>
+      <field name="arch" type="xml">
+        <xpath expr="//div[@id='title']" position="after">
+          <group string="QRIS">
+            <field name="qris_merchant_id"/>
+          </group>
+        </xpath>
+      </field>
+    </record>
+  </data>
+</odoo>

@@ -1,0 +1,9 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_kas_qris_submerchant_admin,kas.qris.submerchant admin,model_kas_qris_submerchant,kas_qris_submerchant_admin.group_qris_admin,1,1,1,1
+
+access_kas_qris_province_admin,kas.qris.province admin,model_kas_qris_province,kas_qris_submerchant_admin.group_qris_admin,1,1,1,1
+access_kas_qris_city_admin,kas.qris.city admin,model_kas_qris_city,kas_qris_submerchant_admin.group_qris_admin,1,1,1,1
+access_kas_qris_merchant_type_admin,kas.qris.merchant.type admin,model_kas_qris_merchant_type,kas_qris_submerchant_admin.group_qris_admin,1,1,1,1
+access_kas_qris_merchant_criteria_admin,kas.qris.merchant.criteria admin,model_kas_qris_merchant_criteria,kas_qris_submerchant_admin.group_qris_admin,1,1,1,1
+access_kas_qris_merchant_category_admin,kas.qris.merchant.category admin,model_kas_qris_merchant_category,kas_qris_submerchant_admin.group_qris_admin,1,1,1,1
+access_kas_qris_bank_code_admin,kas.qris.bank.code admin,model_kas_qris_bank_code,kas_qris_submerchant_admin.group_qris_admin,1,1,1,1

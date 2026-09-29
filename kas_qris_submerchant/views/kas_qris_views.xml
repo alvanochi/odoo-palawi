@@ -1,0 +1,272 @@
+<odoo>
+    <!-- 2. Form view untuk kas.qris.submerchant (read-only) -->
+    <record id="view_kas_qris_submerchant_form" model="ir.ui.view">
+        <field name="name">kas.qris_submerchant.form</field>
+        <field name="model">kas.qris.submerchant</field>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <form string="QRIS Submerchant"
+                create="false"
+                edit="false"
+                delete="false">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="merchant_id" readonly="1" />
+                            <field name="store_name" readonly="1" />
+                            <field name="owner_name" readonly="1" />
+                            <field name="address" readonly="1" />
+                            <field name="email" readonly="1" />
+                            <field name="phone_number" readonly="1" />
+                            <field name="postcode" readonly="1" />
+                            <field name="status" readonly="1" />
+                        </group>
+                        <group string="Bank Info">
+                            <field name="account_number" readonly="1" />
+                            <field name="account_name" readonly="1" />
+                            <field name="bank_code" readonly="1" />
+                            <field name="bank_branch" readonly="1" />
+                        </group>
+
+                        <!-- ✅ Dokumen URL dari Winpay: readonly, clickable -->
+                        <group string="Documents (Winpay)">
+                            <field name="doc_ktp"
+                                widget="url"
+                                readonly="1" />
+                            <field name="doc_selfie"
+                                widget="url"
+                                readonly="1" />
+                            <field name="doc_location"
+                                widget="url"
+                                readonly="1" />
+                            <field name="doc_npwp"
+                                widget="url"
+                                readonly="1" />
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- 3. Tab QRIS Submerchant di res.company -->
+    <record id="view_kas_qris_submerchant_form" model="ir.ui.view">
+        <field name="name">kas.qris_submerchant.form</field>
+        <field name="model">kas.qris.submerchant</field>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <form string="QRIS Submerchant"
+                create="false"
+                edit="false"
+                delete="false">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="merchant_id" readonly="1" />
+                            <field name="store_name" readonly="1" />
+                            <field name="owner_name" readonly="1" />
+                            <field name="address" readonly="1" />
+                            <field name="email" readonly="1" />
+                            <field name="phone_number" readonly="1" />
+                            <field name="postcode" readonly="1" />
+                            <field name="status" readonly="1" />
+                        </group>
+                        <group string="Bank Info">
+                            <field name="account_number" readonly="1" />
+                            <field name="account_name" readonly="1" />
+                            <field name="bank_code" readonly="1" />
+                            <field name="bank_branch" readonly="1" />
+                        </group>
+
+                        <!-- Dokumen URL dari Winpay: readonly, clickable -->
+                        <group string="Documents (Winpay)">
+                            <field name="doc_ktp" widget="url" readonly="1" />
+                            <field name="doc_selfie" widget="url" readonly="1" />
+                            <field name="doc_location" widget="url" readonly="1" />
+                            <field name="doc_npwp" widget="url" readonly="1" />
+                        </group>
+                       
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_company_form_qris" model="ir.ui.view">
+        <field name="name">res.company.form.qris.submerchant</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_company_form" />
+        <field name="arch" type="xml">
+            <xpath expr="//sheet/notebook" position="inside">
+                <page string="QRIS Submerchant" name="qris_submerchant">
+
+                    <!-- Status dari Python: 'pending', 'success', 'failed', dll -->
+                    <field name="qris_submerchant_status" invisible="1" />
+
+                    <!-- Alert PENDING -->
+                    <group colspan="4" invisible="qris_submerchant_status != 'pending'">
+                        <div class="alert alert-warning" role="alert" style="margin-bottom: 10px;">
+                            <span class="fa fa-info-circle" style="margin-right: 8px;"></span>
+                            <strong>Mohon tunggu!</strong>
+                            <span> Data kamu sedang diverifikasi oleh PTEN dan Agregator.</span>
+                        </div>
+                    </group>
+
+                    <!-- Alert FAILED -->
+                    <group colspan="4" invisible="qris_submerchant_status != 'failed'">
+                        <div class="alert alert-danger" role="alert" style="margin-bottom: 10px;">
+                            <span class="fa fa-exclamation-triangle" style="margin-right: 8px;"></span>
+                            <strong>Maaf, verifikasi tidak diterima.</strong>
+                            <span> Silakan perbaiki data kamu lalu buat submerchant ulang.</span>
+                        </div>
+                    </group>
+
+                    <!-- SUBMERCHANT DATA: readonly kalau sudah punya ID dan status BUKAN failed -->
+                    <group string="Submerchant Data">
+                        <group>
+                            <field name="qris_owner_name"
+                                readonly="qris_submerchant_id != False and qris_submerchant_status != 'failed'" />
+                            <field name="qris_store_name"
+                                readonly="qris_submerchant_id != False and qris_submerchant_status != 'failed'" />
+                            <field name="qris_address"
+                                readonly="qris_submerchant_id != False and qris_submerchant_status != 'failed'" />
+                            <field name="qris_email"
+                                readonly="qris_submerchant_id != False and qris_submerchant_status != 'failed'" />
+                            <field name="qris_phone_number"
+                                readonly="qris_submerchant_id != False and qris_submerchant_status != 'failed'" />
+                            <field name="qris_postcode"
+                                readonly="qris_submerchant_id != False and qris_submerchant_status != 'failed'" />
+                            <field name="qris_longitude"
+                                readonly="qris_submerchant_id != False and qris_submerchant_status != 'failed'" />
+                            <field name="qris_latitude"
+                                readonly="qris_submerchant_id != False and qris_submerchant_status != 'failed'" />
+                            <field name="qris_ktp_number"
+                                readonly="qris_submerchant_id != False and qris_submerchant_status != 'failed'" />
+                            <field name="qris_npwp_number"
+                                readonly="qris_submerchant_id != False and qris_submerchant_status != 'failed'" />
+                        </group>
+
+                        <group col="2">
+                            <field name="qris_province_id"
+                                options="{'no_create': True, 'no_create_edit': True}"
+                                readonly="qris_submerchant_id != False and qris_submerchant_status != 'failed'" />
+                            <button name="action_sync_qris_provinces"
+                                type="object"
+                                string="Sync"
+                                icon="fa-refresh"
+                                class="oe_link"
+                                invisible="qris_submerchant_id != False and qris_submerchant_status != 'failed'" />
+
+                            <field name="qris_city_id"
+                                options="{'no_create': True, 'no_create_edit': True}"
+                                readonly="qris_submerchant_id != False and qris_submerchant_status != 'failed'" />
+                            <button name="action_sync_qris_cities"
+                                type="object"
+                                string="Sync"
+                                icon="fa-refresh"
+                                class="oe_link"
+                                invisible="qris_submerchant_id != False and qris_submerchant_status != 'failed'" />
+
+                            <field name="qris_merchant_type_id"
+                                options="{'no_create': True, 'no_create_edit': True}"
+                                readonly="qris_submerchant_id != False and qris_submerchant_status != 'failed'" />
+                            <button name="action_sync_qris_merchant_type"
+                                type="object"
+                                string="Sync"
+                                icon="fa-refresh"
+                                class="oe_link"
+                                invisible="qris_submerchant_id != False and qris_submerchant_status != 'failed'" />
+
+                            <field name="qris_merchant_criteria_id"
+                                options="{'no_create': True, 'no_create_edit': True}"
+                                readonly="qris_submerchant_id != False and qris_submerchant_status != 'failed'" />
+                            <button name="action_sync_qris_merchant_criteria"
+                                type="object"
+                                string="Sync"
+                                icon="fa-refresh"
+                                class="oe_link"
+                                invisible="qris_submerchant_id != False and qris_submerchant_status != 'failed'" />
+
+                            <field name="qris_merchant_category_id"
+                                options="{'no_create': True, 'no_create_edit': True}"
+                                readonly="qris_submerchant_id != False and qris_submerchant_status != 'failed'" />
+                            <button name="action_sync_qris_merchant_category"
+                                type="object"
+                                string="Sync"
+                                icon="fa-refresh"
+                                class="oe_link"
+                                invisible="qris_submerchant_id != False and qris_submerchant_status != 'failed'" />
+
+                            <field name="qris_bank_code_id"
+                                options="{'no_create': True, 'no_create_edit': True}"
+                                readonly="qris_submerchant_id != False and qris_submerchant_status != 'failed'" />
+                            <button name="action_sync_qris_bank_code"
+                                type="object"
+                                string="Sync"
+                                icon="fa-refresh"
+                                class="oe_link"
+                                invisible="qris_submerchant_id != False and qris_submerchant_status != 'failed'" />
+
+                            <field name="qris_account_number"
+                                colspan="2"
+                                readonly="qris_submerchant_id != False and qris_submerchant_status != 'failed'" />
+                            <field name="qris_account_name"
+                                colspan="2"
+                                readonly="qris_submerchant_id != False and qris_submerchant_status != 'failed'" />
+                            <field name="qris_bank_branch"
+                                colspan="2"
+                                readonly="qris_submerchant_id != False and qris_submerchant_status != 'failed'" />
+                        </group>
+                    </group>
+
+                    <!-- Documents: tetap readonly kalau sudah sukses, bisa edit lagi kalau failed -->
+                    <group string="Documents">
+                        <group>
+                            <field name="qris_doc_ktp"
+                                filename="qris_doc_ktp_filename"
+                                widget="image"
+                                readonly="qris_submerchant_id != False and qris_submerchant_status != 'failed'" />
+                            <field name="qris_doc_selfie"
+                                filename="qris_doc_selfie_filename"
+                                widget="image"
+                                readonly="qris_submerchant_id != False and qris_submerchant_status != 'failed'" />
+                        </group>
+                        <group>
+                            <field name="qris_doc_location"
+                                filename="qris_doc_location_filename"
+                                widget="image"
+                                readonly="qris_submerchant_id != False and qris_submerchant_status != 'failed'" />
+                            <field name="qris_doc_npwp"
+                                filename="qris_doc_npwp_filename"
+                                widget="image"
+                                readonly="qris_submerchant_id != False and qris_submerchant_status != 'failed'" />
+                        </group>
+                    </group>
+
+                    <group string="Credential Merchant">
+                        <group>
+                            <field name="qris_submerchant_id" readonly="1" />
+                            <field name="qris_private_key1" readonly="1" />
+                            <field name="qris_private_key2" readonly="1" />
+                            <field name="qris_merchant_key" readonly="1" />
+                        </group>
+                        <group>
+                         
+
+                            <!-- Button Create hanya hilang kalau sudah punya ID DAN status bukan
+                            failed -->
+                            <button name="action_create_qris_submerchant"
+                                string="Create Submerchant"
+                                type="object"
+                                class="btn-primary oe_highlight"
+                                invisible="qris_submerchant_id != False and qris_submerchant_status != 'failed'" />
+                        </group>
+                    </group>
+
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+
+</odoo>

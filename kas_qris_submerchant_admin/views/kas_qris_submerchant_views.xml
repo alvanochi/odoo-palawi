@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+
+    <record id="view_kas_qris_submerchant_list" model="ir.ui.view">
+        <field name="name">kas.qris.submerchant.list</field>
+        <field name="model">kas.qris.submerchant</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="active" column_invisible="1"/>
+                <field name="store_name"/>
+                <field name="company_id"/>
+                <field name="merchant_id"/>
+                <field name="status"/>
+                <field name="owner_name"/>
+                <field name="phone_number"/>
+                <field name="email"/>
+            </list>
+        </field>
+    </record>
+
+
+    <record id="view_kas_qris_submerchant_search" model="ir.ui.view">
+      <field name="name">kas.qris.submerchant.search</field>
+      <field name="model">kas.qris.submerchant</field>
+      <field name="arch" type="xml">
+        <search>
+          <field name="store_name"/>
+          <field name="merchant_id"/>
+          <field name="company_id"/>
+          <filter string="Active" name="active" domain="[('active','=',True)]"/>
+          <filter string="Archived" name="archived" domain="[('active','=',False)]"/>
+          <group expand="0" string="Group By">
+            <filter string="Company" name="group_company" context="{'group_by':'company_id'}"/>
+            <filter string="Status" name="group_status" context="{'group_by':'status'}"/>
+          </group>
+        </search>
+      </field>
+    </record>
+
+    <!-- form kamu biarin sama -->
+    <record id="view_kas_qris_submerchant_form" model="ir.ui.view">
+      <field name="name">kas.qris.submerchant.form</field>
+      <field name="model">kas.qris.submerchant</field>
+      <field name="arch" type="xml">
+        <form>
+          <header>
+       
+            <button name="action_register_to_qris" type="object"
+                    string="Register to QRIS" class="btn-primary"
+                    invisible="merchant_id"/>
+            <button name="action_sync_detail" type="object" string="Sync Detail"
+                    class="btn-secondary"
+                    invisible="not merchant_id and not detail_id"/>
+            <field name="active" widget="boolean_button"
+                   options="{'terminology': 'archive'}"/>
+          </header>
+          <sheet>
+            <div class="oe_title">
+              <h1><field name="store_name" placeholder="Store Name"/></h1>
+            </div>
+
+            <group>
+              <group string="Company &amp; Status">
+                <field name="company_id" required="1"/>
+                <field name="status" readonly="1"/>
+                <field name="merchant_id" readonly="1"/>
+                <field name="detail_id" readonly="1"/>
+              </group>
+              <group string="Owner">
+                <field name="owner_name"/>
+                <field name="phone_number"/>
+                <field name="email"/>
+            </group>
+            
+            <group string="Legal / Identity">
+                <field name="ktp_number"/>
+                <field name="npwp_number"/>
+            </group>
+            
+            </group>
+
+            <notebook>
+              <page string="Location">
+                <group>
+                  <group>
+                    <field name="address"/>
+                    <field name="postcode"/>
+                  </group>
+                  <group>
+                    <field name="province_id"/>
+                    <field name="city_id"/>
+                    <field name="longitude"/>
+                    <field name="latitude"/>
+                  </group>
+                </group>
+              </page>
+
+              <page string="Merchant">
+                <group>
+                <field name="merchant_tier" widget="radio"/>
+                  <field name="merchant_type_id"/>
+                  <field name="merchant_criteria_id"/>
+                  <field name="merchant_category_id"/>
+                </group>
+              </page>
+
+              <page string="Bank">
+                <group>
+                  <field name="account_number"/>
+                  <field name="account_name"/>
+                  <field name="bank_code_id"/>
+                  <field name="bank_branch"/>
+                </group>
+              </page>
+
+              <page string="Documents">
+                <group>
+                  <group string="Uploads">
+                    <field name="doc_ktp" filename="doc_ktp_filename" invisible="ext_doc_ktp" />
+                    <field name="doc_selfie" filename="doc_selfie_filename" invisible="ext_doc_selfie"/>
+                    <field name="doc_location" filename="doc_location_filename" invisible="ext_doc_location"/>
+                    <field name="doc_npwp" filename="doc_npwp_filename" invisible="ext_doc_npwp"/>
+                  </group>
+                  <group string="From API (Info/URL)" colspan="2">
+                    <field name="ext_doc_ktp" readonly="1" widget="url"/>
+                    <field name="ext_doc_selfie" readonly="1" widget="url"/>
+                    <field name="ext_doc_location" readonly="1" widget="url"/>
+                    <field name="ext_doc_npwp" readonly="1" widget="url"/>
+                  </group>
+                </group>
+              </page>
+
+              <page string="Credentials" groups="kas_qris_submerchant_admin.group_qris_admin">
+                <group>
+                  <field name="private_key1" readonly="1"/>
+                  <field name="private_key2" readonly="1"/>
+                  <field name="merchant_key" readonly="1"/>
+                </group>
+              </page>
+            </notebook>
+          </sheet>
+        </form>
+      </field>
+    </record>
+
+    <record id="action_kas_qris_submerchant" model="ir.actions.act_window">
+      <field name="name">Submerchants</field>
+      <field name="res_model">kas.qris.submerchant</field>
+      <field name="view_mode">list,form</field>
+      <field name="search_view_id" ref="view_kas_qris_submerchant_search"/>
+      <field name="context">{'auto_fetch_qris': 1}</field>
+    </record>
+
+    <record id="action_kas_qris_submerchant_view_list" model="ir.actions.act_window.view">
+      <field name="sequence" eval="1"/>
+      <field name="view_mode">list</field>
+      <field name="view_id" ref="view_kas_qris_submerchant_list"/>
+      <field name="act_window_id" ref="action_kas_qris_submerchant"/>
+    </record>
+
+    <record id="action_kas_qris_submerchant_view_form" model="ir.actions.act_window.view">
+      <field name="sequence" eval="2"/>
+      <field name="view_mode">form</field>
+      <field name="view_id" ref="view_kas_qris_submerchant_form"/>
+      <field name="act_window_id" ref="action_kas_qris_submerchant"/>
+    </record>
+
+    
+
+  </data>
+</odoo>

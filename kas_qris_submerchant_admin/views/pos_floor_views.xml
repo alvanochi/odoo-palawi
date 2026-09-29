@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_restaurant_floor_form_inherit_company"
+            model="ir.ui.view">
+        <field name="name">restaurant.floor.form.company</field>
+        <field name="model">restaurant.floor</field>
+        <field name="inherit_id" ref="pos_restaurant.view_restaurant_floor_form"/>
+        <field name="arch" type="xml">
+
+            <!-- taruh company setelah Point of Sales -->
+            <xpath expr="//field[@name='pos_config_ids']" position="after">
+                <field name="company_id"
+                       options="{'no_create': True}"
+                       groups="base.group_multi_company"/>
+            </xpath>
+
+        </field>
+    </record>
+</odoo>

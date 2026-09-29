@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data noupdate="1">
+
+    <record id="qris_merchant_type_lite" model="kas.qris.merchant.type">
+      <field name="name">LITE</field>
+      <field name="code">LITE</field>
+    </record>
+
+    <record id="qris_merchant_type_medium" model="kas.qris.merchant.type">
+      <field name="name">MEDIUM</field>
+      <field name="code">MEDIUM</field>
+    </record>
+
+    <record id="qris_merchant_type_enterprise" model="kas.qris.merchant.type">
+      <field name="name">ENTERPRISE</field>
+      <field name="code">ENTERPRISE</field>
+    </record>
+
+  </data>
+</odoo>
