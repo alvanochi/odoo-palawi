@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================ -->
+    <!-- Inherit product.product form view (product_normal_form_view)  -->
+    <!-- Add "Add-ons" tab inside the notebook                         -->
+    <!-- ============================================================ -->
+    <record id="product_product_form_view_addons" model="ir.ui.view">
+        <field name="name">product.product.form.addons</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="product.product_normal_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='general_information']" position="after">
+                <page string="Add-ons" name="addons">
+                    <group string="Related Add-on Products">
+                        <field name="addon_product_ids"
+                               nolabel="1"
+                               colspan="2"
+                               context="{'default_available_in_pos': True}">
+                            <list>
+                                <field name="name" string="Product Name"/>
+                                <field name="default_code" string="Internal Reference" optional="show"/>
+                                <field name="lst_price" string="Sales Price"/>
+                                <field name="pos_categ_ids" widget="many2many_tags" string="POS Category"/>
+                                <field name="categ_id" string="Internal Category" optional="hide"/>
+                            </list>
+                        </field>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+
+</odoo>

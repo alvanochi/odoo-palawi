@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_member_type" model="ir.actions.act_window">
+        <field name="name">Member Types</field>
+        <field name="res_model">member.type</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_member_type_root"
+        name="Membership"
+        parent="contacts.res_partner_menu_config"
+        sequence="80"/>
+
+    <menuitem id="menu_member_type"
+              name="Member Types"
+              parent="menu_member_type_root"
+              action="action_member_type"
+              sequence="10"/>
+
+    <record id="view_member_type_list" model="ir.ui.view">
+        <field name="name">member.type.list</field>
+        <field name="model">member.type</field>
+        <field name="arch" type="xml">
+            <list string="Member Types" default_order="sequence,name">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="earn_value"/>
+                <field name="redeem_value"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_member_type_form" model="ir.ui.view">
+        <field name="name">member.type.form</field>
+        <field name="model">member.type</field>
+        <field name="arch" type="xml">
+            <form string="Member Type">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="sequence"/>
+                            <field name="active"/>
+                        </group>
+                        <group>
+                            <field name="note" placeholder="Catatan..."/>
+                        </group>
+                    </group>
+
+                    <group string="Point Rule">
+                        <div class="text-muted mb-2" colspan="2">
+                            <span class="fst-italic">Format: Transaksi ≥ Earn Value → dapat Redeem Value point</span>
+                        </div>
+                        <group string="Earn Point">
+                            <field name="earn_value" help="Minimal nilai transaksi (Rupiah) untuk mendapatkan point"/>
+                        </group>
+                        <group string="Redeem Point">
+                            <field name="redeem_value" help="Jumlah point yang didapat per kelipatan Earn Value"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

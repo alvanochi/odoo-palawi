@@ -1,0 +1,10 @@
+<odoo>
+    <data>
+      <!-- Root menu di bawah POS -->
+      <menuitem id="menu_kitchen_screen_root"
+                name="Kitchen Screen"
+                parent="point_of_sale.menu_point_root"
+                sequence="80"/>
+    </data>
+  </odoo>
+  
