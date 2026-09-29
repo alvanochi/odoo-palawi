@@ -954,6 +954,12 @@ class PosOrderApi(http.Controller):
                 "name": base_name,
             }
 
+            # Penanda promo, hanya kalau payload menyebutnya.
+            promo_vals, promo_err = self._loyalty_line_vals(env, ln)
+            if promo_err:
+                return promo_err
+            line_vals.update(promo_vals)
+
             if has_uom and product.uom_id:
                 line_vals["uom_id"] = product.uom_id.id
 
@@ -1188,6 +1194,12 @@ class PosOrderApi(http.Controller):
                     "name": l.name,
                     "price_subtotal": float(getattr(l, "price_subtotal", 0.0) or 0.0),
                     "price_subtotal_incl": float(getattr(l, "price_subtotal_incl", 0.0) or 0.0),
+                    # Penanda promo yang benar-benar tersimpan, supaya klien
+                    # bisa memastikan promonya tercatat -- bukan sekadar
+                    # percaya pada payload yang tadi dikirim.
+                    "is_reward_line": bool(getattr(l, "is_reward_line", False)),
+                    "reward_id": l.reward_id.id if getattr(l, "reward_id", False) else None,
+                    "coupon_id": l.coupon_id.id if getattr(l, "coupon_id", False) else None,
                 })
 
         return data
@@ -1222,6 +1234,103 @@ class PosOrderApi(http.Controller):
         return fallback
 
     
+    # ==========================================================
+    # PROMO / LOYALTY (OPSIONAL)
+    #
+    # Aplikasi POS yang sudah berjalan tidak mengirim satu pun field di bawah
+    # ini, dan tanpa field itu seluruh helper mengembalikan dict kosong --
+    # order dibuat persis seperti sebelumnya. Yang ditambahkan hanyalah
+    # kemampuan MENCATAT promo yang sudah dihitung frontend, supaya baris
+    # potongan tercatat sebagai baris reward Odoo dan laporan loyalty benar.
+    # ==========================================================
+
+    LOYALTY_LINE_KEYS = (
+        "reward_id", "coupon_id", "is_reward_line",
+        "points_cost", "reward_identifier_code",
+    )
+
+    def _loyalty_line_vals(self, env, ln):
+        """-> (vals, error). vals kosong bila payload tidak menyebut promo."""
+        if not any(ln.get(key) not in (None, "") for key in self.LOYALTY_LINE_KEYS):
+            return {}, None
+
+        Line = env["pos.order.line"]
+        if "is_reward_line" not in Line._fields:
+            return None, self._err(
+                "Module 'pos_loyalty' is required to send reward lines", 400)
+
+        vals = {}
+
+        reward_id = self._parse_int(ln.get("reward_id"))
+        if reward_id:
+            if "loyalty.reward" not in env:
+                return None, self._err("Module 'loyalty' is not installed", 400)
+            reward = env["loyalty.reward"].sudo().browse(reward_id)
+            if not reward.exists():
+                return None, self._err("Reward ID %s not found" % reward_id, 404)
+            vals["reward_id"] = reward.id
+
+        coupon_id = self._parse_int(ln.get("coupon_id"))
+        if coupon_id:
+            if "loyalty.card" not in env:
+                return None, self._err("Module 'loyalty' is not installed", 400)
+            coupon = env["loyalty.card"].sudo().browse(coupon_id)
+            if not coupon.exists():
+                return None, self._err("Coupon ID %s not found" % coupon_id, 404)
+            vals["coupon_id"] = coupon.id
+
+        # Baris yang menyebut reward memang baris promo. Flag eksplisit tetap
+        # dihormati supaya klien bisa menandai sendiri bila perlu.
+        raw_flag = ln.get("is_reward_line")
+        if raw_flag in (None, ""):
+            vals["is_reward_line"] = bool(reward_id)
+        elif isinstance(raw_flag, str):
+            vals["is_reward_line"] = raw_flag.strip().lower() in ("1", "true", "t", "yes", "y")
+        else:
+            vals["is_reward_line"] = bool(raw_flag)
+
+        points_cost = ln.get("points_cost")
+        if points_cost not in (None, "") and "points_cost" in Line._fields:
+            try:
+                vals["points_cost"] = float(points_cost)
+            except (TypeError, ValueError):
+                return None, self._err("Invalid points_cost", 400)
+
+        code = ln.get("reward_identifier_code")
+        if code and "reward_identifier_code" in Line._fields:
+            vals["reward_identifier_code"] = str(code)
+
+        return vals, None
+
+    def _confirm_coupon_data(self, env, order, body):
+        """Serahkan coupon_data ke mesin loyalty Odoo. -> error | None.
+
+        Ini yang memotong poin kupon dan menerbitkan kupon hadiah. Dijalankan
+        lewat confirm_coupon_programs() bawaan pos_loyalty, bukan logika
+        sendiri, supaya hasilnya sama persis dengan kasir POS Odoo.
+        """
+        coupon_data = body.get("coupon_data")
+        if not coupon_data:
+            return None
+        if not isinstance(coupon_data, dict):
+            return self._err("'coupon_data' must be an object keyed by coupon id", 400)
+        if not hasattr(order, "confirm_coupon_programs"):
+            return self._err("Module 'pos_loyalty' is required for 'coupon_data'", 400)
+
+        # Aplikasi bisa mengulang pembayaran setelah timeout jaringan. Tanpa
+        # penjagaan ini pengulangan itu menerbitkan kupon dua kali.
+        if "loyalty.card" in env and env["loyalty.card"].sudo().search_count(
+                [("source_pos_order_id", "=", order.id)]):
+            _logger.info("COUPON DATA already confirmed for order=%s, skipped", order.id)
+            return None
+
+        try:
+            order.sudo().confirm_coupon_programs(coupon_data)
+        except Exception as e:
+            _logger.exception("CONFIRM COUPON PROGRAMS FAILED order=%s", order.id)
+            return self._err("Failed to confirm loyalty programs: %s" % e, 400)
+        return None
+
     def _pay_order(self, env, order_id, body):
             order_id = self._parse_int(order_id)
             session_id = self._parse_int(body.get("session_id"))
@@ -1244,6 +1353,13 @@ class PosOrderApi(http.Controller):
             order = Order.browse(order_id)
             if not order.exists():
                 return self._err("Order not found", 404)
+
+            # Poin kupon dipotong sebelum uang dicatat: kalau mesin loyalty
+            # menolak, pembayaran belum terjadi dan aplikasi masih bisa
+            # memperbaiki keranjangnya.
+            promo_err = self._confirm_coupon_data(env, order, body)
+            if promo_err:
+                return promo_err
 
             # =========================
             # HANDLE TOTAL = 0 (diskon 100%)
@@ -1711,6 +1827,23 @@ class PosOrderApi(http.Controller):
             if has_company_line:
                 line_cols.append("company_id")
                 line_params.append(company.id)
+
+            # Jalur darurat ini melewati ORM, jadi kolom promo harus disebut
+            # sendiri -- kalau tidak, penanda reward hilang diam-diam justru
+            # pada order yang pembuatannya sudah bermasalah.
+            for promo_col in ("is_reward_line", "reward_id", "coupon_id",
+                              "points_cost", "reward_identifier_code"):
+                if promo_col in line_vals and self._sql_has_col(env, "pos_order_line", promo_col):
+                    line_cols.append(promo_col)
+                    line_params.append(line_vals[promo_col])
+
+            # Default kolom juga tidak berlaku di jalur SQL. Tanpa ini,
+            # hidangan yang dibuat lewat fallback lahir tanpa status dapur dan
+            # tidak pernah muncul di KDS.
+            if self._sql_has_col(env, "pos_order_line", "kitchen_state"):
+                line_cols.append("kitchen_state")
+                line_params.append(
+                    "served" if line_vals.get("is_reward_line") else "pending")
 
             line_sql = f"INSERT INTO pos_order_line ({', '.join(line_cols)}) VALUES ({', '.join(['%s']*len(line_params))})"
             cr.execute(line_sql, tuple(line_params))

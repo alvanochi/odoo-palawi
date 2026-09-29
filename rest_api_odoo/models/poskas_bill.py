@@ -47,6 +47,37 @@ class PoskasBill(models.Model):
 
     line_ids = fields.One2many("poskas.bill.line", "bill_id", string="Lines")
 
+    # Diturunkan dari baris, tidak pernah di-set langsung: menyimpan salinan di
+    # bill berarti ada dua tempat yang isinya bisa berbeda.
+    kitchen_state = fields.Selection([
+        ("pending", "Pending"),
+        ("cooking", "Cooking"),
+        ("ready", "Ready"),
+        ("served", "Served"),
+    ], string="Kitchen Status", compute="_compute_kitchen_state")
+
+    @api.depends("line_ids.kitchen_state", "line_ids.is_reward_line")
+    def _compute_kitchen_state(self):
+        for bill in self:
+            # Baris promo bukan makanan: potongan harga tidak dimasak siapa pun,
+            # dan sejak awal lahir 'served'. Ikut dihitung, ia akan membuat bill
+            # yang belum disentuh dapur terbaca seolah sudah mulai dimasak.
+            states = [
+                (line.kitchen_state or "pending")
+                for line in bill.line_ids
+                if not line.is_reward_line
+            ]
+            if not states:
+                bill.kitchen_state = False
+            elif all(state == "served" for state in states):
+                bill.kitchen_state = "served"
+            elif all(state in ("ready", "served") for state in states):
+                bill.kitchen_state = "ready"
+            elif any(state in ("cooking", "ready", "served") for state in states):
+                bill.kitchen_state = "cooking"
+            else:
+                bill.kitchen_state = "pending"
+
     amount_total = fields.Float(
         string="Total",
         compute="_compute_amount_total",
@@ -98,11 +129,37 @@ class PoskasBill(models.Model):
         self.env["bus.bus"]._sendone(channel, "poskas_bill_state", payload)
 
     
+    def _send_kds_realtime(self, event, payload=None):
+        """Terbitkan invalidation event bill ke channel KDS milik pos.config.
+
+        Channel-nya disediakan pos_order_extra_states. Modul itu opsional --
+        rest_api_odoo tidak boleh mati kalau dapur tidak dipasang -- jadi
+        kemampuannya dicek dulu, dan tanpa itu bill hanya diam.
+        """
+        for bill in self:
+            config = bill.config_id
+            if not config or not hasattr(config, '_send_kds_realtime'):
+                continue
+            message = {
+                'bill_id': bill.id,
+                'bill_state': bill.state,
+                'table_id': bill.table_id.id if bill.table_id else None,
+                'pos_order_id': bill.pos_order_id.id if bill.pos_order_id else None,
+            }
+            message.update(payload or {})
+            config.sudo()._send_kds_realtime(event, message)
+        return True
+
     @api.model_create_multi
     def create(self, vals_list):
-        recs = super().create(vals_list)
+        # Bill.create() ikut membuat baris. Tahan event baris selama proses ini
+        # supaya satu open bill tidak membangunkan KDS berkali-kali.
+        recs = super(PoskasBill, self.with_context(
+            kds_suppress_line_realtime=True)).create(vals_list)
+        recs = recs.with_context(kds_suppress_line_realtime=False)
         for r in recs:
             r._notify_bill_state()
+        recs._send_kds_realtime('bill.created', {'changed_fields': ['create']})
         return recs
 
 
@@ -118,13 +175,34 @@ class PoskasBill(models.Model):
         
     def write(self, vals):
         res = super().write(vals)
-        if "state" in vals or "line_ids" in vals or "dp_amount" in vals or "is_dp" in vals:   
+        if "state" in vals or "line_ids" in vals or "dp_amount" in vals or "is_dp" in vals:
             for r in self:
                 r._notify_bill_state()
+        # Antrean dapur ikut berubah begitu bill pindah meja, ditutup, atau
+        # ditautkan ke pos.order (yang membuatnya keluar dari antrean bill).
+        kds_tracked = {
+            "state", "line_ids", "table_id", "table_ref", "config_id",
+            "pos_order_id", "name_customer", "name_waiters", "type_order",
+        }
+        changed = kds_tracked.intersection(vals)
+        if changed:
+            self._send_kds_realtime('bill.updated', {
+                'changed_fields': sorted(changed),
+            })
         return res
 
     def unlink(self):
         for bill in self:
             if bill.state == 'paid':
                 raise ValidationError("Data bill dengan status 'Paid' tidak dapat dihapus.")
-        return super().unlink()
+        snapshots = [(bill.config_id, bill.id, bill.state) for bill in self]
+        result = super(PoskasBill, self.with_context(
+            kds_suppress_line_realtime=True)).unlink()
+        for config, bill_id, state in snapshots:
+            if config and hasattr(config, '_send_kds_realtime'):
+                config.sudo()._send_kds_realtime('bill.deleted', {
+                    'bill_id': bill_id,
+                    'bill_state': state,
+                    'changed_fields': ['unlink'],
+                })
+        return result

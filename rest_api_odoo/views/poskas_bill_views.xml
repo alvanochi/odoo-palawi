@@ -18,6 +18,9 @@
                 <field name="type_order" string="Tipe Order"/>
 
                 <field name="state" widget="badge" decoration-info="state == 'open'" decoration-success="state == 'paid'" decoration-danger="state == 'cancel'"/>
+                <field name="kitchen_state" string="Dapur" widget="badge"
+                       decoration-warning="kitchen_state == 'cooking'"
+                       decoration-success="kitchen_state in ('ready', 'served')"/>
             </list>
         </field>
     </record>
@@ -69,6 +72,9 @@
                                     <field name="discount_percent"/>
                                     <field name="note"/>
                                     <field name="subtotal" sum="Subtotal"/>
+                                    <field name="kitchen_state" widget="badge" readonly="1"
+                                           decoration-warning="kitchen_state == 'cooking'"
+                                           decoration-success="kitchen_state in ('ready', 'served')"/>
                                 </list>
                             </field>
                             <group class="oe_subtotal_footer" colspan="2">

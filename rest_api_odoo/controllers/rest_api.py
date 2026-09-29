@@ -381,6 +381,13 @@ class RestApi(http.Controller):
                     continue
                 f = model_env._fields[k]
 
+                # Field computed tanpa method search tidak bisa dipakai sebagai
+                # domain: Odoo melempar error dan SELURUH request gagal, bukan
+                # hanya filternya. Melewatinya membuat param seperti itu
+                # sekadar diabaikan.
+                if not f.store and not f.search:
+                    continue
+
                 if f.type == "many2one":
                     if str(v).isdigit():
                         local_domain.append((k, "=", int(v)))
@@ -478,6 +485,9 @@ class RestApi(http.Controller):
                 fields_root = ["access_token", "config_id", "name", "start_at", "stop_at", "id"]
                 fields_original = list(fields_root)
                 
+            # Field promo TIDAK dipaksa masuk ke sini: mana yang ikut terkirim
+            # ditentukan GET Fields di connection.api, supaya bentuk response
+            # tetap sepenuhnya di tangan yang mengonfigurasi API.
             FORCE_FIELDS = {"company_id", "pos_categ_ids"}
             for f in FORCE_FIELDS:
                 if f in model_env._fields and f not in SKIP_FIELDS and f not in fields_root:
@@ -485,6 +495,15 @@ class RestApi(http.Controller):
                     if f not in fields_original:
                         fields_original.append(f)
 
+
+            # Promo dipersempit ke satu POS bila pemanggil menyebutnya, supaya
+            # badge di katalog sama persis dengan yang berjalan di kasir itu:
+            # pos.config._get_program_ids() ikut menerapkan pos_config_ids,
+            # pricelist dan max_usage. Tanpa param ini cakupannya perusahaan.
+            promo_config_id = params.get("pos_config_id") or params.get("promo_pos_config_id")
+            if (promo_config_id and str(promo_config_id).isdigit()
+                    and "has_promotion" in model_env._fields):
+                model_env = model_env.with_context(promo_pos_config_id=int(promo_config_id))
 
             # 🔥 FORCE fields khusus pos.order (punya kamu, tapi indent dibenerin)
             records = model_env.search_read(

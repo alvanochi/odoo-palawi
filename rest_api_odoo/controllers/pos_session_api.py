@@ -1058,6 +1058,30 @@ class PosSessionApi(http.Controller):
         data = self._build_closing_summary(api_env, session)
         return self._resp({"success": True, "data": data}, 200)
 
+    def _line_gross_excl(self, line, currency, price_unit, qty):
+        """Nilai baris SEBELUM diskon, tanpa pajak.
+
+        Dihitung lewat mesin pajak Odoo, bukan price_unit * qty. Ketika harga
+        jual sudah termasuk pajak, price_unit (termasuk pajak) dan
+        price_subtotal (tanpa pajak) berbeda basis; menguranginya begitu saja
+        membuat pajak tercatat sebagai diskon. compute_all() juga menangani
+        diskon 100%, yang tidak bisa diturunkan dari persentasenya.
+        """
+        taxes = line.tax_ids if "tax_ids" in line._fields else False
+        if taxes:
+            try:
+                partner = line.order_id.partner_id if line.order_id else False
+                result = taxes.compute_all(
+                    price_unit, currency, qty,
+                    product=line.product_id, partner=partner or False,
+                )
+                return float(result.get("total_excluded", price_unit * qty))
+            except Exception:
+                _logger.exception(
+                    "CLOSING SUMMARY tax compute failed line=%s, fallback ke harga polos",
+                    line.id)
+        return price_unit * qty
+
     def _build_closing_summary(self, api_env, session):
         state_ok = ["paid", "done", "invoiced"]
         Order = api_env["pos.order"].sudo()
@@ -1074,10 +1098,22 @@ class PosSessionApi(http.Controller):
 
         pending_paid_unposted = counts_by_state.get("paid", 0)
 
-        total_gross = 0.0
+        # gross dihitung dari BARIS (harga sebelum diskon), bukan dari
+        # amount_total yang sudah dipotong. Tanpa itu, Gross - Discount tidak
+        # pernah sama dengan Net dan diskon menghilang dari ringkasan.
+        total_gross = 0.0       # sebelum diskon, tanpa pajak
+        total_discount = 0.0    # potongan baris + baris reward
+        # Dua komponen diskon dipisah: yang menempel pada produk (persentase
+        # per baris) dan yang berdiri sendiri (baris potongan transaksi).
+        # Tanpa pemisahan ini, jumlah items[].discount_amount tidak akan pernah
+        # sama dengan totals.discount, dan selisihnya tampak seperti kesalahan.
+        discount_on_lines = 0.0
+        discount_standalone = 0.0
         total_tax = 0.0
+        total_charged = 0.0     # yang benar-benar ditagih (termasuk pajak)
         total_net = 0.0
-        total_discount = 0.0
+
+        currency = session.currency_id or session.company_id.currency_id
 
 
         items_map = {}
@@ -1085,7 +1121,7 @@ class PosSessionApi(http.Controller):
 
         for o in orders:
             if "amount_total" in o._fields:
-                total_gross += float(o.amount_total or 0.0)
+                total_charged += float(o.amount_total or 0.0)
             if "amount_tax" in o._fields:
                 total_tax += float(o.amount_tax or 0.0)
 
@@ -1126,23 +1162,31 @@ class PosSessionApi(http.Controller):
                 else:
                     line_total = price_unit * qty
 
-                gross_line = price_unit * qty
+                # =====================================
+                # BARIS POTONGAN (reward promo / diskon transaksi)
+                # =====================================
+                # Baris promo Odoo memakai produk teknis berharga negatif yang
+                # dinamai mengikuti deskripsi reward ("Gratis 1 Croissant"),
+                # jadi menebaknya dari kata "discount" pada nama melewatkan
+                # hampir semuanya -- dan nilainya justru ikut terhitung sebagai
+                # penjualan produk bernilai negatif.
+                is_reward_line = bool(getattr(l, "is_reward_line", False)) \
+                    or bool(getattr(l, "reward_id", False))
+                is_negative_line = line_total < 0 or subtotal_excl < 0
 
+                if is_reward_line or is_negative_line or is_discount_product:
+                    discount_standalone += abs(subtotal_excl)
+                    total_discount += abs(subtotal_excl)
+                    continue
 
                 # =====================================
-                # ITEM DISCOUNT
+                # DISKON PER BARIS
                 # =====================================
-                discount_amount = 0.0
+                gross_line = self._line_gross_excl(l, currency, price_unit, qty)
+                discount_amount = max(gross_line - subtotal_excl, 0.0)
 
-                if discount_percent > 0 and gross_line > 0:
-                    discount_amount = gross_line - subtotal_excl
-
-                # =====================================
-                # TRANSACTION DISCOUNT
-                # =====================================
-                if is_discount_product:
-                    discount_amount = abs(line_total)
-
+                total_gross += gross_line
+                discount_on_lines += discount_amount
                 total_discount += discount_amount
 
                 tmpl = getattr(l.product_id, "product_tmpl_id", False)
@@ -1157,9 +1201,6 @@ class PosSessionApi(http.Controller):
                         pos_categ_id = first.id
                         pos_categ_name = first.display_name
                         
-                if is_discount_product:
-                    continue
-
                 items_detail.append({
                     "order_id": o.id,
                     "order_name": order_name,
@@ -1169,6 +1210,7 @@ class PosSessionApi(http.Controller):
                     "price_unit": price_unit,
                     "discount_percent": discount_percent,
                     "discount_amount": discount_amount,
+                    "gross_excl": gross_line,
                     "subtotal_excl": subtotal_excl,
                     "subtotal_incl": subtotal_incl,
                     "pos_categ_id": pos_categ_id,
@@ -1183,6 +1225,8 @@ class PosSessionApi(http.Controller):
                         "name": name,
                         "qty": 0.0,
                         "total": 0.0,
+                        "gross_excl": 0.0,
+                        "net_excl": 0.0,
                         "discount_amount": 0.0,
                         "discount_percent_total": 0.0,
                         "pos_categ_id": pos_categ_id,
@@ -1191,10 +1235,20 @@ class PosSessionApi(http.Controller):
 
                 items_map[key]["qty"] += qty
                 items_map[key]["total"] += line_total
+                items_map[key]["gross_excl"] += gross_line
+                items_map[key]["net_excl"] += subtotal_excl
                 items_map[key]["discount_amount"] += discount_amount
                 items_map[key]["discount_percent_total"] += discount_percent
 
-        total_net = (total_gross - total_tax) if total_tax > 0 else total_gross
+        # Net tetap berarti sama seperti sebelumnya: nilai setelah diskon,
+        # tanpa pajak. Bedanya sekarang ia benar-benar turunan dari
+        # gross - discount, sehingga ketiganya konsisten.
+        total_net = total_gross - total_discount
+
+        # Selisih terhadap uang yang benar-benar ditagih. Nilai bukan nol
+        # berarti ada baris yang belum terbaca -- lebih baik terlihat di
+        # response daripada diam-diam membuat laporan meleset.
+        difference = round((total_net + total_tax) - total_charged, 2)
 
         pay_breakdown = self._compute_payment_breakdown(api_env, session, orders)
 
@@ -1226,10 +1280,23 @@ class PosSessionApi(http.Controller):
                 "paid_unposted_count": pending_paid_unposted,
             },
             "totals": {
-                "gross": total_gross,
-                "tax": total_tax,
-                "net": total_net,
-                "discount": total_discount,
+                "gross": round(total_gross, 2),
+                "tax": round(total_tax, 2),
+                "net": round(total_net, 2),
+                "discount": round(total_discount, 2),
+                # Uang yang benar-benar ditagih, dari amount_total order.
+                "charged": round(total_charged, 2),
+                # net + tax - charged. Nol berarti ringkasan ini cocok dengan
+                # order-nya.
+                "difference": difference,
+                "reconciled": abs(difference) < 0.01,
+                # on_lines = jumlah items[].discount_amount (diskon persen yang
+                # menempel pada produk). standalone = baris potongan transaksi
+                # yang tidak menempel pada produk mana pun.
+                "discount_breakdown": {
+                    "on_lines": round(discount_on_lines, 2),
+                    "standalone": round(discount_standalone, 2),
+                },
             },
             "payments": pay_breakdown,
             "items": items,

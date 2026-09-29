@@ -6,3 +6,4 @@ from . import pos_bill_api
 from . import pos_cash_movement_api 
 from . import pos_order_detail_api
 from . import poskas_bill_fingerprint
+from . import promo_api

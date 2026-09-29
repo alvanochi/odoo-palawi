@@ -220,12 +220,81 @@ class PosBillApi(http.Controller):
             )
         return None
 
-    def _apply_lines(self, env, bill, items):
-        bill.line_ids.unlink()
+    def _bill_promo_vals(self, env, item):
+        """Field promo untuk satu item bill. Kosong bila item tidak menyebutnya.
 
+        reward_id dan coupon_id disimpan sebagai Integer (lihat catatan di
+        poskas_bill_line.py), jadi database tidak menjaganya sendiri. ID yang
+        tidak ada dibuang di sini: bill yang mengaku memakai promo yang tidak
+        pernah ada hanya membuat laporan berbohong.
+        """
+        BillLine = env["poskas.bill.line"]
+        if "is_reward_line" not in BillLine._fields:
+            return {}
+
+        vals = {}
+
+        for key, model_name in (("reward_id", "loyalty.reward"),
+                                ("coupon_id", "loyalty.card")):
+            raw = item.get(key)
+            if raw in (None, "", False):
+                continue
+            try:
+                record_id = int(raw)
+            except (TypeError, ValueError):
+                _logger.warning("BILL PROMO invalid %s=%r, ignored", key, raw)
+                continue
+            if model_name in env and not env[model_name].sudo().browse(record_id).exists():
+                _logger.warning("BILL PROMO %s=%s does not exist, ignored", key, record_id)
+                continue
+            vals[key] = record_id
+
+        # is_reward_line TIDAK disimpulkan dari reward_id, berbeda dari baris
+        # pos.order. Di order, baris reward adalah baris teknis berharga
+        # negatif; di bill, promo menempel pada baris makanannya sendiri --
+        # produk gratis tetap harus dimasak. Menyimpulkannya di sini akan
+        # membuat hidangan itu lahir 'served' dan hilang dari layar dapur,
+        # dan pelanggan menunggu makanan yang tidak pernah dibuat.
+        raw_flag = item.get("is_reward_line")
+        if raw_flag in (None, ""):
+            pass
+        elif isinstance(raw_flag, str):
+            vals["is_reward_line"] = raw_flag.strip().lower() in ("1", "true", "t", "yes", "y")
+        else:
+            vals["is_reward_line"] = bool(raw_flag)
+
+        code = item.get("reward_identifier_code")
+        if code:
+            vals["reward_identifier_code"] = str(code)
+
+        return vals
+
+    def _apply_lines(self, env, bill, items):
         BillLine = env["poskas.bill.line"]
         Product = env["product.product"]
 
+        # Upsert menulis ulang seluruh keranjang. Tanpa penjagaan ini, menambah
+        # satu item akan mengembalikan hidangan yang sudah 'cooking' atau
+        # 'ready' menjadi 'pending', dan layar dapur kehilangan progresnya.
+        #
+        # Baris tidak punya identitas stabil dari sisi mobile, jadi status
+        # dapur dicocokkan lewat (produk, catatan) -- pasangan yang sama yang
+        # dilihat juru masak di layar.
+        has_kitchen = "kitchen_state" in BillLine._fields
+        kitchen_pool = {}
+        if has_kitchen:
+            for line in bill.line_ids:
+                key = (line.product_id.id, (line.note or "").strip())
+                kitchen_pool.setdefault(key, []).append(line.kitchen_snapshot())
+
+        # Hapus-lalu-tulis-ulang dijalankan sebagai satu perubahan: tanpa ini
+        # satu upsert menerbitkan satu event hapus plus satu event per baris,
+        # dan layar dapur mengambil ulang antrean sebanyak itu pula. Satu event
+        # 'bill.updated' dikirim sekali di akhir.
+        quiet = bill.with_context(kds_suppress_line_realtime=True)
+        quiet.line_ids.unlink()
+
+        line_vals_list = []
         for item in items:
             product_raw = item.get("product_id")
             qty = float(item.get("qty") or 0.0)
@@ -248,14 +317,35 @@ class PosBillApi(http.Controller):
             if not product.exists():
                 continue
 
-            BillLine.create({
+            line_vals = {
                 "bill_id": bill.id,
                 "product_id": product.id,
                 "qty": qty,
                 "price_unit": price_unit,
                 "note": note,
                 "discount_percent": discount_percent,
-            })
+            }
+
+            # Penanda promo, hanya kalau item menyebutnya. Bill tidak bisa
+            # menampung baris berharga negatif -- subtotal-nya menjepit nilai
+            # negatif ke nol -- jadi promo di tahap ini dinyatakan sebagai
+            # diskon per baris, sementara field ini mencatat promo MANA yang
+            # dipakai supaya identitasnya tidak hilang sampai checkout.
+            line_vals.update(self._bill_promo_vals(env, item))
+
+            if has_kitchen:
+                pool = kitchen_pool.get((product.id, (note or "").strip()))
+                if pool:
+                    line_vals.update(pool.pop(0))
+
+            line_vals_list.append(line_vals)
+
+        if line_vals_list:
+            BillLine.with_context(kds_suppress_line_realtime=True).create(line_vals_list)
+
+        bill._send_kds_realtime('bill.lines_replaced', {
+            'changed_fields': ['line_ids'],
+        })
 
     def _set_dp_safe(self, bill, dp_amount, is_dp):
         dp_amount = float(dp_amount or 0.0)
@@ -519,6 +609,8 @@ class PosBillApi(http.Controller):
         "name_waiters": bill.name_waiters,
         "amount_due": bill.amount_due or 0.0,
         "type_order": bill.type_order or "dine_in",
+        # Ringkasan dapur, diturunkan dari baris.
+        "kitchen_state": bill.kitchen_state if "kitchen_state" in bill._fields else None,
         "items": [
             {
                 "id": str(line.id),
@@ -530,6 +622,17 @@ class PosBillApi(http.Controller):
                 "discount_percent": line.discount_percent or 0.0,
                 "note": line.note or "",
                 "subtotal": line.subtotal or 0.0,
+                # Progres dapur per hidangan; kosong dibaca sebagai 'pending'.
+                "kitchen_state": (line.kitchen_state or "pending") if "kitchen_state" in line._fields else None,
+                # Promo yang tercatat pada baris ini; None bila modul belum
+                # di-upgrade, 0/False bila baris ini memang bukan baris promo.
+                "is_reward_line": bool(getattr(line, "is_reward_line", False)),
+                "reward_id": getattr(line, "reward_id", 0) or None,
+                "coupon_id": getattr(line, "coupon_id", 0) or None,
+                "reward_identifier_code": getattr(line, "reward_identifier_code", False) or None,
+                "cooking_started_at": fields.Datetime.to_string(line.cooking_started_at) if getattr(line, "cooking_started_at", False) else None,
+                "ready_at": fields.Datetime.to_string(line.ready_at) if getattr(line, "ready_at", False) else None,
+                "ready_source": getattr(line, "ready_source", False) or None,
             }
             for line in bill.line_ids
         ],
