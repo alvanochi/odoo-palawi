@@ -31,3 +31,8 @@ class ResCompany(models.Model):
         ('58', '58mm'),
         ('80', '80mm')
     ], string='Receipt Paper Width', default='58')
+    qris_min_amount = fields.Integer(string='QRIS Minimum Amount', default=10000)
+    payment_gateway = fields.Selection([
+        ('winpay', 'Winpay'),
+        ('paper', 'Paper'),
+    ], string='Payment Gateway', default='paper')
