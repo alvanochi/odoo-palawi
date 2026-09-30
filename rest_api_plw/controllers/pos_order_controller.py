@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import base64
+import json
 from urllib.parse import urlsplit, urlunsplit
 
 from odoo import http
@@ -21,6 +23,7 @@ from ..domain.use_cases.get_pos_orders import (
 from ..domain.use_cases.update_line_kitchen_state import (
     UpdateLineKitchenStateUseCase, UpdateBillLineKitchenStateUseCase,
 )
+from ..domain.use_cases.save_order_evidence import SaveOrderEvidenceUseCase
 
 
 class PosOrderController(http.Controller):
@@ -304,3 +307,71 @@ class PosOrderController(http.Controller):
 
         use_case = UpdateBillLineKitchenStateUseCase(PoskasBillRepository(request.env))
         return _json_result(use_case.execute(bill_id, line_id, target_state, source))
+
+    @http.route("/api/v1/pos-order/evidence", type="http", auth="none", methods=["POST", "OPTIONS"], csrf=False)
+    @require_api_key_plw
+    def upload_pos_order_evidence(self, **kw):
+        """Upload payment evidence photo (form-data/XFile) and mark POS order as paid."""
+        if request.httprequest.method == "OPTIONS":
+            return http.Response(status=204, headers=_cors_headers())
+
+        # 1. Parse pos_order_id from form-data or kw
+        raw_order_id = (
+            request.httprequest.form.get("pos_order_id")
+            or kw.get("pos_order_id")
+            or request.httprequest.form.get("order_id")
+            or kw.get("order_id")
+        )
+
+        # 2. Extract evidence file (XFile / multipart file upload)
+        evidence_file = (
+            request.httprequest.files.get("evidence")
+            or request.httprequest.files.get("file")
+            or request.httprequest.files.get("photo")
+        )
+
+        evidence_data = None
+        if evidence_file:
+            file_bytes = evidence_file.read()
+            if not file_bytes:
+                return _json_err("Uploaded evidence file is empty", 400)
+            evidence_data = base64.b64encode(file_bytes).decode("utf-8")
+        else:
+            # Fallback: check if base64 text was supplied in form-data
+            raw_evidence = (
+                request.httprequest.form.get("evidence")
+                or kw.get("evidence")
+                or request.httprequest.form.get("photo")
+                or kw.get("photo")
+            )
+            if raw_evidence and isinstance(raw_evidence, str):
+                if "," in raw_evidence and "base64" in raw_evidence:
+                    raw_evidence = raw_evidence.split(",", 1)[1]
+                evidence_data = raw_evidence.strip()
+
+        # Fallback to json if multipart form-data wasn't parsed
+        if not raw_order_id and not evidence_data:
+            try:
+                body_bytes = request.httprequest.get_data()
+                if body_bytes:
+                    payload = json.loads(body_bytes.decode("utf-8"))
+                    if isinstance(payload, dict):
+                        raw_order_id = payload.get("pos_order_id") or payload.get("order_id")
+                        raw_ev = payload.get("evidence") or payload.get("photo")
+                        if raw_ev and isinstance(raw_ev, str):
+                            if "," in raw_ev and "base64" in raw_ev:
+                                raw_ev = raw_ev.split(",", 1)[1]
+                            evidence_data = raw_ev.strip()
+            except Exception:
+                pass
+
+        order_id, error = _parse_int(raw_order_id, "pos_order_id", required=True)
+        if error:
+            return _json_err(error, 400)
+
+        if not evidence_data:
+            return _json_err("Missing required form-data field 'evidence' (photo file)", 400)
+
+        repo = PosOrderRepository(request.env)
+        use_case = SaveOrderEvidenceUseCase(repo)
+        return _json_result(use_case.execute(order_id, evidence_data))

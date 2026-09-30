@@ -287,3 +287,34 @@ class PosOrderRepository:
 
         line.set_kitchen_state(target, source)
         return self._order_entity(order.with_company(order.company_id))
+
+    def save_evidence_and_mark_paid(self, order_id, evidence_data):
+        """Save payment evidence photo and transition POS order to 'paid' state."""
+        order = self.env["pos.order"].sudo().browse(order_id)
+        if not order.exists():
+            raise UserError(f"POS Order ID {order_id} does not exist")
+
+        vals = {"evidence": evidence_data}
+
+        if order.state != "paid":
+            if order.state == "draft":
+                try:
+                    from .checkout_repository import CheckoutRepository
+                    checkout_repo = CheckoutRepository(self.env)
+                    checkout_repo.mark_order_as_paid(order.id)
+                except Exception:
+                    vals["state"] = "paid"
+                    if "amount_paid" in order._fields and not order.amount_paid:
+                        vals["amount_paid"] = order.amount_total
+            else:
+                vals["state"] = "paid"
+
+        order.write(vals)
+
+        # Close any linked poskas.bill if model exists
+        if "poskas.bill" in self.env:
+            bills = self.env["poskas.bill"].sudo().search([("pos_order_id", "=", order.id)])
+            if bills:
+                bills.write({"state": "paid"})
+
+        return order
