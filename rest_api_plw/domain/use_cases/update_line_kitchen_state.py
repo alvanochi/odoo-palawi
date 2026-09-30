@@ -37,3 +37,36 @@ class UpdateLineKitchenStateUseCase:
             return {"success": False, "error": str(e), "status": 400}
         except Exception as e:
             return {"success": False, "error": str(e), "status": 500}
+
+
+class UpdateBillLineKitchenStateUseCase:
+    """Versi open bill dari perpindahan di atas.
+
+    Baris bill hidup di tabel lain dengan ID sendiri, jadi ia punya endpoint
+    sendiri: satu route yang menerima kedua jenis ID akan menulis ke pesanan
+    yang salah begitu ada dua record berbeda dengan ID yang kebetulan sama.
+    """
+
+    def __init__(self, bill_repo):
+        self.bill_repo = bill_repo
+
+    def execute(self, bill_id, line_id, target_state, source='staff'):
+        if not target_state:
+            return {
+                "success": False,
+                "error": "Missing required parameter 'state' (or 'action')",
+                "status": 400,
+            }
+
+        try:
+            bill = self.bill_repo.set_line_kitchen_state(
+                bill_id, line_id, target_state, source or 'staff')
+            return {
+                "success": True,
+                "message": f"Kitchen state updated to '{target_state}'",
+                "data": bill.to_dict(),
+            }
+        except (UserError, AccessError, ValidationError) as e:
+            return {"success": False, "error": str(e), "status": 400}
+        except Exception as e:
+            return {"success": False, "error": str(e), "status": 500}

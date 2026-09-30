@@ -12,9 +12,15 @@ from .utils import (
 from ..repositories.pos_order_repository import (
     PosOrderRepository, KITCHEN_STATES, KITCHEN_PENDING_STATES,
 )
+from ..repositories.poskas_bill_repository import PoskasBillRepository, BILL_STATES
 from ..repositories.pos_config_repository import PosConfigRepository
-from ..domain.use_cases.get_pos_orders import GetPosOrdersUseCase, GetPosOrderDetailUseCase
-from ..domain.use_cases.update_line_kitchen_state import UpdateLineKitchenStateUseCase
+from ..domain.use_cases.get_pos_orders import (
+    GetPosOrdersUseCase, GetPosOrderDetailUseCase, GetBillOrderDetailUseCase,
+    ORDER_SOURCES,
+)
+from ..domain.use_cases.update_line_kitchen_state import (
+    UpdateLineKitchenStateUseCase, UpdateBillLineKitchenStateUseCase,
+)
 
 
 class PosOrderController(http.Controller):
@@ -63,7 +69,15 @@ class PosOrderController(http.Controller):
         kitchen_states = _parse_csv(
             raw_kitchen_state or (None if explicit else ",".join(KITCHEN_PENDING_STATES)))
 
-        use_case = GetPosOrdersUseCase(PosOrderRepository(request.env))
+        # 'source' memilih dari mana hidangan berasal: pesanan yang sudah
+        # checkout ('pos_order'), open bill yang belum jadi pos.order ('bill'),
+        # atau keduanya. Setiap pesanan dan setiap barisnya membawa flag yang
+        # sama di payload.
+        sources = _parse_csv(kw.get("source"), default=ORDER_SOURCES)
+        bill_states = _parse_csv(kw.get("bill_state"), default=BILL_STATES)
+
+        use_case = GetPosOrdersUseCase(
+            PosOrderRepository(request.env), PoskasBillRepository(request.env))
         return _json_result(use_case.execute(
             session_id=session_id,
             pos_config_id=pos_config_id,
@@ -72,6 +86,8 @@ class PosOrderController(http.Controller):
             limit=limit,
             offset=offset,
             kitchen_states=kitchen_states,
+            sources=sources,
+            bill_states=bill_states,
         ))
 
     @http.route("/api/v2/pos/kitchen/orders", type="http", auth="none",
@@ -120,36 +136,38 @@ class PosOrderController(http.Controller):
             tz_name=_api_timezone(),
         )
 
-        session_data = session_context.get("session")
-        if not session_context.get("can_create_order") or not session_data:
-            return _json_result({
-                "success": True,
-                "data": {
-                    "pos_config_id": pos_config_id,
-                    "session": None,
-                    "orders": [],
-                    "reason": session_context.get("reason"),
-                    "open_session_count": session_context.get("open_session_count", 0),
-                    "stale_session_ids": session_context.get("stale_session_ids", []),
-                    "filters": {
-                        "state": KITCHEN_STATES,
-                        "kitchen_state": KITCHEN_PENDING_STATES,
-                    },
-                },
-            })
-
         states = _parse_csv(kw.get("state") or ",".join(KITCHEN_STATES))
         kitchen_states = _parse_csv(
             kw.get("kitchen_state") or ",".join(KITCHEN_PENDING_STATES))
-        orders_result = GetPosOrdersUseCase(
-            PosOrderRepository(request.env)).execute(
-                session_id=session_data["id"],
-                states=states,
-                table_id=table_id,
-                limit=limit,
-                offset=offset,
-                kitchen_states=kitchen_states,
-            )
+        sources = _parse_csv(kw.get("source"), default=ORDER_SOURCES)
+        bill_states = _parse_csv(kw.get("bill_state"), default=BILL_STATES)
+
+        session_data = session_context.get("session")
+        has_session = bool(session_context.get("can_create_order") and session_data)
+
+        # Open bill tidak hidup di dalam pos.session: ia dibuat sebelum
+        # checkout dan bertahan melewati pergantian session. Karena itu session
+        # yang belum terbuka hanya mematikan sumber 'pos_order' -- antrean bill
+        # tetap dikirim, kalau tidak dapur kehilangan pesanan yang sedang
+        # dimasaknya hanya karena kasir menutup POS.
+        active_sources = sources if has_session else [
+            source for source in sources if source == 'bill']
+
+        orders_result = {"success": True, "data": []}
+        if active_sources:
+            orders_result = GetPosOrdersUseCase(
+                PosOrderRepository(request.env),
+                PoskasBillRepository(request.env)).execute(
+                    session_id=session_data["id"] if has_session else None,
+                    pos_config_id=pos_config_id,
+                    states=states,
+                    table_id=table_id,
+                    limit=limit,
+                    offset=offset,
+                    kitchen_states=kitchen_states,
+                    sources=active_sources,
+                    bill_states=bill_states,
+                )
         if not orders_result.get("success"):
             return _json_result(orders_result)
 
@@ -157,14 +175,17 @@ class PosOrderController(http.Controller):
             "success": True,
             "data": {
                 "pos_config_id": pos_config_id,
-                "session": session_data,
+                "session": session_data if has_session else None,
                 "orders": orders_result["data"],
-                "reason": None,
-                "open_session_count": session_context.get("open_session_count", 1),
+                "reason": None if has_session else session_context.get("reason"),
+                "open_session_count": session_context.get(
+                    "open_session_count", 1 if has_session else 0),
                 "stale_session_ids": session_context.get("stale_session_ids", []),
                 "filters": {
                     "state": states,
                     "kitchen_state": kitchen_states,
+                    "source": active_sources,
+                    "bill_state": bill_states,
                 },
             },
         })
@@ -250,3 +271,36 @@ class PosOrderController(http.Controller):
 
         use_case = UpdateLineKitchenStateUseCase(PosOrderRepository(request.env))
         return _json_result(use_case.execute(order_id, line_id, target_state, source))
+
+    # -- open bill --------------------------------------------------------
+    #
+    # Bill punya route sendiri, bukan menumpang route pos.order: ID-nya berasal
+    # dari tabel lain, dan satu route yang menerima keduanya akan menulis ke
+    # pesanan yang salah begitu ada dua record dengan ID kebetulan sama.
+
+    @http.route("/api/v2/pos/bills/<int:bill_id>", type="http", auth="none",
+                methods=["GET", "OPTIONS"], csrf=False)
+    @require_api_key_plw
+    def get_bill_detail(self, bill_id, **kw):
+        if request.httprequest.method == "OPTIONS":
+            return http.Response(status=204, headers=_cors_headers())
+
+        use_case = GetBillOrderDetailUseCase(PoskasBillRepository(request.env))
+        return _json_result(use_case.execute(bill_id))
+
+    @http.route("/api/v2/pos/bills/<int:bill_id>/lines/<int:line_id>/state",
+                type="http", auth="none", methods=["PUT", "POST", "OPTIONS"], csrf=False)
+    @require_api_key_plw
+    def update_bill_line_kitchen_state(self, bill_id, line_id, **kw):
+        if request.httprequest.method == "OPTIONS":
+            return http.Response(status=204, headers=_cors_headers())
+
+        body, error = _parse_json_body()
+        if error:
+            return _json_err(error, 400)
+
+        target_state = body.get("state") or body.get("action")
+        source = body.get("source") or "staff"
+
+        use_case = UpdateBillLineKitchenStateUseCase(PoskasBillRepository(request.env))
+        return _json_result(use_case.execute(bill_id, line_id, target_state, source))

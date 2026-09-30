@@ -230,3 +230,122 @@ class ProductRepository:
             ))
 
         return category_list
+
+    def get_product_detail(self, product_id, base_url=""):
+        template = self.env["product.template"].sudo().browse(product_id)
+        if not template.exists():
+            return None
+
+        # Resolve image URL if image exists on template
+        image_url = ""
+        if template.image_128:
+            image_url = f"{base_url}/api/pos/product/image/{template.id}"
+
+        # Resolve fields
+        category_data = {
+            "id": template.categ_id.id,
+            "name": template.categ_id.name
+        } if template.categ_id else None
+
+        company_data = {
+            "id": template.company_id.id,
+            "name": template.company_id.name
+        } if template.company_id else None
+
+        # Resolve selection labels
+        try:
+            fields_def = template.fields_get(allfields=['type', 'invoice_policy'])
+            type_label = dict(fields_def.get('type', {}).get('selection', [])).get(template.type, template.type or "")
+            invoice_policy_label = dict(fields_def.get('invoice_policy', {}).get('selection', [])).get(template.invoice_policy, template.invoice_policy or "")
+        except Exception:
+            type_label = template.type or ""
+            invoice_policy_label = template.invoice_policy or ""
+
+        # Sales taxes
+        sales_taxes = [
+            {"id": tax.id, "name": tax.name} for tax in template.taxes_id
+        ]
+
+        general_information = {
+            "id": template.id,
+            "name": template.name,
+            "product_type": template.type or "",
+            "product_type_label": type_label,
+            "invoicing_policy": template.invoice_policy or "",
+            "invoicing_policy_label": invoice_policy_label,
+            "track_inventory": bool(template.is_storable),
+            "sales_price": template.list_price or 0.0,
+            "sales_taxes": sales_taxes,
+            "cost": template.standard_price or 0.0,
+            "category": category_data,
+            "reference": template.default_code or "",
+            "barcode": template.barcode or "",
+            "company": company_data,
+            "image_url": image_url
+        }
+
+        # Resolve attributes
+        attributes_data = []
+        for line in template.attribute_line_ids:
+            attributes_data.append({
+                "id": line.attribute_id.id,
+                "name": line.attribute_id.name,
+                "values": [{"id": val.id, "name": val.name} for val in line.value_ids]
+            })
+
+        # Resolve variants
+        variants_data = []
+        for variant in template.product_variant_ids:
+            variants_data.append({
+                "id": variant.id,
+                "display_name": variant.display_name or variant.name,
+                "price": variant.lst_price or variant.list_price or 0.0,
+                "stock_qty": variant.qty_available or 0.0
+            })
+
+        return {
+            "id": template.id,
+            "name": template.name,
+            "general_information": general_information,
+            "attributes": attributes_data,
+            "variants": variants_data
+        }
+
+    def get_products_addons(self, product_ids, base_url=""):
+        if not product_ids:
+            return []
+
+        products = self.env["product.product"].sudo().browse(product_ids).exists()
+        
+        result = []
+        for product in products:
+            if not product.addon_product_ids:
+                continue
+
+            addons_data = []
+            for addon in product.addon_product_ids:
+                categ = addon.pos_categ_ids[:1]
+                category_id = categ.id if categ else None
+                category_name = categ.display_name if categ else None
+
+                image_url = ""
+                if addon.image_128:
+                    image_url = f"{base_url}/api/pos/product/image/{addon.product_tmpl_id.id}"
+
+                addons_data.append({
+                    "id": addon.id,
+                    "name": addon.display_name or addon.name,
+                    "price": addon.lst_price or addon.list_price or 0.0,
+                    "qty": 1,
+                    "categoryId": category_id,
+                    "category": category_name,
+                    "imageUrl": image_url
+                })
+
+            result.append({
+                "id": product.id,
+                "name": product.display_name or product.name,
+                "addons": addons_data
+            })
+
+        return result

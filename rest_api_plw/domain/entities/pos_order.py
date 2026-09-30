@@ -6,8 +6,14 @@ class PosOrderLineEntity:
                  estimated_time, attributes, customer_note, note,
                  is_reward_line, reward_id, coupon_id,
                  kitchen_state=None, cooking_started_at=None,
-                 ready_at=None, ready_source=None, is_kitchen=True):
+                 ready_at=None, ready_source=None, source='pos_order'):
         self.id = id
+        # 'pos_order' atau 'bill'. Keduanya masuk antrean dapur yang sama,
+        # tetapi hanya baris pos.order yang sudah terikat pada satu order yang
+        # dibayar; baris bill masih bisa berubah sampai kasir menutupnya.
+        # ID keduanya berasal dari tabel berbeda, jadi frontend harus memakai
+        # 'uid' (bukan 'id') sebagai kunci daftar.
+        self.source = source
         self.product_id = product_id
         self.product_tmpl_id = product_tmpl_id
         self.product_name = product_name
@@ -24,11 +30,6 @@ class PosOrderLineEntity:
         self.is_reward_line = is_reward_line
         self.reward_id = reward_id
         self.coupon_id = coupon_id
-        # Dari checkbox 'Is Kitchen' pada produk. False berarti baris ini
-        # tidak perlu disiapkan dapur (mis. air mineral kemasan) -- baris
-        # tetap tercantum di sini untuk keperluan lain (struk, rekonsiliasi),
-        # tapi dikecualikan dari waktu masak dan ringkasan status dapur.
-        self.is_kitchen = is_kitchen
         # Status memasak per hidangan; None bila modul dapur belum terpasang
         self.kitchen_state = kitchen_state
         self.cooking_started_at = cooking_started_at
@@ -38,6 +39,8 @@ class PosOrderLineEntity:
     def to_dict(self):
         return {
             "id": self.id,
+            "uid": "%s-%s" % (self.source, self.id),
+            "source": self.source,
             "product_id": self.product_id,
             "product_tmpl_id": self.product_tmpl_id,
             "product_name": self.product_name,
@@ -54,7 +57,6 @@ class PosOrderLineEntity:
             "is_reward_line": self.is_reward_line,
             "reward_id": self.reward_id,
             "coupon_id": self.coupon_id,
-            "is_kitchen": self.is_kitchen,
             "kitchen_state": self.kitchen_state,
             "cooking_started_at": self.cooking_started_at,
             "ready_at": self.ready_at,
@@ -68,8 +70,13 @@ class PosOrderEntity:
                  estimated_time_max, estimated_time_total,
                  amount_total, amount_tax, amount_paid, company_id,
                  session, config, partner, table, pricelist, general_note, lines,
-                 kitchen_state=None):
+                 kitchen_state=None, source='pos_order', bill=None):
         self.id = id
+        # Dari mana antrean ini berasal: 'pos_order' (checkout sudah jalan) atau
+        # 'bill' (open bill, pos.order belum dibuat). Nilai 'bill' berisi detail
+        # khas bill -- DP, waiters, tipe order -- dan null untuk pos.order.
+        self.source = source
+        self.bill = bill
         self.name = name
         self.pos_reference = pos_reference
         self.tracking_number = tracking_number
@@ -99,6 +106,9 @@ class PosOrderEntity:
     def to_dict(self):
         return {
             "id": self.id,
+            "uid": "%s-%s" % (self.source, self.id),
+            "source": self.source,
+            "bill": self.bill,
             "name": self.name,
             "pos_reference": self.pos_reference,
             "tracking_number": self.tracking_number,
