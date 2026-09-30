@@ -99,6 +99,8 @@ class CompanyPosConfigController(http.Controller):
                     'soc_tiktok': company.soc_tiktok or '',
                     'soc_fb': company.soc_fb or '',
                     'qris_submerchant_id': company.qris_submerchant_id or '',
+                    'qris_min_amount': company.qris_min_amount or 10000,
+                    'payment_gateway': company.payment_gateway or 'paper',
                     'ip_printer_external': company.ip_printer_external or '',
                     'POS_DISCOUNT_PRODUCT_ID': company.pos_discount_product_id or '',
                     'wifi_profiles_json': wifi_profiles,

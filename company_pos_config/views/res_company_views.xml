@@ -49,7 +49,9 @@
                             <field name="soc_fb"/>
                         </group>
                         <group string="Hardware &amp; Integrations">
+                            <field name="payment_gateway"/>
                             <field name="qris_submerchant_id"/>
+                            <field name="qris_min_amount"/>
                             <field name="pos_discount_product_id"/>
                             <field name="ip_printer_external"/>
                             <field name="printer_paper_width"/>
