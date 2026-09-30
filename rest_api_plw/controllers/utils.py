@@ -131,3 +131,61 @@ def _api_timezone():
     so we cannot rely on the request user's timezone here.
     """
     return request.env['ir.config_parameter'].sudo().get_param('api_pos_timezone') or 'Asia/Jakarta'
+
+
+def compress_image_bytes(image_bytes, max_bytes=1024 * 1024):
+    """Compress image bytes so the size does not exceed max_bytes (default 1MB).
+
+    If the payload is not an image or fails to process, returns the original bytes.
+    """
+    if not image_bytes or len(image_bytes) <= max_bytes:
+        return image_bytes
+
+    try:
+        import io
+        from PIL import Image
+    except ImportError:
+        return image_bytes
+
+    try:
+        image = Image.open(io.BytesIO(image_bytes))
+    except Exception:
+        return image_bytes
+
+    resample = getattr(getattr(Image, 'Resampling', None), 'LANCZOS', getattr(Image, 'ANTIALIAS', None))
+
+    # Convert non-RGB modes (RGBA, LA, P, CMYK) to RGB for JPEG encoding
+    if image.mode in ('RGBA', 'LA', 'P'):
+        background = Image.new('RGB', image.size, (255, 255, 255))
+        if image.mode == 'P':
+            image = image.convert('RGBA')
+        mask = image.split()[-1] if 'A' in image.mode else None
+        background.paste(image, mask=mask)
+        image = background
+    elif image.mode != 'RGB':
+        image = image.convert('RGB')
+
+    # Initial downscale if dimensions are very large (e.g. mobile photo > 1920px)
+    max_dim = 1920
+    if max(image.size) > max_dim:
+        image.thumbnail((max_dim, max_dim), resample)
+
+    # 1. First phase: adjust JPEG quality
+    compressed = image_bytes
+    for quality in (85, 75, 65, 50, 35):
+        out = io.BytesIO()
+        image.save(out, format='JPEG', quality=quality, optimize=True)
+        compressed = out.getvalue()
+        if len(compressed) <= max_bytes:
+            return compressed
+
+    # 2. Second phase: downscale dimensions until under max_bytes
+    while len(compressed) > max_bytes and max(image.size) > 300:
+        new_w = max(1, int(image.width * 0.75))
+        new_h = max(1, int(image.height * 0.75))
+        image = image.resize((new_w, new_h), resample)
+        out = io.BytesIO()
+        image.save(out, format='JPEG', quality=60, optimize=True)
+        compressed = out.getvalue()
+
+    return compressed

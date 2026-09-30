@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'REST API Palawi (PLW)',
-    'version': '1.4.0',
+    'version': '1.4.1',
     'summary': 'Palawi Odoo REST API using Clean Architecture',
     'description': """
         Clean Architecture implementation of Odoo REST APIs for the Palawi Project.
@@ -13,6 +13,7 @@
         - POST /api/auth/otp/request   -> Request OTP for employee
         - POST /api/auth/otp/verify    -> Verify OTP and complete login
         - POST /api/pos/order/refund    -> Refund a paid POS order with selected payment method
+        - POST /pos-order/evindence     -> Upload evidence photo (form-data) and mark order as paid
         - GET  /api/v2/pos/kitchen/orders -> Kitchen queue: pos.order + open bill (flag 'source')
         - GET  /api/v2/pos/bills/<id>     -> One open bill in kitchen-order shape
         - PUT  /api/v2/pos/bills/<id>/lines/<line_id>/state -> Move one bill dish along the kitchen states
@@ -42,6 +43,7 @@
         'views/res_company_views.xml',
         'views/restaurant_floor_views.xml',
         'views/product_views.xml',
+        'views/pos_order_views.xml',
     ],
     'installable': True,
     'application': False,
