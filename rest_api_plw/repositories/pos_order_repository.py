@@ -33,13 +33,6 @@ class PosOrderRepository:
         # estimated_time comes from the product_estimated_time addon; guard in
         # case that addon is not installed on a given database.
         estimated_time = getattr(template, 'estimated_time', 0) or 0
-        # is_kitchen datang dari checkbox pada produk. Default True bila field
-        # belum ada (mis. modul belum di-upgrade) -- kosong harus dibaca
-        # sebagai "tetap tampil di dapur seperti sebelumnya", bukan
-        # sebaliknya, supaya upgrade tidak diam-diam menyembunyikan tiket.
-        is_kitchen = getattr(template, 'is_kitchen', True)
-        if is_kitchen is None:
-            is_kitchen = True
 
         return PosOrderLineEntity(
             id=line.id,
@@ -59,7 +52,6 @@ class PosOrderRepository:
             is_reward_line=bool(getattr(line, 'is_reward_line', False)),
             reward_id=line.reward_id.id if getattr(line, 'reward_id', False) else None,
             coupon_id=line.coupon_id.id if getattr(line, 'coupon_id', False) else None,
-            is_kitchen=is_kitchen,
             # getattr: field ini datang dari pos_order_extra_states, jadi API
             # tetap jalan (mengirim null) bila modul itu belum terpasang.
             # Record lama dapat masih NULL ketika addon kitchen dipasang pada
@@ -81,13 +73,10 @@ class PosOrderRepository:
     def _order_entity(self, order):
         line_entities = [self._line_entity(line) for line in order.lines]
 
-        # Reward lines are discounts/freebies, not dishes to cook. Non-kitchen
-        # lines (checkbox 'Is Kitchen' kosong -- mis. air mineral kemasan)
-        # juga bukan hidangan: keduanya tidak boleh ikut menentukan berapa
-        # lama pesanan akan siap.
+        # Reward lines are discounts/freebies, not dishes to cook.
         cooking_times = [
             line.estimated_time for line in line_entities
-            if not line.is_reward_line and line.is_kitchen and line.estimated_time
+            if not line.is_reward_line and line.estimated_time
         ]
         estimated_time_max = max(cooking_times) if cooking_times else 0
         estimated_time_total = sum(cooking_times)
@@ -163,17 +152,10 @@ class PosOrderRepository:
 
         Baris reward dikecualikan: potongan harga bukan makanan, dan sejak
         v2.1.0 baris seperti itu memang lahir langsung 'served'.
-
-        Baris non-dapur (is_kitchen=False) juga dikecualikan dengan alasan
-        yang sama pentingnya: baris itu tidak pernah disentuh siapa pun di
-        dapur, jadi kitchen_state-nya akan diam selamanya di 'pending'. Kalau
-        ikut dihitung, satu botol air mineral yang menemani nasi goreng bisa
-        membuat seluruh tiket terlihat belum dimasak padahal makanannya sudah
-        siap sejak lama.
         """
         states = [
             line.kitchen_state for line in line_entities
-            if not line.is_reward_line and line.is_kitchen and line.kitchen_state
+            if not line.is_reward_line and line.kitchen_state
         ]
         if not states:
             return None
@@ -216,12 +198,6 @@ class PosOrderRepository:
         # that module is absent the filter is simply dropped, so this endpoint
         # keeps serving orders instead of failing with a raw SQL error.
         if kitchen_states and 'kitchen_state' in self.env["pos.order.line"]._fields:
-            # is_kitchen datang dari checkbox pada produk. Kalau field itu
-            # belum ada (modul belum di-upgrade), filternya dilewati -- sama
-            # seperti guard kitchen_state di atas -- supaya endpoint tetap
-            # jalan alih-alih gagal dengan error SQL mentah.
-            has_is_kitchen = 'is_kitchen' in self.env['product.template']._fields
-
             # NULL dari baris historis dibaca sebagai pending oleh model/API.
             # Domain harus mempunyai arti yang sama, kalau tidak order lama
             # kadang hilang walaupun serialisasinya menyebut pending.
@@ -235,13 +211,6 @@ class PosOrderRepository:
             else:
                 domain.append(('lines.is_reward_line', '=', False))
                 domain.append(("lines.kitchen_state", "in", kitchen_states))
-
-            if has_is_kitchen:
-                # Tanpa ini, order yang seluruh isinya produk non-dapur (mis.
-                # hanya air mineral kemasan) tetap masuk antrean sebagai
-                # tiket kosong -- baris satu-satunya yang belum "selesai"
-                # memang tidak akan pernah disentuh dapur.
-                domain.append(('lines.product_id.is_kitchen', '=', True))
         if table_id:
             domain.append(("table_id", "=", table_id))
 
@@ -250,6 +219,13 @@ class PosOrderRepository:
             domain, order="date_order asc, id asc", limit=limit or None, offset=offset or 0
         )
         return [self._order_entity(order) for order in orders]
+
+    def config_id_for_session(self, session_id):
+        """POS config di balik satu session; dipakai untuk mencari open bill."""
+        session = self.env["pos.session"].sudo().browse(session_id)
+        if not session.exists():
+            raise UserError(f"POS Session ID {session_id} does not exist")
+        return session.config_id.id
 
     def find_order(self, order_id):
         order = self.env["pos.order"].sudo().browse(order_id)

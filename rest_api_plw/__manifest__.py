@@ -13,13 +13,9 @@
         - POST /api/auth/otp/request   -> Request OTP for employee
         - POST /api/auth/otp/verify    -> Verify OTP and complete login
         - POST /api/pos/order/refund    -> Refund a paid POS order with selected payment method
-
-        Product:
-        - product.template.is_kitchen -> checkbox (default True) menentukan
-          apakah baris pesanan produk ini muncul di layar dapur / KDS. Produk
-          yang tidak perlu diproses dapur (air mineral kemasan, barang retail)
-          dikecualikan dari waktu masak dan status dapur, dan order yang
-          seluruh isinya produk non-dapur tidak lagi masuk antrean KDS.
+        - GET  /api/v2/pos/kitchen/orders -> Kitchen queue: pos.order + open bill (flag 'source')
+        - GET  /api/v2/pos/bills/<id>     -> One open bill in kitchen-order shape
+        - PUT  /api/v2/pos/bills/<id>/lines/<line_id>/state -> Move one bill dish along the kitchen states
     """,
     'category': 'Technical',
     'author': 'HKR',
@@ -37,7 +33,6 @@
         'views/res_users_views.xml',
         'views/res_company_views.xml',
         'views/restaurant_floor_views.xml',
-        'views/product_views.xml',
     ],
     'installable': True,
     'application': False,
