@@ -46,6 +46,12 @@ class PoskasBillRepository:
         # estimated_time berasal dari addon product_estimated_time; dijaga
         # kalau addon itu tidak terpasang di suatu database.
         estimated_time = getattr(template, 'estimated_time', 0) or 0
+        # is_kitchen datang dari checkbox pada produk (rest_api_plw). Kosong
+        # dibaca True -- sama seperti di pos_order_repository -- supaya
+        # upgrade tidak diam-diam menyembunyikan tiket dari dapur.
+        is_kitchen = getattr(template, 'is_kitchen', True)
+        if is_kitchen is None:
+            is_kitchen = True
 
         return PosOrderLineEntity(
             id=line.id,
@@ -70,6 +76,7 @@ class PoskasBillRepository:
             is_reward_line=False,
             reward_id=None,
             coupon_id=None,
+            is_kitchen=is_kitchen,
             kitchen_state=(
                 getattr(line, 'kitchen_state', None) or 'pending'
             ) if 'kitchen_state' in line._fields else None,
@@ -106,8 +113,11 @@ class PoskasBillRepository:
     def _bill_entity(self, bill):
         line_entities = [self._line_entity(line) for line in bill.line_ids]
 
+        # Produk non-dapur (mis. air mineral kemasan) tidak boleh ikut
+        # menentukan estimasi waktu siap -- sama seperti di pos_order.
         cooking_times = [
-            line.estimated_time for line in line_entities if line.estimated_time
+            line.estimated_time for line in line_entities
+            if line.is_kitchen and line.estimated_time
         ]
         estimated_time_max = max(cooking_times) if cooking_times else 0
         estimated_time_total = sum(cooking_times)
@@ -211,6 +221,12 @@ class PoskasBillRepository:
                 ])
             else:
                 domain.append(("line_ids.kitchen_state", "in", kitchen_states))
+
+            # Sama seperti pos_order_repository.find_orders: bill yang
+            # seluruh isinya produk non-dapur tidak boleh muncul sebagai
+            # tiket kosong di layar dapur.
+            if 'is_kitchen' in self.env['product.template']._fields:
+                domain.append(('line_ids.product_id.is_kitchen', '=', True))
 
         if table_id:
             domain.append(("table_id", "=", table_id))
