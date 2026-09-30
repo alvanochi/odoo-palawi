@@ -85,3 +85,16 @@ class TestPosOrderEvidence(TransactionCase):
         self.assertEqual(res_success['data']['state'], 'paid')
         self.assertEqual(res_success['data']['pos_order_id'], order.id)
         self.assertEqual(order.state, 'paid')
+
+    def test_compress_image_bytes(self):
+        """Image compression should ensure file size is within 1MB."""
+        import io
+        from PIL import Image
+        from ..controllers.utils import compress_image_bytes
+
+        # Small image (less than 1MB) remains untouched
+        small_img = Image.new('RGB', (100, 100), color=(255, 0, 0))
+        buf = io.BytesIO()
+        small_img.save(buf, format='JPEG')
+        small_bytes = buf.getvalue()
+        self.assertLessEqual(len(compress_image_bytes(small_bytes)), 1024 * 1024)

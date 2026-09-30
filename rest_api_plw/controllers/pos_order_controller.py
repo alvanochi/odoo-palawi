@@ -10,6 +10,7 @@ from odoo.addons.bus.websocket import WebsocketConnectionHandler
 from .utils import (
     require_api_key_plw, _cors_headers, _json_err, _json_result,
     _parse_int, _parse_csv, _parse_json_body, _api_timezone,
+    compress_image_bytes,
 )
 from ..repositories.pos_order_repository import (
     PosOrderRepository, KITCHEN_STATES, KITCHEN_PENDING_STATES,
@@ -335,7 +336,8 @@ class PosOrderController(http.Controller):
             file_bytes = evidence_file.read()
             if not file_bytes:
                 return _json_err("Uploaded evidence file is empty", 400)
-            evidence_data = base64.b64encode(file_bytes).decode("utf-8")
+            compressed_bytes = compress_image_bytes(file_bytes, max_bytes=1024 * 1024)
+            evidence_data = base64.b64encode(compressed_bytes).decode("utf-8")
         else:
             # Fallback: check if base64 text was supplied in form-data
             raw_evidence = (
@@ -347,7 +349,13 @@ class PosOrderController(http.Controller):
             if raw_evidence and isinstance(raw_evidence, str):
                 if "," in raw_evidence and "base64" in raw_evidence:
                     raw_evidence = raw_evidence.split(",", 1)[1]
-                evidence_data = raw_evidence.strip()
+                raw_evidence = raw_evidence.strip()
+                try:
+                    decoded = base64.b64decode(raw_evidence)
+                    compressed_bytes = compress_image_bytes(decoded, max_bytes=1024 * 1024)
+                    evidence_data = base64.b64encode(compressed_bytes).decode("utf-8")
+                except Exception:
+                    evidence_data = raw_evidence
 
         # Fallback to json if multipart form-data wasn't parsed
         if not raw_order_id and not evidence_data:
@@ -361,7 +369,13 @@ class PosOrderController(http.Controller):
                         if raw_ev and isinstance(raw_ev, str):
                             if "," in raw_ev and "base64" in raw_ev:
                                 raw_ev = raw_ev.split(",", 1)[1]
-                            evidence_data = raw_ev.strip()
+                            raw_ev = raw_ev.strip()
+                            try:
+                                decoded = base64.b64decode(raw_ev)
+                                compressed_bytes = compress_image_bytes(decoded, max_bytes=1024 * 1024)
+                                evidence_data = base64.b64encode(compressed_bytes).decode("utf-8")
+                            except Exception:
+                                evidence_data = raw_ev
             except Exception:
                 pass
 
