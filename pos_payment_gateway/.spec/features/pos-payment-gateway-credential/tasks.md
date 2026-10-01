@@ -1,0 +1,11 @@
+# Tasks — pos_payment_gateway
+- [x] 1. Manifest & skeleton
+- [x] 2. Model `pos.payment.gateway` + data Paper.id (REQ-2, 4)
+- [x] 3. Model `pos.payment.gateway.credential` + param + constraints + index (REQ-1, 2, 3, 6)
+- [x] 4. Grup, ACL, record rule (REQ-5)
+- [x] 5. Views, actions, menu (REQ-5, 6)
+- [x] 6. Controller API (REQ-7, 8)
+- [x] 7. Helper `get_credential` + fallback env (REQ-9)
+- [x] 8. Tests model & API
+- [ ] 9. Ganti pembacaan env var di modul Paper existing → `get_credential(pos_config.id, "paper")`
+- [ ] 10. Setelah semua POS terisi: `fallback_env=False`, hapus env var dari server

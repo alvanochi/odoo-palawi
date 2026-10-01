@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="group_pos_payment_gateway_manager" model="res.groups">
+        <field name="name">Payment Gateway Credential Manager</field>
+        <field name="category_id" ref="base.module_category_sales_point_of_sale"/>
+        <field name="comment">Boleh mengelola payment gateway dan credential-nya (termasuk client secret) serta memanggil API credential.</field>
+    </record>
+
+    <record id="pos_payment_gateway_credential_company_rule" model="ir.rule">
+        <field name="name">Payment Gateway Credential: multi-company</field>
+        <field name="model_id" ref="model_pos_payment_gateway_credential"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="pos_payment_gateway_credential_param_company_rule" model="ir.rule">
+        <field name="name">Payment Gateway Credential Param: multi-company</field>
+        <field name="model_id" ref="model_pos_payment_gateway_credential_param"/>
+        <field name="domain_force">['|', ('credential_id.company_id', '=', False), ('credential_id.company_id', 'in', company_ids)]</field>
+    </record>
+</odoo>

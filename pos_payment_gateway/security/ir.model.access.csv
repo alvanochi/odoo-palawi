@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_pos_payment_gateway_manager,pos.payment.gateway manager,model_pos_payment_gateway,group_pos_payment_gateway_manager,1,1,1,1
+access_pos_payment_gateway_credential_manager,pos.payment.gateway.credential manager,model_pos_payment_gateway_credential,group_pos_payment_gateway_manager,1,1,1,1
+access_pos_payment_gateway_credential_param_manager,pos.payment.gateway.credential.param manager,model_pos_payment_gateway_credential_param,group_pos_payment_gateway_manager,1,1,1,1

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="gateway_paper" model="pos.payment.gateway">
+        <field name="name">Paper.id</field>
+        <field name="code">paper</field>
+        <field name="sequence">10</field>
+        <field name="default_base_url">https://open-api.paper.id/api/v1</field>
+    </record>
+</odoo>
