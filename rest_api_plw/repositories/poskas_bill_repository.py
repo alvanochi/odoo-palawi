@@ -110,8 +110,12 @@ class PoskasBillRepository:
             }
         return None
 
-    def _bill_entity(self, bill):
+    def _bill_entity(self, bill, kitchen_only=False):
         line_entities = [self._line_entity(line) for line in bill.line_ids]
+        shown_lines = [
+            line for line in line_entities
+            if line.is_kitchen or not kitchen_only
+        ]
 
         # Produk non-dapur (mis. air mineral kemasan) tidak boleh ikut
         # menentukan estimasi waktu siap -- sama seperti di pos_order.
@@ -166,7 +170,7 @@ class PoskasBillRepository:
             pricelist=None,
             general_note=None,
             kitchen_state=PosOrderRepository._summarise_kitchen_state(line_entities),
-            lines=line_entities,
+            lines=shown_lines,
             bill={
                 "id": bill.id,
                 "customer_name": bill.name_customer or None,
@@ -236,7 +240,7 @@ class PoskasBillRepository:
             domain, order="create_date asc, id asc",
             limit=limit or None, offset=offset or 0,
         )
-        return [self._bill_entity(bill) for bill in bills]
+        return [self._bill_entity(bill, kitchen_only=True) for bill in bills]
 
     def find_bill(self, bill_id):
         if not self.is_available():

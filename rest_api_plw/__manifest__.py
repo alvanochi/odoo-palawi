@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'REST API Palawi (PLW)',
-    'version': '1.4.1',
+    'version': '1.5.0',
     'summary': 'Palawi Odoo REST API using Clean Architecture',
     'description': """
         Clean Architecture implementation of Odoo REST APIs for the Palawi Project.
@@ -18,13 +18,11 @@
         - GET  /api/v2/pos/bills/<id>     -> One open bill in kitchen-order shape
         - PUT  /api/v2/pos/bills/<id>/lines/<line_id>/state -> Move one bill dish along the kitchen states
 
-        Product:
-        - product.template.is_kitchen -> checkbox (default True) menentukan
-          apakah baris pesanan produk ini muncul di layar dapur / KDS -- baik
-          lewat pos.order maupun open bill. Produk yang tidak perlu diproses
-          dapur (air mineral kemasan, barang retail) dikecualikan dari waktu
-          masak dan status dapur, dan tiket yang seluruh isinya produk
-          non-dapur tidak lagi masuk antrean.
+        Kitchen:
+        - product.category.is_kitchen -> checkbox (default True) di kategori
+          produk. Produk mengikuti kategorinya (product.template.is_kitchen,
+          computed). Produk non-dapur dikecualikan dari antrean KDS -- baik
+          pos.order maupun open bill -- dan dari waktu masak serta status dapur.
     """,
     'category': 'Technical',
     'author': 'HKR',

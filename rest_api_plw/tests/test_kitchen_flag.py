@@ -27,6 +27,7 @@ from ..repositories.poskas_bill_repository import PoskasBillRepository
 
 
 def _product(env, name, price, is_kitchen=None):
+    """is_kitchen dikontrol dari kategori produk, bukan dari produknya."""
     vals = {
         'name': name,
         'type': 'consu',
@@ -34,7 +35,11 @@ def _product(env, name, price, is_kitchen=None):
         'available_in_pos': True,
     }
     if is_kitchen is not None:
-        vals['is_kitchen'] = is_kitchen
+        category = env['product.category'].create({
+            'name': 'Kategori Uji (dapur=%s)' % is_kitchen,
+            'is_kitchen': is_kitchen,
+        })
+        vals['categ_id'] = category.id
     return env['product.product'].create(vals)
 
 
@@ -44,8 +49,15 @@ class TestKitchenFlagField(TransactionCase):
 
     def test_is_kitchen_defaults_to_true(self):
         """Upgrade tidak boleh membuat produk lama diam-diam hilang dari dapur."""
-        product = _product(self.env, 'Produk Tanpa Nilai Eksplisit', 10000.0)
+        product = _product(self.env, 'Produk Tanpa Kategori', 10000.0)
         self.assertTrue(product.is_kitchen)
+
+    def test_product_follows_its_category(self):
+        product = _product(self.env, 'Produk Ikut Kategori', 10000.0, is_kitchen=False)
+        self.assertFalse(product.is_kitchen)
+        product.categ_id.is_kitchen = True
+        self.assertTrue(product.is_kitchen,
+                        "mengubah kategori harus ikut mengubah produk di dalamnya")
 
 
 @tagged('post_install', '-at_install')
@@ -102,6 +114,27 @@ class TestKitchenFlagOnPosOrder(TransactionCase):
 
         self.assertTrue(by_product[self.nasi.id]['is_kitchen'])
         self.assertFalse(by_product[self.air.id]['is_kitchen'])
+
+    def test_queue_payload_omits_non_kitchen_lines(self):
+        """Antrean dapur tidak boleh memuat baris non-dapur sama sekali."""
+        session = self._session()
+        order = self._order(session, [(self.nasi, 1, 35000.0), (self.air, 1, 8000.0)])
+
+        queued = self.repo.find_orders(
+            session_id=session.id, states=['paid'],
+            kitchen_states=['pending', 'cooking', 'ready'])
+        payload = queued[0].to_dict()
+
+        self.assertEqual([line['product_id'] for line in payload['lines']], [self.nasi.id])
+
+    def test_detail_payload_still_lists_every_line(self):
+        """Detail order tetap utuh untuk struk dan rekonsiliasi."""
+        session = self._session()
+        order = self._order(session, [(self.nasi, 1, 35000.0), (self.air, 1, 8000.0)])
+
+        payload = self.repo.find_order(order.id).to_dict()
+
+        self.assertEqual(len(payload['lines']), 2)
 
     def test_order_kitchen_state_ignores_non_kitchen_lines(self):
         """Air mineral yang tidak pernah disentuh dapur tidak boleh menyeret

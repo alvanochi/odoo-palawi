@@ -78,8 +78,14 @@ class PosOrderRepository:
     def _iso(value):
         return value.isoformat() if value else None
 
-    def _order_entity(self, order):
+    def _order_entity(self, order, kitchen_only=False):
         line_entities = [self._line_entity(line) for line in order.lines]
+        # Antrean dapur hanya memuat baris yang memang perlu dimasak; ringkasan
+        # di bawah tetap dihitung dari semua baris supaya konsisten.
+        shown_lines = [
+            line for line in line_entities
+            if line.is_kitchen or not kitchen_only
+        ]
 
         # Reward lines are discounts/freebies, not dishes to cook. Non-kitchen
         # lines (checkbox 'Is Kitchen' kosong -- mis. air mineral kemasan)
@@ -154,7 +160,7 @@ class PosOrderRepository:
             } if order.pricelist_id else None,
             general_note=order.general_note or None,
             kitchen_state=kitchen_state,
-            lines=line_entities,
+            lines=shown_lines,
         )
 
     @staticmethod
@@ -253,7 +259,7 @@ class PosOrderRepository:
         orders = self.env["pos.order"].sudo().with_company(company).search(
             domain, order="date_order asc, id asc", limit=limit or None, offset=offset or 0
         )
-        return [self._order_entity(order) for order in orders]
+        return [self._order_entity(order, kitchen_only=True) for order in orders]
 
     def config_id_for_session(self, session_id):
         """POS config di balik satu session; dipakai untuk mencari open bill."""
