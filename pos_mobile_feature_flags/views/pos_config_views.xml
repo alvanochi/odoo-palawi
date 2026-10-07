@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="pos_config_view_form_mobile_flags" model="ir.ui.view">
+        <field name="name">pos.config.form.mobile.flags</field>
+        <field name="model">pos.config</field>
+        <field name="inherit_id" ref="point_of_sale.pos_config_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <group string="Android App Feature Flags"
+                       groups="pos_mobile_feature_flags.group_pos_mobile_flag_manager">
+                    <field name="mobile_plan"/>
+                    <button name="action_apply_mobile_plan" type="object"
+                            string="Apply Plan Defaults" class="btn-secondary"
+                            invisible="not id"
+                            confirm="Reset all mobile flags of this POS to the selected plan?"/>
+                </group>
+                <group string="Master flags (module off = all its features off)"
+                       invisible="not id"
+                       groups="pos_mobile_feature_flags.group_pos_mobile_flag_manager">
+                    <field name="mobile_module_flag_ids" nolabel="1" colspan="2"
+                           context="{'list_view_ref': 'pos_mobile_feature_flags.pos_mobile_config_module_view_list'}"/>
+                </group>
+                <group string="Feature flags" invisible="not id"
+                       groups="pos_mobile_feature_flags.group_pos_mobile_flag_manager">
+                    <field name="mobile_flag_ids" nolabel="1" colspan="2"
+                           context="{'list_view_ref': 'pos_mobile_feature_flags.pos_mobile_config_flag_view_list'}"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

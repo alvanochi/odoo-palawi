@@ -1,0 +1,843 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <record id="module_account" model="pos.mobile.module">
+        <field name="code">account</field>
+        <field name="name">Akun &amp; Autentikasi</field>
+        <field name="sequence">10</field>
+        <field name="description">Registrasi, login (password/SSO/OTP), profil, password</field>
+    </record>
+    <record id="module_cashier" model="pos.mobile.module">
+        <field name="code">cashier</field>
+        <field name="name">Kasir / Order</field>
+        <field name="sequence">20</field>
+        <field name="description">Input order, open/close/split bill, void, pembayaran, special request</field>
+    </record>
+    <record id="module_printing" model="pos.mobile.module">
+        <field name="code">printing</field>
+        <field name="name">Cetak / Printer</field>
+        <field name="sequence">30</field>
+        <field name="description">Struk thermal, KOT, BOT, invoice fisik</field>
+    </record>
+    <record id="module_tax" model="pos.mobile.module">
+        <field name="code">tax</field>
+        <field name="name">Pajak &amp; Service Charge</field>
+        <field name="sequence">40</field>
+        <field name="description">Pajak &amp; service charge otomatis</field>
+    </record>
+    <record id="module_menu" model="pos.mobile.module">
+        <field name="code">menu</field>
+        <field name="name">Menu &amp; Produk</field>
+        <field name="sequence">50</field>
+        <field name="description">Info produk, harga, modifier, ketersediaan (sebagian Odoo)</field>
+    </record>
+    <record id="module_table" model="pos.mobile.module">
+        <field name="code">table</field>
+        <field name="name">Meja</field>
+        <field name="sequence">60</field>
+        <field name="description">Penempatan meja, denah, section, merge, pindah meja</field>
+    </record>
+    <record id="module_inventory" model="pos.mobile.module">
+        <field name="code">inventory</field>
+        <field name="name">Stok &amp; Inventori</field>
+        <field name="sequence">70</field>
+        <field name="description">Stok masuk/keluar/opname/adjustment, resep, HPP</field>
+    </record>
+    <record id="module_reporting" model="pos.mobile.module">
+        <field name="code">reporting</field>
+        <field name="name">Laporan</field>
+        <field name="sequence">80</field>
+        <field name="description">Laporan transaksi, produk, keuangan, korporat, export</field>
+    </record>
+    <record id="module_kds" model="pos.mobile.module">
+        <field name="code">kds</field>
+        <field name="name">Dapur (KDS)</field>
+        <field name="sequence">90</field>
+        <field name="description">Tampilan dapur real-time, status masak, antrian</field>
+    </record>
+    <record id="module_promo" model="pos.mobile.module">
+        <field name="code">promo</field>
+        <field name="name">Promo &amp; Diskon</field>
+        <field name="sequence">100</field>
+        <field name="description">Diskon manual, BOGO, combo, menu berbasis waktu</field>
+    </record>
+    <record id="module_customer" model="pos.mobile.module">
+        <field name="code">customer</field>
+        <field name="name">Pelanggan &amp; Loyalty</field>
+        <field name="sequence">110</field>
+        <field name="description">Membership, poin, voucher, riwayat, segmentasi</field>
+    </record>
+    <record id="module_digital_order" model="pos.mobile.module">
+        <field name="code">digital_order</field>
+        <field name="name">Order Digital / Self-Order</field>
+        <field name="sequence">120</field>
+        <field name="description">Self-order QR/URL, dine-in/takeaway, bayar online</field>
+    </record>
+    <record id="module_transaction" model="pos.mobile.module">
+        <field name="code">transaction</field>
+        <field name="name">Transaksi Lanjutan</field>
+        <field name="sequence">130</field>
+        <field name="description">Refund, e-invoice email/WhatsApp</field>
+    </record>
+    <record id="module_hr" model="pos.mobile.module">
+        <field name="code">hr</field>
+        <field name="name">SDM / HR</field>
+        <field name="sequence">140</field>
+        <field name="description">Absensi, shift, cuti, payroll, onboarding, ESS</field>
+    </record>
+    <record id="module_security" model="pos.mobile.module">
+        <field name="code">security</field>
+        <field name="name">Keamanan &amp; Akses</field>
+        <field name="sequence">150</field>
+        <field name="description">Role-based access, SSO, OTP, audit/activity log</field>
+    </record>
+    <record id="module_delivery" model="pos.mobile.module">
+        <field name="code">delivery</field>
+        <field name="name">Delivery &amp; Online</field>
+        <field name="sequence">160</field>
+        <field name="description">Marketplace, order web/mobile, tracking, driver</field>
+    </record>
+
+    <record id="feature_account_register" model="pos.mobile.feature">
+        <field name="module_id" ref="module_account"/>
+        <field name="name">Registrasi</field>
+        <field name="key">account.register</field>
+        <field name="sequence">1</field>
+        <field name="android_status">done</field>
+        <field name="plan_lite" eval="True"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_account_login" model="pos.mobile.feature">
+        <field name="module_id" ref="module_account"/>
+        <field name="name">Login</field>
+        <field name="key">account.login</field>
+        <field name="sequence">2</field>
+        <field name="android_status">done</field>
+        <field name="plan_lite" eval="True"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_account_forgot_password" model="pos.mobile.feature">
+        <field name="module_id" ref="module_account"/>
+        <field name="name">Lupa Password</field>
+        <field name="key">account.forgot_password</field>
+        <field name="sequence">3</field>
+        <field name="android_status">partial</field>
+        <field name="plan_lite" eval="True"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+        <field name="note">Flow utama di Back Office</field>
+    </record>
+    <record id="feature_account_reset_password" model="pos.mobile.feature">
+        <field name="module_id" ref="module_account"/>
+        <field name="name">Reset Password</field>
+        <field name="key">account.reset_password</field>
+        <field name="sequence">4</field>
+        <field name="android_status">partial</field>
+        <field name="plan_lite" eval="True"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+        <field name="note">Flow utama di Back Office</field>
+    </record>
+    <record id="feature_account_change_password" model="pos.mobile.feature">
+        <field name="module_id" ref="module_account"/>
+        <field name="name">Ubah Password</field>
+        <field name="key">account.change_password</field>
+        <field name="sequence">5</field>
+        <field name="android_status">partial</field>
+        <field name="plan_lite" eval="True"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_account_logout" model="pos.mobile.feature">
+        <field name="module_id" ref="module_account"/>
+        <field name="name">Logout</field>
+        <field name="key">account.logout</field>
+        <field name="sequence">6</field>
+        <field name="android_status">done</field>
+        <field name="plan_lite" eval="True"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_account_profile_view" model="pos.mobile.feature">
+        <field name="module_id" ref="module_account"/>
+        <field name="name">Lihat Data Profil</field>
+        <field name="key">account.profile_view</field>
+        <field name="sequence">7</field>
+        <field name="android_status">done</field>
+        <field name="plan_lite" eval="True"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_account_profile_edit" model="pos.mobile.feature">
+        <field name="module_id" ref="module_account"/>
+        <field name="name">Edit Data Diri</field>
+        <field name="key">account.profile_edit</field>
+        <field name="sequence">8</field>
+        <field name="android_status">partial</field>
+        <field name="plan_lite" eval="True"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_cashier_input_order" model="pos.mobile.feature">
+        <field name="module_id" ref="module_cashier"/>
+        <field name="name">Input Order</field>
+        <field name="key">cashier.input_order</field>
+        <field name="sequence">12</field>
+        <field name="android_status">done</field>
+        <field name="plan_lite" eval="True"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_cashier_open_close_bill" model="pos.mobile.feature">
+        <field name="module_id" ref="module_cashier"/>
+        <field name="name">Open Bill / Close Bill</field>
+        <field name="key">cashier.open_close_bill</field>
+        <field name="sequence">13</field>
+        <field name="android_status">done</field>
+        <field name="plan_lite" eval="True"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_cashier_split_bill" model="pos.mobile.feature">
+        <field name="module_id" ref="module_cashier"/>
+        <field name="name">Split Bill</field>
+        <field name="key">cashier.split_bill</field>
+        <field name="sequence">14</field>
+        <field name="android_status">done</field>
+        <field name="plan_lite" eval="True"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+        <field name="note">QRIS/VA split + min-amount guard</field>
+    </record>
+    <record id="feature_cashier_void" model="pos.mobile.feature">
+        <field name="module_id" ref="module_cashier"/>
+        <field name="name">Void Transaksi</field>
+        <field name="key">cashier.void</field>
+        <field name="sequence">15</field>
+        <field name="android_status">planned</field>
+        <field name="plan_lite" eval="True"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+        <field name="note">Belum tersedia di POS Android - prioritaskan | Belum ada di POS Android (prioritas)</field>
+    </record>
+    <record id="feature_cashier_payment_basic" model="pos.mobile.feature">
+        <field name="module_id" ref="module_cashier"/>
+        <field name="name">Pembayaran Tunai / Non Tunai</field>
+        <field name="key">cashier.payment_basic</field>
+        <field name="sequence">16</field>
+        <field name="android_status">done</field>
+        <field name="plan_lite" eval="True"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+        <field name="note">Cash + non-tunai</field>
+    </record>
+    <record id="feature_cashier_special_request" model="pos.mobile.feature">
+        <field name="module_id" ref="module_cashier"/>
+        <field name="name">Special Request</field>
+        <field name="key">cashier.special_request</field>
+        <field name="sequence">17</field>
+        <field name="android_status">done</field>
+        <field name="plan_lite" eval="True"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+        <field name="note">Catatan/notes per item</field>
+    </record>
+    <record id="feature_printing_receipt_thermal" model="pos.mobile.feature">
+        <field name="module_id" ref="module_printing"/>
+        <field name="name">Cetak Struk Thermal</field>
+        <field name="key">printing.receipt_thermal</field>
+        <field name="sequence">18</field>
+        <field name="android_status">done</field>
+        <field name="plan_lite" eval="True"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+        <field name="note">USB/Bluetooth/LAN</field>
+    </record>
+    <record id="feature_printing_kot" model="pos.mobile.feature">
+        <field name="module_id" ref="module_printing"/>
+        <field name="name">Cetak Kitchen Order Ticket (KOT)</field>
+        <field name="key">printing.kot</field>
+        <field name="sequence">19</field>
+        <field name="android_status">done</field>
+        <field name="plan_lite" eval="True"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_printing_bot" model="pos.mobile.feature">
+        <field name="module_id" ref="module_printing"/>
+        <field name="name">Cetak Bar Order Ticket (BOT)</field>
+        <field name="key">printing.bot</field>
+        <field name="sequence">20</field>
+        <field name="android_status">done</field>
+        <field name="plan_lite" eval="True"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_printing_invoice_physical" model="pos.mobile.feature">
+        <field name="module_id" ref="module_printing"/>
+        <field name="name">Cetak Invoice Fisik</field>
+        <field name="key">printing.invoice_physical</field>
+        <field name="sequence">21</field>
+        <field name="android_status">partial</field>
+        <field name="plan_lite" eval="True"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_tax_auto" model="pos.mobile.feature">
+        <field name="module_id" ref="module_tax"/>
+        <field name="name">Pajak &amp; Service Charge Otomatis</field>
+        <field name="key">tax.auto</field>
+        <field name="sequence">22</field>
+        <field name="android_status">done</field>
+        <field name="plan_lite" eval="True"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_menu_modifiers" model="pos.mobile.feature">
+        <field name="module_id" ref="module_menu"/>
+        <field name="name">Personalisasi Menu (Modifikasi Produk)</field>
+        <field name="key">menu.modifiers</field>
+        <field name="sequence">27</field>
+        <field name="android_status">done</field>
+        <field name="plan_lite" eval="True"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+        <field name="note">Addon/varian</field>
+    </record>
+    <record id="feature_menu_availability" model="pos.mobile.feature">
+        <field name="module_id" ref="module_menu"/>
+        <field name="name">Status Ketersediaan Produk</field>
+        <field name="key">menu.availability</field>
+        <field name="sequence">28</field>
+        <field name="android_status">done</field>
+        <field name="plan_lite" eval="True"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_menu_temp_disable" model="pos.mobile.feature">
+        <field name="module_id" ref="module_menu"/>
+        <field name="name">Nonaktifkan Produk Sementara</field>
+        <field name="key">menu.temp_disable</field>
+        <field name="sequence">29</field>
+        <field name="android_status">partial</field>
+        <field name="plan_lite" eval="True"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_table_placement" model="pos.mobile.feature">
+        <field name="module_id" ref="module_table"/>
+        <field name="name">Penempatan Pesanan per Meja</field>
+        <field name="key">table.placement</field>
+        <field name="sequence">30</field>
+        <field name="android_status">done</field>
+        <field name="plan_lite" eval="True"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_inventory_initial" model="pos.mobile.feature">
+        <field name="module_id" ref="module_inventory"/>
+        <field name="name">Initial Stock</field>
+        <field name="key">inventory.initial</field>
+        <field name="sequence">31</field>
+        <field name="android_status">partial</field>
+        <field name="plan_lite" eval="True"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_inventory_stock_in" model="pos.mobile.feature">
+        <field name="module_id" ref="module_inventory"/>
+        <field name="name">Stock-In</field>
+        <field name="key">inventory.stock_in</field>
+        <field name="sequence">32</field>
+        <field name="android_status">partial</field>
+        <field name="plan_lite" eval="True"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_inventory_stock_out" model="pos.mobile.feature">
+        <field name="module_id" ref="module_inventory"/>
+        <field name="name">Stock-Out</field>
+        <field name="key">inventory.stock_out</field>
+        <field name="sequence">33</field>
+        <field name="android_status">partial</field>
+        <field name="plan_lite" eval="True"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_inventory_adjustment" model="pos.mobile.feature">
+        <field name="module_id" ref="module_inventory"/>
+        <field name="name">Stock Adjustment</field>
+        <field name="key">inventory.adjustment</field>
+        <field name="sequence">34</field>
+        <field name="android_status">partial</field>
+        <field name="plan_lite" eval="True"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_inventory_min_notify" model="pos.mobile.feature">
+        <field name="module_id" ref="module_inventory"/>
+        <field name="name">Notifikasi Stok Minimum</field>
+        <field name="key">inventory.min_notify</field>
+        <field name="sequence">35</field>
+        <field name="android_status">partial</field>
+        <field name="plan_lite" eval="True"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_reporting_transaction" model="pos.mobile.feature">
+        <field name="module_id" ref="module_reporting"/>
+        <field name="name">Laporan Transaksi</field>
+        <field name="key">reporting.transaction</field>
+        <field name="sequence">36</field>
+        <field name="android_status">partial</field>
+        <field name="plan_lite" eval="True"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_reporting_best_seller" model="pos.mobile.feature">
+        <field name="module_id" ref="module_reporting"/>
+        <field name="name">Produk Terlaris</field>
+        <field name="key">reporting.best_seller</field>
+        <field name="sequence">37</field>
+        <field name="android_status">partial</field>
+        <field name="plan_lite" eval="True"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_table_layout" model="pos.mobile.feature">
+        <field name="module_id" ref="module_table"/>
+        <field name="name">Table Layout</field>
+        <field name="key">table.layout</field>
+        <field name="sequence">39</field>
+        <field name="android_status">done</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+        <field name="note">Denah Meja</field>
+    </record>
+    <record id="feature_table_section" model="pos.mobile.feature">
+        <field name="module_id" ref="module_table"/>
+        <field name="name">Section / Flooring</field>
+        <field name="key">table.section</field>
+        <field name="sequence">40</field>
+        <field name="android_status">done</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+        <field name="note">Floor/lantai</field>
+    </record>
+    <record id="feature_table_merge" model="pos.mobile.feature">
+        <field name="module_id" ref="module_table"/>
+        <field name="name">Merge Table</field>
+        <field name="key">table.merge</field>
+        <field name="sequence">41</field>
+        <field name="android_status">planned</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+        <field name="note">Belum tersedia di POS Android | Belum ada di POS Android</field>
+    </record>
+    <record id="feature_table_move" model="pos.mobile.feature">
+        <field name="module_id" ref="module_table"/>
+        <field name="name">Moving Table</field>
+        <field name="key">table.move</field>
+        <field name="sequence">42</field>
+        <field name="android_status">done</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+        <field name="note">Belum tersedia di POS Android | Pindah meja lintas-lantai (baru diperbaiki)</field>
+    </record>
+    <record id="feature_kds_realtime_display" model="pos.mobile.feature">
+        <field name="module_id" ref="module_kds"/>
+        <field name="name">Real-Time Order Display</field>
+        <field name="key">kds.realtime_display</field>
+        <field name="sequence">43</field>
+        <field name="android_status">partial</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+        <field name="note">Kirim order ke dapur ada; display KDS terpisah</field>
+    </record>
+    <record id="feature_kds_cooking_status" model="pos.mobile.feature">
+        <field name="module_id" ref="module_kds"/>
+        <field name="name">Status Memasak</field>
+        <field name="key">kds.cooking_status</field>
+        <field name="sequence">44</field>
+        <field name="android_status">partial</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_kds_done_notify" model="pos.mobile.feature">
+        <field name="module_id" ref="module_kds"/>
+        <field name="name">Notifikasi Order Selesai</field>
+        <field name="key">kds.done_notify</field>
+        <field name="sequence">45</field>
+        <field name="android_status">partial</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_inventory_auto_deduct" model="pos.mobile.feature">
+        <field name="module_id" ref="module_inventory"/>
+        <field name="name">Pengurangan Stok Otomatis</field>
+        <field name="key">inventory.auto_deduct</field>
+        <field name="sequence">47</field>
+        <field name="android_status">partial</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+        <field name="note">Via Odoo</field>
+    </record>
+    <record id="feature_inventory_realtime_monitor" model="pos.mobile.feature">
+        <field name="module_id" ref="module_inventory"/>
+        <field name="name">Pemantauan Stok Real-Time</field>
+        <field name="key">inventory.realtime_monitor</field>
+        <field name="sequence">48</field>
+        <field name="android_status">partial</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_inventory_opname" model="pos.mobile.feature">
+        <field name="module_id" ref="module_inventory"/>
+        <field name="name">Stock Opname</field>
+        <field name="key">inventory.opname</field>
+        <field name="sequence">49</field>
+        <field name="android_status">partial</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_inventory_waste" model="pos.mobile.feature">
+        <field name="module_id" ref="module_inventory"/>
+        <field name="name">Waste / Loss Tracking</field>
+        <field name="key">inventory.waste</field>
+        <field name="sequence">51</field>
+        <field name="android_status">partial</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_promo_create" model="pos.mobile.feature">
+        <field name="module_id" ref="module_promo"/>
+        <field name="name">Pembuatan Promo</field>
+        <field name="key">promo.create</field>
+        <field name="sequence">57</field>
+        <field name="android_status">backoffice</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+        <field name="note">Perlu adjust (trigger otomatis) | Dibuat di Odoo; app konsumsi via promotions/match</field>
+    </record>
+    <record id="feature_promo_discount" model="pos.mobile.feature">
+        <field name="module_id" ref="module_promo"/>
+        <field name="name">Manajemen Diskon</field>
+        <field name="key">promo.discount</field>
+        <field name="sequence">58</field>
+        <field name="android_status">done</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+        <field name="note">Diskon manual % / nominal</field>
+    </record>
+    <record id="feature_promo_combo" model="pos.mobile.feature">
+        <field name="module_id" ref="module_promo"/>
+        <field name="name">Combo Package</field>
+        <field name="key">promo.combo</field>
+        <field name="sequence">59</field>
+        <field name="android_status">planned</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_promo_bogo" model="pos.mobile.feature">
+        <field name="module_id" ref="module_promo"/>
+        <field name="name">Buy One Get One (BOGO)</field>
+        <field name="key">promo.bogo</field>
+        <field name="sequence">60</field>
+        <field name="android_status">done</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+        <field name="note">Server rewards + badge</field>
+    </record>
+    <record id="feature_promo_time_based" model="pos.mobile.feature">
+        <field name="module_id" ref="module_promo"/>
+        <field name="name">Menu Berbasis Waktu</field>
+        <field name="key">promo.time_based</field>
+        <field name="sequence">61</field>
+        <field name="android_status">partial</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_customer_membership" model="pos.mobile.feature">
+        <field name="module_id" ref="module_customer"/>
+        <field name="name">Membership</field>
+        <field name="key">customer.membership</field>
+        <field name="sequence">62</field>
+        <field name="android_status">done</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_customer_points" model="pos.mobile.feature">
+        <field name="module_id" ref="module_customer"/>
+        <field name="name">Point Reward</field>
+        <field name="key">customer.points</field>
+        <field name="sequence">63</field>
+        <field name="android_status">planned</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+        <field name="note">Pending: Android belum terintegrasi Loyalty Card Odoo | Pending integrasi Loyalty Card Odoo</field>
+    </record>
+    <record id="feature_customer_voucher" model="pos.mobile.feature">
+        <field name="module_id" ref="module_customer"/>
+        <field name="name">Voucher Digital</field>
+        <field name="key">customer.voucher</field>
+        <field name="sequence">64</field>
+        <field name="android_status">partial</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+        <field name="note">Pending: Android belum terintegrasi Loyalty Card Odoo | Kupon/voucher di app; loyalty pending</field>
+    </record>
+    <record id="feature_customer_history" model="pos.mobile.feature">
+        <field name="module_id" ref="module_customer"/>
+        <field name="name">Riwayat Transaksi Pelanggan</field>
+        <field name="key">customer.history</field>
+        <field name="sequence">65</field>
+        <field name="android_status">partial</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_digital_order_qr_menu" model="pos.mobile.feature">
+        <field name="module_id" ref="module_digital_order"/>
+        <field name="name">Menu Digital (QR / URL)</field>
+        <field name="key">digital_order.qr_menu</field>
+        <field name="sequence">66</field>
+        <field name="android_status">planned</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+        <field name="note">Aplikasi self-order terpisah</field>
+    </record>
+    <record id="feature_digital_order_selforder_dinein" model="pos.mobile.feature">
+        <field name="module_id" ref="module_digital_order"/>
+        <field name="name">Pemesanan Dine In (per Meja)</field>
+        <field name="key">digital_order.selforder_dinein</field>
+        <field name="sequence">67</field>
+        <field name="android_status">planned</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_digital_order_selforder_takeaway" model="pos.mobile.feature">
+        <field name="module_id" ref="module_digital_order"/>
+        <field name="name">Pemesanan Take Away</field>
+        <field name="key">digital_order.selforder_takeaway</field>
+        <field name="sequence">68</field>
+        <field name="android_status">planned</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_digital_order_online_payment" model="pos.mobile.feature">
+        <field name="module_id" ref="module_digital_order"/>
+        <field name="name">Pembayaran Online (Payment Gateway)</field>
+        <field name="key">digital_order.online_payment</field>
+        <field name="sequence">69</field>
+        <field name="android_status">done</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+        <field name="note">QRIS Winpay/Paper.id, VA; evidence manual-paid</field>
+    </record>
+    <record id="feature_transaction_refund" model="pos.mobile.feature">
+        <field name="module_id" ref="module_transaction"/>
+        <field name="name">Refund Transaksi</field>
+        <field name="key">transaction.refund</field>
+        <field name="sequence">70</field>
+        <field name="android_status">planned</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_transaction_einvoice_email" model="pos.mobile.feature">
+        <field name="module_id" ref="module_transaction"/>
+        <field name="name">E-Invoice via Email</field>
+        <field name="key">transaction.einvoice_email</field>
+        <field name="sequence">71</field>
+        <field name="android_status">planned</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_transaction_einvoice_wa" model="pos.mobile.feature">
+        <field name="module_id" ref="module_transaction"/>
+        <field name="name">E-Invoice via WhatsApp</field>
+        <field name="key">transaction.einvoice_wa</field>
+        <field name="sequence">72</field>
+        <field name="android_status">planned</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_hr_attendance" model="pos.mobile.feature">
+        <field name="module_id" ref="module_hr"/>
+        <field name="name">Jadwal Tugas / Kehadiran</field>
+        <field name="key">hr.attendance</field>
+        <field name="sequence">75</field>
+        <field name="android_status">partial</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_hr_shift" model="pos.mobile.feature">
+        <field name="module_id" ref="module_hr"/>
+        <field name="name">Shift Kerja</field>
+        <field name="key">hr.shift</field>
+        <field name="sequence">76</field>
+        <field name="android_status">partial</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_hr_leave" model="pos.mobile.feature">
+        <field name="module_id" ref="module_hr"/>
+        <field name="name">Manajemen Cuti</field>
+        <field name="key">hr.leave</field>
+        <field name="sequence">77</field>
+        <field name="android_status">backoffice</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_security_sso_google" model="pos.mobile.feature">
+        <field name="module_id" ref="module_security"/>
+        <field name="name">Login SSO (Google)</field>
+        <field name="key">security.sso_google</field>
+        <field name="sequence">79</field>
+        <field name="android_status">done</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_security_otp" model="pos.mobile.feature">
+        <field name="module_id" ref="module_security"/>
+        <field name="name">Login Nomor Telepon (OTP)</field>
+        <field name="key">security.otp</field>
+        <field name="sequence">80</field>
+        <field name="android_status">done</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="True"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_delivery_web_order" model="pos.mobile.feature">
+        <field name="module_id" ref="module_delivery"/>
+        <field name="name">Order via Web / Mobile</field>
+        <field name="key">delivery.web_order</field>
+        <field name="sequence">101</field>
+        <field name="android_status">planned</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="False"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_delivery_tracking" model="pos.mobile.feature">
+        <field name="module_id" ref="module_delivery"/>
+        <field name="name">Tracking Status Order</field>
+        <field name="key">delivery.tracking</field>
+        <field name="sequence">102</field>
+        <field name="android_status">planned</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="False"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_delivery_eta" model="pos.mobile.feature">
+        <field name="module_id" ref="module_delivery"/>
+        <field name="name">Estimasi Pengiriman</field>
+        <field name="key">delivery.eta</field>
+        <field name="sequence">103</field>
+        <field name="android_status">planned</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="False"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_delivery_driver" model="pos.mobile.feature">
+        <field name="module_id" ref="module_delivery"/>
+        <field name="name">Driver Assignment</field>
+        <field name="key">delivery.driver</field>
+        <field name="sequence">104</field>
+        <field name="android_status">planned</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="False"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_delivery_platform_promo" model="pos.mobile.feature">
+        <field name="module_id" ref="module_delivery"/>
+        <field name="name">Promo Platform Digital</field>
+        <field name="key">delivery.platform_promo</field>
+        <field name="sequence">105</field>
+        <field name="android_status">planned</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="False"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_kds_eta" model="pos.mobile.feature">
+        <field name="module_id" ref="module_kds"/>
+        <field name="name">Estimasi Waktu</field>
+        <field name="key">kds.eta</field>
+        <field name="sequence">106</field>
+        <field name="android_status">planned</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="False"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_kds_priority" model="pos.mobile.feature">
+        <field name="module_id" ref="module_kds"/>
+        <field name="name">Prioritas Order</field>
+        <field name="key">kds.priority</field>
+        <field name="sequence">107</field>
+        <field name="android_status">planned</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="False"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_kds_queue_monitor" model="pos.mobile.feature">
+        <field name="module_id" ref="module_kds"/>
+        <field name="name">Monitoring Kitchen Queue</field>
+        <field name="key">kds.queue_monitor</field>
+        <field name="sequence">108</field>
+        <field name="android_status">partial</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="False"/>
+        <field name="plan_enterprise" eval="True"/>
+        <field name="note">Antrian/queue ada sebagian</field>
+    </record>
+    <record id="feature_hr_ess" model="pos.mobile.feature">
+        <field name="module_id" ref="module_hr"/>
+        <field name="name">Employee Self-Service (ESS)</field>
+        <field name="key">hr.ess</field>
+        <field name="sequence">111</field>
+        <field name="android_status">planned</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="False"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+    <record id="feature_customer_push" model="pos.mobile.feature">
+        <field name="module_id" ref="module_customer"/>
+        <field name="name">Push Notification / Email</field>
+        <field name="key">customer.push</field>
+        <field name="sequence">114</field>
+        <field name="android_status">planned</field>
+        <field name="plan_lite" eval="False"/>
+        <field name="plan_medium" eval="False"/>
+        <field name="plan_enterprise" eval="True"/>
+    </record>
+</odoo>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_pos_mobile_flags_root"
+              name="Mobile Feature Flags"
+              parent="point_of_sale.menu_point_config_product"
+              sequence="90"
+              groups="pos_mobile_feature_flags.group_pos_mobile_flag_manager"/>
+    <menuitem id="menu_pos_mobile_flags_per_pos" name="Flags per POS"
+              parent="menu_pos_mobile_flags_root" action="pos_mobile_config_flag_action" sequence="1"/>
+    <menuitem id="menu_pos_mobile_modules" name="Modules"
+              parent="menu_pos_mobile_flags_root" action="pos_mobile_module_action" sequence="10"/>
+    <menuitem id="menu_pos_mobile_features" name="Features"
+              parent="menu_pos_mobile_flags_root" action="pos_mobile_feature_action" sequence="20"/>
+</odoo>

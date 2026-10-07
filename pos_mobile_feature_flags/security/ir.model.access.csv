@@ -1,0 +1,9 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_pos_mobile_module_user,pos.mobile.module user,model_pos_mobile_module,point_of_sale.group_pos_user,1,0,0,0
+access_pos_mobile_module_manager,pos.mobile.module manager,model_pos_mobile_module,group_pos_mobile_flag_manager,1,1,1,1
+access_pos_mobile_feature_user,pos.mobile.feature user,model_pos_mobile_feature,point_of_sale.group_pos_user,1,0,0,0
+access_pos_mobile_feature_manager,pos.mobile.feature manager,model_pos_mobile_feature,group_pos_mobile_flag_manager,1,1,1,1
+access_pos_mobile_config_module_user,pos.mobile.config.module user,model_pos_mobile_config_module,point_of_sale.group_pos_user,1,0,0,0
+access_pos_mobile_config_module_manager,pos.mobile.config.module manager,model_pos_mobile_config_module,group_pos_mobile_flag_manager,1,1,1,1
+access_pos_mobile_config_flag_user,pos.mobile.config.flag user,model_pos_mobile_config_flag,point_of_sale.group_pos_user,1,0,0,0
+access_pos_mobile_config_flag_manager,pos.mobile.config.flag manager,model_pos_mobile_config_flag,group_pos_mobile_flag_manager,1,1,1,1
