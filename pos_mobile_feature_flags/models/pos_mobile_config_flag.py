@@ -32,15 +32,18 @@ class PosMobileConfigFlag(models.Model):
     android_status = fields.Selection(related='feature_id.android_status')
     enabled = fields.Boolean(default=True)
     default_enabled = fields.Boolean(
-        compute='_compute_default_enabled', string='Plan Default')
-    overridden = fields.Boolean(compute='_compute_default_enabled', string='Overridden')
+        compute='_compute_default_enabled', store=True, string='Plan Default')
+    overridden = fields.Boolean(
+        compute='_compute_default_enabled', store=True, string='Overridden')
 
     _sql_constraints = [
         ('config_feature_uniq', 'unique(config_id, feature_id)',
          'Only one flag per feature and POS.'),
     ]
 
-    @api.depends('config_id.mobile_plan', 'feature_id', 'enabled')
+    @api.depends(
+        'config_id.mobile_plan', 'enabled', 'feature_id.plan_lite',
+        'feature_id.plan_medium', 'feature_id.plan_enterprise')
     def _compute_default_enabled(self):
         for rec in self:
             default = rec.feature_id.default_for_plan(rec.config_id.mobile_plan)
