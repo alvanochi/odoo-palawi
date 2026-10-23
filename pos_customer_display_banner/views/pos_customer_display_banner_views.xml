@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="pos_customer_display_banner_view_list" model="ir.ui.view">
+        <field name="name">pos.customer.display.banner.list</field>
+        <field name="model">pos.customer.display.banner</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="sequence" widget="handle"/>
+                <field name="image" widget="image" options="{'size': [0, 48]}"/>
+                <field name="name"/>
+                <field name="pos_config_ids" widget="many2many_tags"/>
+                <field name="duration"/>
+                <field name="date_start" optional="show"/>
+                <field name="date_end" optional="show"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+                <field name="active" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="pos_customer_display_banner_view_form" model="ir.ui.view">
+        <field name="name">pos.customer.display.banner.form</field>
+        <field name="model">pos.customer.display.banner</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger"
+                            invisible="active"/>
+                    <field name="active" invisible="1"/>
+                    <group>
+                        <group string="Banner">
+                            <field name="name"/>
+                            <field name="sequence"/>
+                            <field name="duration"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group string="Jadwal Tayang">
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                        </group>
+                    </group>
+                    <group string="Tampil di POS">
+                        <field name="pos_config_ids" widget="many2many_tags"
+                               options="{'no_create': True}"
+                               placeholder="Kosong = semua POS"/>
+                    </group>
+                    <group string="Gambar">
+                        <field name="image" widget="image" nolabel="1"
+                               options="{'size': [0, 300]}"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="pos_customer_display_banner_view_search" model="ir.ui.view">
+        <field name="name">pos.customer.display.banner.search</field>
+        <field name="model">pos.customer.display.banner</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="pos_config_ids"/>
+                <filter name="archived" string="Archived" domain="[('active', '=', False)]"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_pos" string="POS" context="{'group_by': 'pos_config_ids'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="pos_customer_display_banner_action" model="ir.actions.act_window">
+        <field name="name">Customer Display Banners</field>
+        <field name="res_model">pos.customer.display.banner</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Buat banner pertama untuk customer display POS
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="pos_customer_display_banner_menu"
+              name="Customer Display Banners"
+              parent="point_of_sale.menu_point_config_product"
+              action="pos_customer_display_banner_action"
+              sequence="60"
+              groups="point_of_sale.group_pos_manager"/>
+</odoo>
