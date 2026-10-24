@@ -1,17 +1,41 @@
 # -*- coding: utf-8 -*-
+import base64
+import hashlib
+import hmac
+import json
 import logging
+import time
 
 from odoo import http, fields
+from odoo.exceptions import AccessDenied
 from odoo.http import request
 
 _logger = logging.getLogger(__name__)
 
 
+def _b64d(value):
+    return base64.urlsafe_b64decode(value + '=' * (-len(value) % 4))
+
+
 class PosCustomerDisplayBannerController(http.Controller):
     """Customer display banner API for POS.
 
-    Auth: either an Odoo session (cookie) or an Odoo API key sent as
-    ``Authorization: Bearer <api_key>``. The user must be a POS user.
+    Headers (same as the existing FE):
+        Authorization: Bearer <JWT>
+        login: <odoo login>
+        password: <odoo password>
+        db: <database name>
+        api-key: <static key>
+
+    Authentication = ``login`` + ``password`` (verified against res.users).
+    Optional hardening via ir.config_parameter (skipped when unset):
+        pos_customer_display.api_key     -> must equal the ``api-key`` header
+        pos_customer_display.jwt_secret  -> HS256 secret; Bearer JWT must be
+                                            valid, not expired and ``sub`` must
+                                            equal the authenticated user id.
+    Fallbacks when no login/password header: Odoo API key as
+    ``Authorization: Bearer <odoo_api_key>``, or a normal session cookie.
+    The user must be a POS user.
     """
 
     # ---------------------------------------------------------------- helpers
@@ -21,19 +45,85 @@ class PosCustomerDisplayBannerController(http.Controller):
     def _error(self, status, message):
         return self._json({'error': message}, status=status)
 
-    def _authenticate_user(self):
-        header = request.httprequest.headers.get('Authorization', '')
+    def _header(self, name):
+        return (request.httprequest.headers.get(name) or '').strip()
+
+    def _bearer(self):
+        header = self._header('Authorization')
         if header.lower().startswith('bearer '):
-            key = header[7:].strip()
+            return header[7:].strip()
+        return ''
+
+    @staticmethod
+    def _verify_jwt(token, secret):
+        """Minimal HS256 verification. Returns the payload dict or None."""
+        try:
+            head_b64, body_b64, sig_b64 = token.split('.')
+            if json.loads(_b64d(head_b64)).get('alg') != 'HS256':
+                return None
+            expected = hmac.new(
+                secret.encode(), ('%s.%s' % (head_b64, body_b64)).encode(),
+                hashlib.sha256).digest()
+            if not hmac.compare_digest(expected, _b64d(sig_b64)):
+                return None
+            payload = json.loads(_b64d(body_b64))
+            if payload.get('exp') and payload['exp'] < time.time():
+                return None
+            return payload
+        except Exception:  # noqa: BLE001
+            return None
+
+    def _authenticate_user(self):
+        icp = request.env['ir.config_parameter'].sudo()
+
+        # Optional static api-key check.
+        expected_key = icp.get_param('pos_customer_display.api_key')
+        if expected_key and not hmac.compare_digest(
+                self._header('api-key'), expected_key):
+            return False
+
+        # ``db`` header must match the database serving this request.
+        db = self._header('db')
+        if db and request.db and db != request.db:
+            return False
+
+        bearer = self._bearer()
+        login = self._header('login')
+        password = request.httprequest.headers.get('password')
+
+        # 1) login + password headers (existing FE contract)
+        if login and password:
+            user = request.env['res.users'].sudo().search(
+                [('login', '=', login)], limit=1)
+            if not user:
+                return False
+            try:
+                user.with_user(user)._check_credentials(
+                    {'type': 'password', 'password': password},
+                    {'interactive': False})
+            except AccessDenied:
+                return False
+            secret = icp.get_param('pos_customer_display.jwt_secret')
+            if secret:
+                payload = self._verify_jwt(bearer, secret)
+                if not payload or payload.get('sub') != user.id:
+                    return False
+            request.update_env(user=user.id)
+            return request.env.user
+
+        # 2) Odoo API key as Bearer
+        if bearer:
             try:
                 uid = request.env['res.users.apikeys'].sudo()._check_credentials(
-                    scope='rpc', key=key)
+                    scope='rpc', key=bearer)
             except Exception:  # noqa: BLE001
                 uid = False
             if not uid:
                 return False
             request.update_env(user=uid)
             return request.env.user
+
+        # 3) session cookie
         user = request.env.user
         return user if user and not user._is_public() else False
 
