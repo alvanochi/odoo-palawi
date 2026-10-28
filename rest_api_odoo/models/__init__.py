@@ -8,3 +8,4 @@ from . import  pos_cash_movement
 from . import pos_session
 from . import pos_order
 from . import product_product
+from . import pos_payload_nonce

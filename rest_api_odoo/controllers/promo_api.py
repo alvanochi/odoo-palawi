@@ -416,7 +416,11 @@ class PromoApi(http.Controller):
         body, error = self._body()
         if error:
             return error
+        return self.validate_coupon_from_body(body)
 
+    def validate_coupon_from_body(self, body):
+        """Isi validate_coupon setelah body di-parse. Dipakai bersama oleh
+        /api/pos/coupons/validate dan versi terenkripsinya (/api/pos/v2/...)."""
         pos_config_id, message = self._int(body.get("pos_config_id"), "pos_config_id")
         if message:
             return self._err(message, 400)

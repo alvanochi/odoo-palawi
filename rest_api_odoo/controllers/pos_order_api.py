@@ -49,27 +49,7 @@ class PosOrderApi(http.Controller):
                 except Exception:
                     return self._resp(self._err(f"Invalid JSON body (req_id={req_id})", 400), 400)
 
-                # Validasi minimal & aman
-                if not isinstance(body, dict):
-                    return self._resp(self._err(f"Body must be a JSON object (req_id={req_id})", 400), 400)
-
-                # lines wajib list & tidak kosong
-                lines = body.get("lines")
-                if not isinstance(lines, list) or not lines:
-                    return self._resp(self._err(f"Field 'lines' must be a non-empty list (req_id={req_id})", 400), 400)
-
-                # validasi tiap line
-                for i, line in enumerate(lines):
-                    if not isinstance(line, dict):
-                        return self._resp(self._err(f"lines[{i}] must be an object (req_id={req_id})", 400), 400)
-                    for k in ("product_id", "qty", "price_unit"):
-                        if line.get(k) is None:
-                            return self._resp(self._err(f"lines[{i}].{k} is required (req_id={req_id})", 400), 400)
-
-                result = self._create_order(env, body)
-                if isinstance(result, dict):
-                    result.setdefault("req_id", req_id)
-                return self._resp(result, result.get("status", 200) if isinstance(result, dict) else 200)
+                return self.create_order_from_body(env, body, req_id)
 
             return self._resp(self._err(f"Method not allowed (req_id={req_id})", 405), 405)
 
@@ -77,6 +57,34 @@ class PosOrderApi(http.Controller):
             # Jangan bocorin error internal mentah ke client
             _logger.exception("POS ORDER API ERROR req_id=%s", req_id)
             return self._resp(self._err(f"Internal server error (req_id={req_id})", 500), 500)
+
+    def create_order_from_body(self, env, body, req_id):
+        """Validasi + buat order dari body yang sudah di-parse.
+
+        Dipakai bersama oleh POST /api/pos/order dan versi terenkripsinya
+        (/api/pos/v2/order), supaya keduanya pasti berperilaku sama.
+        """
+        # Validasi minimal & aman
+        if not isinstance(body, dict):
+            return self._resp(self._err(f"Body must be a JSON object (req_id={req_id})", 400), 400)
+
+        # lines wajib list & tidak kosong
+        lines = body.get("lines")
+        if not isinstance(lines, list) or not lines:
+            return self._resp(self._err(f"Field 'lines' must be a non-empty list (req_id={req_id})", 400), 400)
+
+        # validasi tiap line
+        for i, line in enumerate(lines):
+            if not isinstance(line, dict):
+                return self._resp(self._err(f"lines[{i}] must be an object (req_id={req_id})", 400), 400)
+            for k in ("product_id", "qty", "price_unit"):
+                if line.get(k) is None:
+                    return self._resp(self._err(f"lines[{i}].{k} is required (req_id={req_id})", 400), 400)
+
+        result = self._create_order(env, body)
+        if isinstance(result, dict):
+            result.setdefault("req_id", req_id)
+        return self._resp(result, result.get("status", 200) if isinstance(result, dict) else 200)
 
     
     @http.route("/api/pos/order/pay", type="http", auth="none", methods=["POST", "OPTIONS"], csrf=False)
@@ -101,49 +109,57 @@ class PosOrderApi(http.Controller):
             except Exception:
                 return self._resp(self._err("Invalid JSON body", 400), 400)
 
-            # =========================
-            # 1) PAY ORDER (EXISTING)
-            # =========================
-            result = self._pay_order(env, order_id, body)
-
-            # =========================
-            # 2) STOCK PROCESS (ADD-ON, FRONTEND TIDAK PERLU UBAH)
-            #    - tidak mengubah route / params / request contract
-            #    - hanya menambahkan proses stock setelah berhasil pay
-            # =========================
-            try:
-                # hanya lanjut kalau response pay sukses
-                is_dict = isinstance(result, dict)
-                success = bool(result.get("success")) if is_dict else False
-                status = int(result.get("status", 200)) if is_dict else 200
-
-                if success and status < 400:
-                    order = env["pos.order"].sudo().browse(order_id)
-                    if order and order.exists():
-                        self._fix_order_line_uom(env, order)
-                        # kalau state paid/done, coba trigger stock
-                        st = (order.state or "").lower()
-                        if st in ("paid", "done", "invoiced"):
-                            stock_info = self._pos_try_process_stock(env, order)
-
-                            # tambahin info ke response (frontend aman karena biasanya ignore extra field)
-                            if is_dict:
-                                # simpan di level root biar mudah trace, tapi tidak mengubah field lama
-                                result["stock_processed"] = bool(stock_info.get("stock_processed", False))
-                                result["picking_ids"] = stock_info.get("picking_ids", [])
-                                result["picking_states"] = stock_info.get("picking_states", [])
-                                if stock_info.get("stock_error"):
-                                    result["stock_error"] = stock_info.get("stock_error")
-
-            except Exception:
-                # jangan bikin pay gagal cuma karena stock post-process error
-                _logger.exception("POS ORDER PAY STOCK POST-PROCESS ERROR order_id=%s", order_id)
-
-            return self._resp(result, result.get("status", 200) if isinstance(result, dict) else 200)
+            return self.pay_order_from_body(env, order_id, body)
 
         except Exception as e:
             _logger.exception("POS ORDER PAY API ERROR")
             return self._resp(self._err(str(e), 400), 400)
+
+    def pay_order_from_body(self, env, order_id, body):
+        """Bayar order + proses stock, dari body yang sudah di-parse.
+
+        Dipakai bersama oleh POST /api/pos/order/pay dan versi terenkripsinya
+        (/api/pos/v2/order/pay).
+        """
+        # =========================
+        # 1) PAY ORDER (EXISTING)
+        # =========================
+        result = self._pay_order(env, order_id, body)
+
+        # =========================
+        # 2) STOCK PROCESS (ADD-ON, FRONTEND TIDAK PERLU UBAH)
+        #    - tidak mengubah route / params / request contract
+        #    - hanya menambahkan proses stock setelah berhasil pay
+        # =========================
+        try:
+            # hanya lanjut kalau response pay sukses
+            is_dict = isinstance(result, dict)
+            success = bool(result.get("success")) if is_dict else False
+            status = int(result.get("status", 200)) if is_dict else 200
+
+            if success and status < 400:
+                order = env["pos.order"].sudo().browse(order_id)
+                if order and order.exists():
+                    self._fix_order_line_uom(env, order)
+                    # kalau state paid/done, coba trigger stock
+                    st = (order.state or "").lower()
+                    if st in ("paid", "done", "invoiced"):
+                        stock_info = self._pos_try_process_stock(env, order)
+
+                        # tambahin info ke response (frontend aman karena biasanya ignore extra field)
+                        if is_dict:
+                            # simpan di level root biar mudah trace, tapi tidak mengubah field lama
+                            result["stock_processed"] = bool(stock_info.get("stock_processed", False))
+                            result["picking_ids"] = stock_info.get("picking_ids", [])
+                            result["picking_states"] = stock_info.get("picking_states", [])
+                            if stock_info.get("stock_error"):
+                                result["stock_error"] = stock_info.get("stock_error")
+
+        except Exception:
+            # jangan bikin pay gagal cuma karena stock post-process error
+            _logger.exception("POS ORDER PAY STOCK POST-PROCESS ERROR order_id=%s", order_id)
+
+        return self._resp(result, result.get("status", 200) if isinstance(result, dict) else 200)
 
 
     def _pos_try_process_stock(self, env, order):
