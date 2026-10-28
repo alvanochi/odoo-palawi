@@ -848,6 +848,7 @@ class PosOrderApi(http.Controller):
     def _create_order(self, env, body):
         session_id = self._parse_int(body.get("session_id"))
         partner_id = self._parse_int(body.get("partner_id"))
+        user_id = self._parse_int(body.get("user_id"))  # ✅ opsional, boleh tidak dikirim FE
         waiter_name = (body.get("name_waiters") or "").strip()
         lines = body.get("lines") or []
 
@@ -894,6 +895,8 @@ class PosOrderApi(http.Controller):
         has_general_note = "general_note" in PosOrder._fields
         # ✅ field baru
         has_change_amount = "change_amount" in PosOrder._fields
+        # ✅ field user_id (kasir)
+        has_user_id = "user_id" in PosOrder._fields
 
         # ====== line fields ======
         has_uom = "uom_id" in PosLine._fields
@@ -905,6 +908,19 @@ class PosOrderApi(http.Controller):
         # fallback legacy
         has_line_note = "note" in PosLine._fields
 
+        # ======================================================
+        # ✅ user_id OPSIONAL
+        # - FE tidak kirim  -> skip, tidak error
+        # - FE kirim tapi user tidak ada -> di-log, tetap tidak error
+        # ======================================================
+        user = False
+        if user_id and has_user_id:
+            _user = env["res.users"].sudo().browse(user_id)
+            if _user.exists():
+                user = _user
+            else:
+                _logger.warning("user_id=%s not found, diabaikan (non-fatal)", user_id)
+
         # Kalau kamu MAU juga copy ke general note, set True (default False)
         copy_line_notes_to_general_note = bool(body.get("copy_line_notes_to_general_note", False))
 
@@ -915,8 +931,9 @@ class PosOrderApi(http.Controller):
             return self._err("Invalid change_amount", 400)
 
         _logger.warning(
-            "DEBUG change_amount: has_field=%s raw_body=%r parsed=%s",
-            has_change_amount, body.get("change_amount"), change_amount
+            "DEBUG change_amount: has_field=%s raw_body=%r parsed=%s | user_id raw=%r resolved=%s",
+            has_change_amount, body.get("change_amount"), change_amount,
+            body.get("user_id"), (user.id if user else False)
         )
 
         order_line_cmds = []
@@ -1015,6 +1032,10 @@ class PosOrderApi(http.Controller):
         # ✅ masukkan change_amount kalau field-nya ada
         if has_change_amount:
             order_vals["change_amount"] = change_amount
+
+        # ✅ masukkan user_id HANYA kalau FE kirim & valid
+        if user:
+            order_vals["user_id"] = user.id
 
         try:
             company = session.company_id
@@ -1120,6 +1141,25 @@ class PosOrderApi(http.Controller):
                 except Exception:
                     _logger.exception("FORCE WRITE change_amount failed (non-fatal). order_id=%s", order.id)
 
+            # ======================================================
+            # ✅ FORCE WRITE USER_ID KE ORDER (opsional, non-fatal)
+            # Backstop kalau order dibuat lewat SQL fallback yang
+            # belum meng-insert user_id.
+            # ======================================================
+            if user:
+                try:
+                    order_sudo = order.sudo()
+                    current_uid = order_sudo.user_id.id if order_sudo.user_id else False
+                    if current_uid != user.id:
+                        order_sudo.write({"user_id": user.id})
+                        env["pos.order"].flush_model()
+                        _logger.warning(
+                            "FORCE WRITE user_id OK. order_id=%s before=%s after=%s",
+                            order.id, current_uid, user.id
+                        )
+                except Exception:
+                    _logger.exception("FORCE WRITE user_id failed (non-fatal). order_id=%s", order.id)
+
             # reload final
             order = PosOrder.sudo().browse(order.id)
 
@@ -1132,7 +1172,6 @@ class PosOrderApi(http.Controller):
         except Exception:
             _logger.exception("CREATE ORDER FAILED")
             return self._err("Failed to create order", 400)
-        
              
     def _order_to_dict(self, order, include_lines=True, include_payments=False):
         if not order or not order.exists():
@@ -1347,421 +1386,464 @@ class PosOrderApi(http.Controller):
             return self._err("Failed to confirm loyalty programs: %s" % e, 400)
         return None
 
-    def _pay_order(self, env, order_id, body):
-            order_id = self._parse_int(order_id)
-            session_id = self._parse_int(body.get("session_id"))
-            pm_id = self._parse_int(body.get("payment_method_id"))
-            ref = (body.get("ref") or "").strip()
+    # ------------------------------------------------------------------
+    # HELPER: link bill <-> order (idempotent, savepoint sendiri, diverifikasi)
+    # ------------------------------------------------------------------
+    def _link_bill_to_order(self, env, order, bill_id, mark_paid=False):
+        """
+        Simpan pos_order_id ke poskas.bill.
+        - pos_order_id SELALU diisi (walau order belum lunas).
+        - state bill = "paid" hanya kalau mark_paid=True DAN order benar-benar paid.
+        - Return True kalau setelah write, bill.pos_order_id == order.id.
+        """
+        if not bill_id:
+            return False
 
-            if not order_id:
-                return self._err("Missing order_id", 400)
-            if not session_id:
-                return self._err("Missing session_id", 400)
-            if not pm_id:
-                return self._err("Missing payment_method_id", 400)
-
+        def _inv(rec):
             try:
-                amount = float(body.get("amount", 0) or 0)
+                if hasattr(rec, "invalidate_recordset"):
+                    rec.invalidate_recordset()
+                elif hasattr(rec, "invalidate_cache"):
+                    rec.invalidate_cache()
             except Exception:
-                return self._err("Invalid amount", 400)
+                pass
 
-            Order = env["pos.order"]
-            order = Order.browse(order_id)
-            if not order.exists():
-                return self._err("Order not found", 404)
+        try:
+            with env.cr.savepoint():
+                bill = env["poskas.bill"].sudo().browse(bill_id)
+                if not bill.exists():
+                    _logger.warning("LINK BILL: bill not found bill_id=%s order=%s", bill_id, order.id)
+                    return False
 
-            # Poin kupon dipotong sebelum uang dicatat: kalau mesin loyalty
-            # menolak, pembayaran belum terjadi dan aplikasi masih bisa
-            # memperbaiki keranjangnya.
-            promo_err = self._confirm_coupon_data(env, order, body)
-            if promo_err:
-                return promo_err
+                _inv(bill)
+                current = bill.pos_order_id
+                if current and current.id != order.id:
+                    _logger.warning(
+                        "LINK BILL: bill=%s sudah ter-link ke order=%s, tidak ditimpa dengan order=%s",
+                        bill.id, current.id, order.id,
+                    )
+                    return False
 
-            # =========================
-            # HANDLE TOTAL = 0 (diskon 100%)
-            # =========================
-            currency = getattr(order, "currency_id", None)
-            total0 = float(order.amount_total or 0.0)
-
-            is_zero_total = False
-            if currency:
-                is_zero_total = (currency.compare_amounts(total0, 0.0) == 0)
-            else:
-                is_zero_total = abs(total0) < 1e-9
-
-            if is_zero_total:
-                # finalize tanpa payment walaupun amount=0
                 vals = {}
-                if "amount_paid" in order._fields:
-                    vals["amount_paid"] = 0.0
-                if "amount_return" in order._fields:
-                    vals["amount_return"] = 0.0
+                if not current:
+                    vals["pos_order_id"] = order.id
+
+                if mark_paid:
+                    _inv(order)
+                    order_state = order.read(["state"])[0].get("state")
+                    if order_state in ("paid", "done", "invoiced"):
+                        vals["state"] = "paid"
+
                 if vals:
-                    order.write(vals)
-                    env.cr.flush()
-                    if hasattr(order, "invalidate_recordset"):
-                        order.invalidate_recordset()
+                    bill.write(vals)
+                    try:
+                        env.cr.flush()
+                    except Exception:
+                        pass
 
-                try:
-                    order.with_context(
-                        active_model="pos.order",
-                        active_id=order.id,
-                        default_pos_order_id=order.id,
-                        pos_order_id=order.id,
-                    ).action_pos_order_paid()
-                except Exception:
-                    if "state" in order._fields:
-                        order.write({"state": "paid"})
+                _inv(bill)
+                ok = bool(bill.pos_order_id) and bill.pos_order_id.id == order.id
+                if not ok:
+                    _logger.error(
+                        "LINK BILL: verifikasi gagal bill=%s order=%s", bill.id, order.id
+                    )
+                return ok
+        except Exception:
+            _logger.exception("FAILED LINK BILL TO ORDER bill_id=%s order_id=%s", bill_id, order.id)
+            return False
 
+    def _parse_bill_ids(self, body):
+        """Kunci 'bill_ids' dan 'bill_id' sama-sama boleh berisi: angka, list angka,
+        atau string "1,2,3". Hasil: list id unik berurutan."""
+        ids = []
+        for key in ("bill_ids", "bill_id"):
+            raw = body.get(key)
+            if isinstance(raw, (list, tuple)):
+                items = raw
+            elif isinstance(raw, str):
+                items = raw.split(",")
+            else:
+                items = [raw]
+            ids += [self._parse_int(x) for x in items]
+        return list(dict.fromkeys(i for i in ids if i))
+
+    def _link_bills_to_order(self, env, order, bill_ids, mark_paid=False):
+        """Link semua bill (gabung bayar). True hanya bila semua berhasil ter-link."""
+        if not bill_ids:
+            return False
+        results = [self._link_bill_to_order(env, order, bid, mark_paid=mark_paid) for bid in bill_ids]
+        return all(results)
+
+    def _pay_order(self, env, order_id, body):
+        order_id = self._parse_int(order_id)
+        session_id = self._parse_int(body.get("session_id"))
+        pm_id = self._parse_int(body.get("payment_method_id"))
+        bill_ids = self._parse_bill_ids(body)  # "bill_ids" (gabung bayar) atau "bill_id"
+        bill_id = bill_ids[0] if bill_ids else None
+        ref = (body.get("ref") or "").strip()
+
+        if not order_id:
+            return self._err("Missing order_id", 400)
+        if not session_id:
+            return self._err("Missing session_id", 400)
+        if not pm_id:
+            return self._err("Missing payment_method_id", 400)
+
+        try:
+            amount = float(body.get("amount", 0) or 0)
+        except Exception:
+            return self._err("Invalid amount", 400)
+
+        Order = env["pos.order"]
+        order = Order.browse(order_id)
+        if not order.exists():
+            return self._err("Order not found", 404)
+
+        # Poin kupon dipotong sebelum uang dicatat: kalau mesin loyalty
+        # menolak, pembayaran belum terjadi dan aplikasi masih bisa
+        # memperbaiki keranjangnya.
+        promo_err = self._confirm_coupon_data(env, order, body)
+        if promo_err:
+            return promo_err
+
+        # =========================
+        # HANDLE TOTAL = 0 (diskon 100%)
+        # =========================
+        currency = getattr(order, "currency_id", None)
+        total0 = float(order.amount_total or 0.0)
+
+        if currency:
+            is_zero_total = (currency.compare_amounts(total0, 0.0) == 0)
+        else:
+            is_zero_total = abs(total0) < 1e-9
+
+        if is_zero_total:
+            # finalize tanpa payment walaupun amount=0
+            vals = {}
+            if "amount_paid" in order._fields:
+                vals["amount_paid"] = 0.0
+            if "amount_return" in order._fields:
+                vals["amount_return"] = 0.0
+            if vals:
+                order.write(vals)
                 env.cr.flush()
                 if hasattr(order, "invalidate_recordset"):
                     order.invalidate_recordset()
 
-                try:
-                    bill_id = self._parse_int(body.get("bill_id"))
-                    if bill_id:
-                        bill = env["poskas.bill"].sudo().browse(bill_id)
-                        if bill.exists():
-                            bill.write({
-                                "pos_order_id": order.id,
-                                "state": "paid",
-                            })
-                except Exception:
-                    _logger.exception("FAILED LINK BILL TO ORDER ZERO TOTAL order_id=%s", order.id)
-                    
-                return {
-                    "success": True,
-                    "data": {
-                        "order_id": order.id,
-                        "amount_total": 0.0,
-                        "amount_paid": 0.0,
-                        "amount_return": 0.0,
-                        "state": getattr(order, "state", "paid"),
-                        "payments": [],
-                        "note": "Zero total (100% discount) - finalized without payment",
-                    }
-                }
-
-            # =========================
-            # VALIDASI AMOUNT NORMAL
-            # =========================
-            if amount <= 0:
-                return self._err("Amount must be > 0", 400)
-
-
-        
-
-            Order = env["pos.order"]
-            order = Order.browse(order_id)
-            if not order.exists():
-                return self._err("Order not found", 404)
-
-            session = env["pos.session"].browse(session_id)
-            if not session.exists():
-                return self._err("Session not found", 404)
-
-            if getattr(order, "session_id", False) and order.session_id.id != session.id:
-                return self._err("Order session mismatch", 409)
-
-            pm = env["pos.payment.method"].browse(pm_id)
-            if not pm.exists():
-                return self._err("Payment method not found", 404)
-
-            if "pos.payment" not in env.registry.models:
-                return self._err("Model pos.payment not available", 500)
-
-            Payment = env["pos.payment"]
-
-            # ----------------------------
-            # compatibility helpers
-            # ----------------------------
-            def _invalidate(rec):
-                """Compat: invalidate cache/recordset."""
-                try:
-                    # Odoo lama/beda bisa punya salah satu dari ini
-                    if hasattr(rec, "invalidate_recordset"):
-                        rec.invalidate_recordset()
-                    elif hasattr(rec, "invalidate_cache"):
-                        rec.invalidate_cache()
-                    elif hasattr(env, "cache") and hasattr(env.cache, "invalidate"):
-                        # best-effort
-                        env.cache.invalidate()
-                except Exception:
-                    pass
-
-            def _flush():
-                try:
-                    env.cr.flush()
-                except Exception:
-                    pass
-
-            def _read_money_snapshot():
-                _invalidate(order)
-                fields_to_read = ["amount_total"]
-                if "amount_paid" in order._fields:
-                    fields_to_read.append("amount_paid")
-                if "amount_return" in order._fields:
-                    fields_to_read.append("amount_return")
+            try:
+                order.with_context(
+                    active_model="pos.order",
+                    active_id=order.id,
+                    default_pos_order_id=order.id,
+                    pos_order_id=order.id,
+                ).action_pos_order_paid()
+            except Exception:
                 if "state" in order._fields:
-                    fields_to_read.append("state")
+                    order.write({"state": "paid"})
 
-                od = order.read(fields_to_read)[0]
-                total_ = float(od.get("amount_total") or 0.0)
-                paid_ = float(od.get("amount_paid") or 0.0) if "amount_paid" in order._fields else None
-                ret_ = float(od.get("amount_return") or 0.0) if "amount_return" in order._fields else None
-                state_ = od.get("state") if "state" in order._fields else getattr(order, "state", None)
-                return total_, paid_, ret_, state_
+            env.cr.flush()
+            if hasattr(order, "invalidate_recordset"):
+                order.invalidate_recordset()
 
-            def _compute_paid_total_from_payments():
-                _invalidate(order)
-                if "payment_ids" in order._fields:
-                    return float(sum(order.payment_ids.mapped("amount")) if order.payment_ids else 0.0)
-                if "amount_paid" in order._fields:
-                    return float(order.amount_paid or 0.0)
-                return 0.0
-
-            # ============================================================
-            # 1) CREATE PAYMENT (add_payment -> SQL fallback)
-            # ============================================================
-            pay_id = None
-
-            # A) coba add_payment (kalau ada)
-            add_payment_ok = False
-            if hasattr(order, "add_payment"):
-                try:
-                    with env.cr.savepoint():
-                        vals = {"payment_method_id": pm.id, "amount": amount}
-                        if ref:
-                            vals["payment_name"] = ref
-                        order_ctx = order.with_context(
-                            active_model="pos.order",
-                            active_id=order.id,
-                            default_pos_order_id=order.id,
-                            pos_order_id=order.id,
-                        )
-                        order_ctx.add_payment(vals)
-                        _flush()
-                        _invalidate(order)
-                        add_payment_ok = True
-                except Exception:
-                    _logger.exception("add_payment failed; will fallback to SQL")
-
-            # B) Kalau add_payment tidak sukses, LANGSUNG SQL (karena ORM kamu terbukti insert NULL pos_order_id)
-            if not add_payment_ok:
-                try:
-                    with env.cr.savepoint():
-                        pay_id = self._sql_insert_pos_payment(env, order, pm, amount, ref=ref)
-                        _flush()
-                        _invalidate(order)
-                except psycopg2.Error as e:
-                    _logger.exception("SQL pos_payment insert failed: order=%s err=%s", order.id, e)
-                    return self._err(str(e), 400)
-                except Exception as e:
-                    _logger.exception("SQL pos_payment insert failed (non-db): order=%s err=%s", order.id, e)
-                    return self._err(str(e), 400)
-
-            # ============================================================
-            # 2) RECOMPUTE paid/return (fresh)
-            # ============================================================
-            total, paid_read, ret_read, _state = _read_money_snapshot()
-
-            if paid_read is None:
-                paid = _compute_paid_total_from_payments()
-            else:
-                paid = float(paid_read or 0.0)
-                if paid <= 0 and amount > 0:
-                    paid = max(paid, _compute_paid_total_from_payments())
-
-            change = max(0.0, paid - total)
-
-            # update amount_paid/return kalau ada
-            write_vals = {}
-            if "amount_paid" in order._fields:
-                write_vals["amount_paid"] = paid
-            if "amount_return" in order._fields:
-                write_vals["amount_return"] = change
-
-            if write_vals:
-                try:
-                    with env.cr.savepoint():
-                        order.write(write_vals)
-                        _flush()
-                        _invalidate(order)
-                except Exception as e:
-                    _logger.exception("ORDER WRITE PAID/RETURN FAILED: order=%s err=%s", order.id, e)
-                    return self._err(str(e), 400)
-
-            # ============================================================
-            # 3) FINALIZE kalau lunas (rounding currency)
-            # ============================================================
-            bill_id = self._parse_int(body.get("bill_id"))
-
-            currency = getattr(order, "currency_id", None)
-
-            if bill_id:
-                bill = env["poskas.bill"].sudo().browse(bill_id)
-
-                if bill.exists():
-                    is_paid = True
-
-                    _logger.warning(
-                        "FORCE PAID FROM BILL order=%s bill=%s paid=%s total=%s",
-                        order.id,
-                        bill.id,
-                        paid,
-                        total,
-                    )
-                else:
-                    if currency:
-                        is_paid = currency.compare_amounts(paid, total) >= 0
-                    else:
-                        is_paid = (paid + 1e-9) >= total
-
-            else:
-                if currency:
-                    is_paid = currency.compare_amounts(paid, total) >= 0
-                else:
-                    is_paid = (paid + 1e-9) >= total
-                    
-                    
-            if is_paid:
-                try:
-                    with env.cr.savepoint():
-                        total2, paid2, ret2, _ = _read_money_snapshot()
-                        v = {}
-                        if "amount_paid" in order._fields:
-                            v["amount_paid"] = float(paid2 or paid)
-                        if "amount_return" in order._fields:
-                            v["amount_return"] = float(ret2 or change)
-                        if v:
-                            order.write(v)
-                            _flush()
-                            _invalidate(order)
-
-                        currency = order.currency_id
-                        total = float(order.amount_total or 0.0)
-
-                        # hitung ulang paid dari payment_ids (INI PENTING)
-                        paid = sum(order.payment_ids.mapped("amount")) if order.payment_ids else 0.0
-                        change = max(0.0, paid - total)
-                        net_paid = paid - change  # INI yang dipakai Odoo
-
-                        # pastikan field tersimpan dulu
-                        vals = {}
-                        if "amount_paid" in order._fields:
-                            vals["amount_paid"] = paid
-                        if "amount_return" in order._fields:
-                            vals["amount_return"] = change
-
-                        if vals:
-                            order.write(vals)
-                            env.cr.flush()
-                            if hasattr(order, "invalidate_recordset"):
-                                order.invalidate_recordset()
-
-                        # check lunas ala Odoo
-                        is_paid = currency.compare_amounts(net_paid, total) >= 0
-
-                        if is_paid:
-                            try:
-                                order.with_context(
-                                    active_model="pos.order",
-                                    active_id=order.id,
-                                    default_pos_order_id=order.id,
-                                    pos_order_id=order.id,
-                                ).action_pos_order_paid()
-                            except UserError as ue:
-                                _logger.warning(
-                                    "action_pos_order_paid blocked, fallback state=paid: order=%s err=%s",
-                                    order.id, ue
-                                )
-                                if "state" in order._fields:
-                                    order.write({"state": "paid"})
-                        elif hasattr(order, "action_paid"):
-                            order.action_paid()
-                        elif "state" in order._fields:
-                            order.write({"state": "paid"})
-
-                        # TARUH DI SINI
-                        try:
-                            bill_id = self._parse_int(body.get("bill_id"))
-                            if bill_id:
-                                bill = env["poskas.bill"].sudo().browse(bill_id)
-                                if bill.exists():
-                                    bill.write({
-                                        "pos_order_id": order.id,
-                                        "state": "paid",
-                                    })
-                        except Exception:
-                            _logger.exception("FAILED LINK BILL TO ORDER order_id=%s", order.id)
-
-                        _flush()
-                        _invalidate(order)
-
-                except UserError as ue:
-                    t3, p3, r3, st3 = _read_money_snapshot()
-                    if p3 is None:
-                        p3 = _compute_paid_total_from_payments()
-                    _logger.warning(
-                        "PAY not fully paid per Odoo: order=%s paid=%s total=%s return=%s state=%s err=%s",
-                        order.id, p3, t3, r3, st3, ue
-                    )
-                    return self._err(str(ue), 409, code="ORDER_NOT_FULLY_PAID", data={
-                        "order_id": order.id,
-                        "amount_total": float(t3),
-                        "amount_paid": float(p3),
-                        "amount_return": float(r3 or 0.0),
-                        "state": st3,
-                    })
-                except Exception as e:
-                    _logger.exception("FINALIZE ORDER PAID FAILED: order=%s err=%s", order.id, e)
-                    return self._err(str(e), 400)
-
-            # ============================================================
-            # 4) RESPONSE
-            # ============================================================
-            fields_to_read = ["state", "amount_total"]
-            if "amount_paid" in order._fields:
-                fields_to_read.append("amount_paid")
-            if "amount_return" in order._fields:
-                fields_to_read.append("amount_return")
-            order_data = order.read(fields_to_read)[0]
-
-            payments_out = []
-            if "payment_ids" in order._fields and order.payment_ids:
-                for p in order.payment_ids:
-                    payments_out.append({
-                        "id": p.id,
-                        "payment_method_id": p.payment_method_id.id if getattr(p, "payment_method_id", False) else None,
-                        "payment_method_name": p.payment_method_id.display_name if getattr(p, "payment_method_id", False) else None,
-                        "amount": float(p.amount or 0.0),
-                        "ref": getattr(p, "payment_reference", None) or getattr(p, "ref", None) or None,
-                    })
-            else:
-                payments_out.append({
-                    "id": pay_id,
-                    "payment_method_id": pm.id,
-                    "payment_method_name": pm.display_name,
-                    "amount": float(amount),
-                    "ref": ref or None,
-                })
-
-            total_final = float(order_data.get("amount_total") or total or 0.0)
-            paid_final = float(order_data.get("amount_paid") or 0.0) if "amount_paid" in order._fields else _compute_paid_total_from_payments()
-            return_final = float(order_data.get("amount_return") or 0.0) if "amount_return" in order._fields else max(0.0, paid_final - total_final)
+            bill_linked = self._link_bills_to_order(env, order, bill_ids, mark_paid=True)
 
             return {
                 "success": True,
                 "data": {
                     "order_id": order.id,
-                    "amount_total": total_final,
-                    "amount_paid": paid_final,
-                    "amount_return": return_final,
-                    "state": order_data.get("state") or getattr(order, "state", None),
-                    "payments": payments_out,
+                    "amount_total": 0.0,
+                    "amount_paid": 0.0,
+                    "amount_return": 0.0,
+                    "state": getattr(order, "state", "paid"),
+                    "payments": [],
+                    "bill_id": bill_id or None,
+                    "bill_linked": bill_linked if bill_id else None,
+                    "note": "Zero total (100% discount) - finalized without payment",
                 }
             }
 
+        # =========================
+        # VALIDASI AMOUNT NORMAL
+        # =========================
+        if amount <= 0:
+            return self._err("Amount must be > 0", 400)
+
+        session = env["pos.session"].browse(session_id)
+        if not session.exists():
+            return self._err("Session not found", 404)
+
+        if getattr(order, "session_id", False) and order.session_id.id != session.id:
+            return self._err("Order session mismatch", 409)
+
+        pm = env["pos.payment.method"].browse(pm_id)
+        if not pm.exists():
+            return self._err("Payment method not found", 404)
+
+        if "pos.payment" not in env.registry.models:
+            return self._err("Model pos.payment not available", 500)
+
+        # ----------------------------
+        # compatibility helpers
+        # ----------------------------
+        def _invalidate(rec):
+            """Compat: invalidate cache/recordset."""
+            try:
+                if hasattr(rec, "invalidate_recordset"):
+                    rec.invalidate_recordset()
+                elif hasattr(rec, "invalidate_cache"):
+                    rec.invalidate_cache()
+                elif hasattr(env, "cache") and hasattr(env.cache, "invalidate"):
+                    env.cache.invalidate()
+            except Exception:
+                pass
+
+        def _flush():
+            try:
+                env.cr.flush()
+            except Exception:
+                pass
+
+        def _read_money_snapshot():
+            _invalidate(order)
+            fields_to_read = ["amount_total"]
+            if "amount_paid" in order._fields:
+                fields_to_read.append("amount_paid")
+            if "amount_return" in order._fields:
+                fields_to_read.append("amount_return")
+            if "state" in order._fields:
+                fields_to_read.append("state")
+
+            od = order.read(fields_to_read)[0]
+            total_ = float(od.get("amount_total") or 0.0)
+            paid_ = float(od.get("amount_paid") or 0.0) if "amount_paid" in order._fields else None
+            ret_ = float(od.get("amount_return") or 0.0) if "amount_return" in order._fields else None
+            state_ = od.get("state") if "state" in order._fields else getattr(order, "state", None)
+            return total_, paid_, ret_, state_
+
+        def _compute_paid_total_from_payments():
+            _invalidate(order)
+            if "payment_ids" in order._fields:
+                return float(sum(order.payment_ids.mapped("amount")) if order.payment_ids else 0.0)
+            if "amount_paid" in order._fields:
+                return float(order.amount_paid or 0.0)
+            return 0.0
+
+        # ============================================================
+        # 1) CREATE PAYMENT (add_payment -> SQL fallback)
+        # ============================================================
+        pay_id = None
+
+        # A) coba add_payment (kalau ada)
+        add_payment_ok = False
+        if hasattr(order, "add_payment"):
+            try:
+                with env.cr.savepoint():
+                    vals = {"payment_method_id": pm.id, "amount": amount}
+                    if ref:
+                        vals["payment_name"] = ref
+                    order_ctx = order.with_context(
+                        active_model="pos.order",
+                        active_id=order.id,
+                        default_pos_order_id=order.id,
+                        pos_order_id=order.id,
+                    )
+                    order_ctx.add_payment(vals)
+                    _flush()
+                    _invalidate(order)
+                    add_payment_ok = True
+            except Exception:
+                _logger.exception("add_payment failed; will fallback to SQL")
+
+        # B) Kalau add_payment tidak sukses, langsung SQL
+        if not add_payment_ok:
+            try:
+                with env.cr.savepoint():
+                    pay_id = self._sql_insert_pos_payment(env, order, pm, amount, ref=ref)
+                    _flush()
+                    _invalidate(order)
+            except psycopg2.Error as e:
+                _logger.exception("SQL pos_payment insert failed: order=%s err=%s", order.id, e)
+                return self._err(str(e), 400)
+            except Exception as e:
+                _logger.exception("SQL pos_payment insert failed (non-db): order=%s err=%s", order.id, e)
+                return self._err(str(e), 400)
+
+        # ============================================================
+        # 1b) LINK BILL -> ORDER SEGERA setelah payment tercatat.
+        #     Dilakukan di luar blok finalize supaya tidak ikut ter-rollback
+        #     kalau finalize gagal / pembayaran baru sebagian.
+        # ============================================================
+        bill_linked = self._link_bills_to_order(env, order, bill_ids, mark_paid=False)
+
+        # ============================================================
+        # 2) RECOMPUTE paid/return (fresh)
+        # ============================================================
+        total, paid_read, ret_read, _state = _read_money_snapshot()
+
+        if paid_read is None:
+            paid = _compute_paid_total_from_payments()
+        else:
+            paid = float(paid_read or 0.0)
+            if paid <= 0 and amount > 0:
+                paid = max(paid, _compute_paid_total_from_payments())
+
+        change = max(0.0, paid - total)
+
+        # update amount_paid/return kalau ada
+        write_vals = {}
+        if "amount_paid" in order._fields:
+            write_vals["amount_paid"] = paid
+        if "amount_return" in order._fields:
+            write_vals["amount_return"] = change
+
+        if write_vals:
+            try:
+                with env.cr.savepoint():
+                    order.write(write_vals)
+                    _flush()
+                    _invalidate(order)
+            except Exception as e:
+                _logger.exception("ORDER WRITE PAID/RETURN FAILED: order=%s err=%s", order.id, e)
+                return self._err(str(e), 400)
+
+        # ============================================================
+        # 3) FINALIZE kalau lunas (rounding currency)
+        # ============================================================
+        currency = getattr(order, "currency_id", None)
+        if currency:
+            is_paid = currency.compare_amounts(paid, total) >= 0
+        else:
+            is_paid = (paid + 1e-9) >= total
+
+        if is_paid:
+            try:
+                with env.cr.savepoint():
+                    total2, paid2, ret2, _ = _read_money_snapshot()
+                    v = {}
+                    if "amount_paid" in order._fields:
+                        v["amount_paid"] = float(paid2 or paid)
+                    if "amount_return" in order._fields:
+                        v["amount_return"] = float(ret2 or change)
+                    if v:
+                        order.write(v)
+                        _flush()
+                        _invalidate(order)
+
+                    currency = order.currency_id
+                    total = float(order.amount_total or 0.0)
+
+                    # hitung ulang paid dari payment_ids
+                    paid = sum(order.payment_ids.mapped("amount")) if order.payment_ids else 0.0
+                    change = max(0.0, paid - total)
+                    net_paid = paid - change  # yang dipakai Odoo
+
+                    vals = {}
+                    if "amount_paid" in order._fields:
+                        vals["amount_paid"] = paid
+                    if "amount_return" in order._fields:
+                        vals["amount_return"] = change
+                    if vals:
+                        order.write(vals)
+                        _flush()
+                        _invalidate(order)
+
+                    # check lunas ala Odoo
+                    if currency.compare_amounts(net_paid, total) >= 0:
+                        try:
+                            order.with_context(
+                                active_model="pos.order",
+                                active_id=order.id,
+                                default_pos_order_id=order.id,
+                                pos_order_id=order.id,
+                            ).action_pos_order_paid()
+                        except UserError as ue:
+                            _logger.warning(
+                                "action_pos_order_paid blocked, fallback state=paid: order=%s err=%s",
+                                order.id, ue
+                            )
+                            if "state" in order._fields:
+                                order.write({"state": "paid"})
+
+                    _flush()
+                    _invalidate(order)
+
+            except UserError as ue:
+                t3, p3, r3, st3 = _read_money_snapshot()
+                if p3 is None:
+                    p3 = _compute_paid_total_from_payments()
+                _logger.warning(
+                    "PAY not fully paid per Odoo: order=%s paid=%s total=%s return=%s state=%s err=%s",
+                    order.id, p3, t3, r3, st3, ue
+                )
+                return self._err(str(ue), 409, code="ORDER_NOT_FULLY_PAID", data={
+                    "order_id": order.id,
+                    "amount_total": float(t3),
+                    "amount_paid": float(p3),
+                    "amount_return": float(r3 or 0.0),
+                    "state": st3,
+                    "bill_id": bill_id or None,
+                    "bill_linked": bill_linked if bill_id else None,
+                })
+            except Exception as e:
+                _logger.exception("FINALIZE ORDER PAID FAILED: order=%s err=%s", order.id, e)
+                return self._err(str(e), 400)
+
+        # ============================================================
+        # 3b) LINK FINAL: pastikan pos_order_id tersimpan, dan set
+        #     state bill = paid kalau order memang sudah paid.
+        #     Dipanggil SELALU (lunas atau tidak), di luar savepoint finalize.
+        # ============================================================
+        if bill_id:
+            bill_linked = self._link_bills_to_order(env, order, bill_ids, mark_paid=True)
+
+        # ============================================================
+        # 4) RESPONSE
+        # ============================================================
+        fields_to_read = ["state", "amount_total"]
+        if "amount_paid" in order._fields:
+            fields_to_read.append("amount_paid")
+        if "amount_return" in order._fields:
+            fields_to_read.append("amount_return")
+        _invalidate(order)
+        order_data = order.read(fields_to_read)[0]
+
+        payments_out = []
+        if "payment_ids" in order._fields and order.payment_ids:
+            for p in order.payment_ids:
+                payments_out.append({
+                    "id": p.id,
+                    "payment_method_id": p.payment_method_id.id if getattr(p, "payment_method_id", False) else None,
+                    "payment_method_name": p.payment_method_id.display_name if getattr(p, "payment_method_id", False) else None,
+                    "amount": float(p.amount or 0.0),
+                    "ref": getattr(p, "payment_reference", None) or getattr(p, "ref", None) or None,
+                })
+        else:
+            payments_out.append({
+                "id": pay_id,
+                "payment_method_id": pm.id,
+                "payment_method_name": pm.display_name,
+                "amount": float(amount),
+                "ref": ref or None,
+            })
+
+        total_final = float(order_data.get("amount_total") or total or 0.0)
+        paid_final = float(order_data.get("amount_paid") or 0.0) if "amount_paid" in order._fields else _compute_paid_total_from_payments()
+        return_final = float(order_data.get("amount_return") or 0.0) if "amount_return" in order._fields else max(0.0, paid_final - total_final)
+
+        return {
+            "success": True,
+            "data": {
+                "order_id": order.id,
+                "amount_total": total_final,
+                "amount_paid": paid_final,
+                "amount_return": return_final,
+                "state": order_data.get("state") or getattr(order, "state", None),
+                "payments": payments_out,
+                "bill_id": bill_id or None,
+                "bill_linked": bill_linked if bill_id else None,
+            }
+        }
+    
     def _sql_create_order_fallback(self, env, session, partner, table_id, order_line_cmds, total, tax, general_note_text=None):
         cr = env.cr
 

@@ -616,7 +616,7 @@ class PosBillApi(http.Controller):
                 "id": str(line.id),
                 "product_id": line.product_id.id,
                 "product_name": line.product_id.display_name or "",
-                "product_category": line.product_id.categ_id.name if line.product_id.categ_id else "",
+                "product_category": line.product_id.pos_categ_ids[0].display_name if line.product_id.pos_categ_ids else "",
                 "qty": line.qty or 0.0,
                 "price_unit": line.price_unit or 0.0,
                 "discount_percent": line.discount_percent or 0.0,
