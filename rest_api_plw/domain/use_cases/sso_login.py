@@ -3,17 +3,36 @@ import requests
 import random
 from datetime import datetime, timedelta
 
+# Google documents exactly these two issuer values for ID tokens.
+_GOOGLE_ISSUERS = {"accounts.google.com", "https://accounts.google.com"}
+
+
 class SsoLoginUseCase:
-    def __init__(self, user_repo, otp_repo, mail_service, otp_duration_seconds, google_client_id):
+    def __init__(self, user_repo, otp_repo, mail_service, otp_duration_seconds, google_client_ids):
+        """
+        google_client_ids: every OAuth client id whose ID tokens this backend accepts.
+        The POS app signs in through two Google clients of the same Cloud project:
+          - the WEB client (Play Services flows: Credential Manager / legacy GoogleSignIn)
+          - the ANDROID client (browser OAuth flow on devices without Play Services)
+        Accepts a set/list, or a single string (optionally comma-separated).
+        """
         self.user_repo = user_repo
         self.otp_repo = otp_repo
         self.mail_service = mail_service
         self.otp_duration_seconds = otp_duration_seconds
-        self.google_client_id = google_client_id
+
+        if isinstance(google_client_ids, str):
+            google_client_ids = google_client_ids.split(",")
+        self.google_client_ids = {
+            c.strip() for c in (google_client_ids or []) if c and c.strip()
+        }
 
     def execute(self, id_token):
         if not id_token:
             return {"success": False, "error": "Missing parameter 'id_token'", "status": 400}
+
+        if not self.google_client_ids:
+            return {"success": False, "error": "Google SSO is not configured (no client id)", "status": 500}
 
         # 1. Validate id_token with Google TokenInfo API
         try:
@@ -36,13 +55,20 @@ class SsoLoginUseCase:
         token_info = resp.json()
 
         # 2. Verify audience and issuer
-        aud = token_info.get("aud")
-        if aud != self.google_client_id:
+        #    CHANGED: the audience may be any of the accepted client ids, not one fixed id.
+        aud = (token_info.get("aud") or "").strip()
+        if aud not in self.google_client_ids:
             return {"success": False, "error": "Google Token audience mismatch", "status": 401}
 
-        iss = token_info.get("iss") or ""
-        if "accounts.google.com" not in iss:
+        #    CHANGED: exact issuer match instead of substring.
+        iss = (token_info.get("iss") or "").strip()
+        if iss not in _GOOGLE_ISSUERS:
             return {"success": False, "error": "Invalid token issuer", "status": 401}
+
+        #    ADDED: tokeninfo returns email_verified as the string "true".
+        email_verified = str(token_info.get("email_verified") or "").lower()
+        if email_verified != "true":
+            return {"success": False, "error": "Google account email is not verified", "status": 401}
 
         email = (token_info.get("email") or "").strip().lower()
         if not email:
