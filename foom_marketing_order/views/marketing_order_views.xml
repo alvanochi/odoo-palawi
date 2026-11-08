@@ -1,0 +1,145 @@
+<odoo>
+    <data>
+        <record id="view_marketing_order_form" model="ir.ui.view">
+            <field name="name">view.marketing.order.form</field>
+            <field name="model">marketing.order</field>
+            <field name="arch" type="xml">
+                <form duplicate="0" delete="0">
+                    <header>
+                        <field name="delivery_state" invisible="1"/>
+                        <field name="state" widget="statusbar" statusbar_visible="draft,submit,confirm"/>
+
+                        <button name="appr_action_submit" string="Submit"
+                                invisible="state != 'draft'" type="object" class="oe_highlight"/>
+
+                        <button name="appr_action_appr" string="Confirm"
+                                invisible="state != 'submit'" type="object" class="oe_highlight"/>
+
+                        <button name="appr_action_reject" string="Reject"
+                                invisible="state != 'submit'" type="object"/>
+
+                        <button name="unlink" string="Delete"
+                                invisible="state != 'draft'" type="object" confirm="Are you sure you want to delete this?"/>
+
+                        <button name="appr_action_set_to_draft" string="Set to Draft"
+                                invisible="delivery_state not in ['draft','cancel'] and state != 'draft'" type="object"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_button_box" name="button_box">
+                            <button class="oe_stat_button" name="open_do" type="object" icon="fa-truck">
+                                <field name="count_do" widget="statinfo" string="Delivery"/>
+                            </button>
+                            <button class="oe_stat_button" name="open_move" type="object" icon="fa-book">
+                                <field name="count_mv" widget="statinfo" string="Journals"/>
+                            </button>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="name" readonly="1"/>
+                                <field name="requestor" readonly="state != 'draft'"/>
+                                <field name="type_id" readonly="state != 'draft'" options="{'no_create': True}"/>
+                                <field name="analytic_id" readonly="state != 'draft'" options="{'no_create': True}"/>
+                                <field name="pricelist_id" invisible="1" readonly="1"/>
+                            </group>
+                            <group>
+                                <field name="tujuan" invisible="1" readonly="state != 'draft'"/>
+                                <field name="res_partner_id"
+                                       invisible="tujuan not in ['SC','HP']"
+                                       readonly="state != 'draft'"
+                                       required="not cust_id and tujuan in ['SC','HP']"
+                                       domain="['|',('category_id.name', 'ilike', 'indirect channel%'), ('category_id.parent_id.name','ilike','indirect channel%')]"
+                                       options="{'no_create': True}"/>
+                                <field name="cust_id"
+                                       invisible="tujuan in ['SC','HP']"
+                                       readonly="state != 'draft'"
+                                       required="not res_partner_id and tujuan not in ['SC','HP']"
+                                       options="{'no_create': True}"/>
+                                <field name="nama_tujuan" force_save="1"/>
+                                <field name="alamat_tujuan" force_save="1" readonly="state != 'draft'" required="1"/>
+                                <field name="no_hp_tujuan" force_save="1" readonly="1"/>
+                                <field name="delivery_state" readonly="1"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="Request Details" name="request_details">
+                                <field name="line_ids" readonly="state != 'draft'">
+                                    <list editable="bottom" delete="1"> <field name="product_id" options="{'no_create': True}"/>
+                                        <field name="variant_ids" widget="many2many_tags" force_save="1"/>
+                                        <field name="cost_price" column_invisible="True"/> <field name="barcode" force_save="1"/>
+                                        <field name="qty"/>
+                                        <field name="uom_id"/>
+                                        <field name="unit_price"/>
+                                        <field name="subtotal" sum="Total Subtotal"/>
+                                    </list>
+                                </field>
+                                <group class="oe_subtotal_footer">
+                                    <field name="amount_total" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                </group>
+                            </page>
+                            <page string="Other Info" name="other_info">
+                                <group string="Delivery">
+                                    <field name="warehouse_id" domain="[('is_marketing_order', '=', True)]" options="{'no_create': True}" required="1"/>
+                                    <field name="notes" placeholder="Add internal notes..."/>
+                                </group>
+                            </page>
+                        </notebook>
+                    </sheet>
+                    <chatter/>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_marketing_order_tree" model="ir.ui.view">
+            <field name="name">view.marketing.order.list</field>
+            <field name="model">marketing.order</field>
+            <field name="arch" type="xml">
+                <list default_order='create_date desc'>
+                    <field name="name" decoration-bf="1"/>
+                    <field name="create_date" widget="date"/>
+                    <field name="nama_tujuan" string="Customer"/>
+                    <field name="requestor"/>
+                    <field name="warehouse_id" optional="show"/>
+                    <field name="amount_total" sum="Total Amount" widget="monetary"/>
+                    <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-success="state == 'confirm'"/>
+                    <field name="delivery_state" widget="badge" decoration-warning="delivery_state == 'draft'"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_marketing_order_search" model="ir.ui.view">
+            <field name="name">view.marketing.order.search</field>
+            <field name="model">marketing.order</field>
+            <field name="arch" type="xml">
+                <search string="Marketing Order">
+                    <field name="name"/>
+                    <field name="nama_tujuan"/>
+                    <field name="requestor"/>
+                    <field name="line_ids" string="Product" filter_domain="[('line_ids.product_id', 'ilike', self)]"/>
+                    <field name="warehouse_id"/>
+                    <field name="state"/>
+                    <field name="delivery_state"/>
+                    <group expand="0" string="Group By">
+                        <filter string="Status" name="status" domain="[]" context="{'group_by': 'state'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <record model="ir.actions.act_window" id="action_marketing_order">
+            <field name="name">Marketing Order</field>
+            <field name="res_model">marketing.order</field>
+            <field name="view_mode">list,form</field>
+            <field name="domain">[('warehouse_id.company_id', 'in', allowed_company_ids)]</field>
+            <field name="search_view_id" ref="view_marketing_order_search"/>
+        </record>
+
+        <menuitem name="Marketing Order" id="foom_marketing_order.menu_root"
+                  web_icon="foom_marketing_order,static/description/icon.png"/>
+
+        <menuitem id="foom_marketing_order_main_menu"
+                  parent="foom_marketing_order.menu_root"
+                  action="action_marketing_order"
+                  name="Marketing Order"
+                  sequence="10"/>
+    </data>
+</odoo>

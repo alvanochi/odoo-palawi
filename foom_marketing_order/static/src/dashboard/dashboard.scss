@@ -1,0 +1,259 @@
+:has(> .o_mkt_dashboard) {
+    height: 100% !important;
+    overflow-y: auto !important;
+}
+
+.o_mkt_dashboard {
+    padding: 16px 20px 32px;
+    
+    // UBAH DUA BARIS INI:
+    height: auto !important;       // Biarkan memanjang mengikuti isi konten
+    min-height: 100%;
+    overflow-x: hidden;            // Hindari scroll samping yang tidak perlu
+    overflow-y: visible;           // Biarkan parent Odoo yang menangani scrollbar
+    
+    box-sizing: border-box;
+    background: #f6f7f9;
+
+    // Custom Scrollbar Style (opsional: agar tampilan scrollbar lebih tebal & jelas)
+    &::-webkit-scrollbar {
+        width: 10px;
+    }
+    &::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+    &::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 4px;
+    }
+    &::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+    }
+
+    .o_mkt_toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+
+        h2 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 600;
+        }
+        small {
+            color: #6b7280;
+        }
+    }    
+
+    // ---------------- KPI ----------------
+    .o_mkt_kpi_row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .o_mkt_kpi {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 14px 16px;
+
+        .o_mkt_kpi_label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+            color: #6b7280;
+        }
+        .o_mkt_kpi_value {
+            font-size: 24px;
+            font-weight: 600;
+            margin-top: 4px;
+            line-height: 1.2;
+        }
+        .o_mkt_kpi_hint {
+            font-size: 11px;
+            color: #9ca3af;
+            margin-top: 2px;
+        }
+        &.o_mkt_kpi_warn .o_mkt_kpi_value {
+            color: #b45309;
+        }
+    }
+
+    // ---------------- Cards ----------------
+    .o_mkt_card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 14px 16px;
+        margin-bottom: 16px;
+
+        .o_mkt_card_head {
+            margin-bottom: 12px;
+            h3 {
+                margin: 0;
+                font-size: 15px;
+                font-weight: 600;
+            }
+            small {
+                color: #9ca3af;
+                font-size: 11px;
+            }
+        }
+    }
+
+    .o_mkt_grid2 {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 16px;
+    }
+
+    // ---------------- Vertical bars ----------------
+    .o_mkt_barchart {
+        display: flex;
+        align-items: flex-end;
+        gap: 8px;
+        min-height: 200px;
+        overflow-x: auto;
+        padding-bottom: 4px;
+    }
+
+    .o_mkt_bar_col {
+        flex: 1 0 48px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+
+        .o_mkt_bar_value {
+            font-size: 10px;
+            color: #6b7280;
+            margin-bottom: 4px;
+            white-space: nowrap;
+        }
+        .o_mkt_bar_track {
+            width: 100%;
+            height: 130px;
+            display: flex;
+            align-items: flex-end;
+            background: #f3f4f6;
+            border-radius: 4px 4px 0 0;
+        }
+        .o_mkt_bar_fill {
+            width: 100%;
+            background: linear-gradient(180deg, #6366f1, #4f46e5);
+            border-radius: 4px 4px 0 0;
+            transition: height .2s ease;
+        }
+        .o_mkt_bar_label {
+            font-size: 11px;
+            margin-top: 6px;
+            font-weight: 500;
+        }
+        .o_mkt_bar_sub {
+            font-size: 10px;
+            color: #9ca3af;
+        }
+        &:hover .o_mkt_bar_fill {
+            filter: brightness(1.15);
+        }
+    }
+
+    // ---------------- Horizontal bars ----------------
+    .o_mkt_hbar {
+        margin-bottom: 10px;
+
+        .o_mkt_hbar_head {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            font-size: 12px;
+            margin-bottom: 3px;
+        }
+        .o_mkt_hbar_label {
+            font-weight: 500;
+        }
+        .o_mkt_hbar_track {
+            height: 8px;
+            background: #f3f4f6;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .o_mkt_hbar_fill {
+            height: 100%;
+            background: #4f46e5;
+            border-radius: 4px;
+            &.o_mkt_hbar_alt {
+                background: #0ea5e9;
+            }
+        }
+        &:hover .o_mkt_hbar_fill {
+            filter: brightness(1.15);
+        }
+    }
+
+    // ---------------- Stacked bar + legend ----------------
+    .o_mkt_stack {
+        display: flex;
+        height: 18px;
+        border-radius: 4px;
+        overflow: hidden;
+        background: #f3f4f6;
+    }
+    .o_mkt_stack_seg {
+        height: 100%;
+        &:hover {
+            filter: brightness(1.15);
+        }
+    }
+    .o_mkt_legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 10px;
+    }
+    .o_mkt_legend_item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+    }
+    .o_mkt_dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+        display: inline-block;
+    }
+
+    // ---------------- Table ----------------
+    .o_mkt_table {
+        margin-bottom: 0;
+        font-size: 12px;
+        th {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #6b7280;
+            border-top: none;
+        }
+    }
+
+    .o_mkt_muted {
+        color: #9ca3af;
+    }
+
+    .o_mkt_clickable {
+        cursor: pointer;
+    }
+
+    .o_mkt_nodata,
+    .o_mkt_empty {
+        color: #9ca3af;
+        font-size: 13px;
+        text-align: center;
+        padding: 24px 0;
+    }
+}

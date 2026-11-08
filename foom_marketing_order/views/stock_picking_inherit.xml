@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="stock_picking_inherit_view_form" model="ir.ui.view">
+        <field name="name">stock.picking.inherit.form</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+            <field name="partner_id" position="after">
+                <field name="mkt_id" invisible="1"/>
+                <field name="partner_name" invisible="1"/>
+                <field name="domain_picking_type_ids" invisible="1"/>
+
+                <field name="name_tujuan" placeholder="Name..."
+                       invisible="partner_name != 'SAMPLE EKSTERNAL'" string="Delivery Address"/>
+
+                <label for="street" invisible="partner_name != 'SAMPLE EKSTERNAL'"/>
+                <div class="o_address_format" invisible="partner_name != 'SAMPLE EKSTERNAL'">
+                    <field name="street" placeholder="Street..." class="o_address_street"/>
+                    <field name="kecamatan" placeholder="Kecamatan..." class="o_address_street"/>
+                    <field name="city" placeholder="City" class="o_address_city"/>
+                    <field name="state_id" class="o_address_state" placeholder="State"/>
+                    <field name="zip" placeholder="ZIP" class="o_address_zip"/>
+                    <field name="mobile" placeholder="Mobile..." class="o_address_street"/>
+                </div>
+            </field>
+
+            <field name="picking_type_id" position="attributes">
+                <attribute name="domain">[('id', 'in', domain_picking_type_ids)]</attribute>
+            </field>
+
+            <field name="partner_id" position="attributes">
+                <attribute name="invisible">partner_name == 'SAMPLE EKSTERNAL'</attribute>
+            </field>
+
+            <xpath expr="//label[@for='partner_id']" position="attributes">
+                <attribute name="invisible">partner_name == 'SAMPLE EKSTERNAL'</attribute>
+            </xpath>
+
+            <xpath expr="//button[@name='action_cancel']" position="attributes">
+                <attribute name="invisible">mkt_id != False</attribute>
+                </xpath>
+        </field>
+    </record>
+
+    <record id="stock_picking_inherit_tree_view_form" model="ir.ui.view">
+        <field name="name">stock.move.line.inherit.list.form</field> <field name="model">stock.move.line</field>
+        <field name="inherit_id" ref="stock.view_move_line_tree"/>
+        <field name="arch" type="xml">
+            <field name="product_uom_id" position="after">
+                <field name="mkt_unit_price" optional="show"/>
+            </field>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="foom_marketing_order.MarketingDashboard">
+        <div class="o_mkt_dashboard o_action">
+
+            <!-- ============ Toolbar ============ -->
+            <div class="o_mkt_toolbar">
+                <div class="o_mkt_toolbar_title">
+                    <h2>Dashboard Marketing Order</h2>
+                    <small t-if="state.data and state.data.company_names.length">
+                        <t t-esc="state.data.company_names.join(', ')"/>
+                    </small>
+                </div>
+                <div class="o_mkt_filters btn-group">
+                    <button class="btn btn-sm"
+                            t-att-class="state.range === 'this_month' ? 'btn-primary' : 'btn-outline-primary'"
+                            t-on-click="() => this.setRange('this_month')">Bulan Ini</button>
+                    <button class="btn btn-sm"
+                            t-att-class="state.range === 'last_3_months' ? 'btn-primary' : 'btn-outline-primary'"
+                            t-on-click="() => this.setRange('last_3_months')">3 Bulan</button>
+                    <button class="btn btn-sm"
+                            t-att-class="state.range === 'this_year' ? 'btn-primary' : 'btn-outline-primary'"
+                            t-on-click="() => this.setRange('this_year')">Tahun Ini</button>
+                    <button class="btn btn-sm"
+                            t-att-class="state.range === 'all' ? 'btn-primary' : 'btn-outline-primary'"
+                            t-on-click="() => this.setRange('all')">Semua</button>
+                </div>
+            </div>
+
+            <!-- ============ Loading / Error ============ -->
+            <div t-if="state.loading" class="o_mkt_empty">
+                <i class="fa fa-circle-o-notch fa-spin fa-2x"/>
+                <p>Memuat data…</p>
+            </div>
+
+            <div t-elif="state.error" class="alert alert-danger m-3">
+                Gagal memuat data dashboard. Coba muat ulang halaman.
+            </div>
+
+            <t t-else="">
+                <!-- ============ KPI ============ -->
+                <div class="o_mkt_kpi_row">
+                    <div class="o_mkt_kpi o_mkt_clickable" t-on-click="onClickAllOrders">
+                        <div class="o_mkt_kpi_label">Total Marketing Order</div>
+                        <div class="o_mkt_kpi_value"><t t-esc="formatNumber(state.data.kpi.total_order)"/></div>
+                        <div class="o_mkt_kpi_hint">klik untuk lihat daftar</div>
+                    </div>
+                    <div class="o_mkt_kpi">
+                        <div class="o_mkt_kpi_label">Nilai Jual</div>
+                        <div class="o_mkt_kpi_value">Rp <t t-esc="formatNumber(state.data.kpi.total_value)"/></div>
+                        <div class="o_mkt_kpi_hint">total amount</div>
+                    </div>
+                    <div class="o_mkt_kpi">
+                        <div class="o_mkt_kpi_label">Nilai Cost</div>
+                        <div class="o_mkt_kpi_value">Rp <t t-esc="formatNumber(state.data.kpi.total_cost)"/></div>
+                        <div class="o_mkt_kpi_hint">total cost price</div>
+                    </div>
+                    <div class="o_mkt_kpi o_mkt_clickable o_mkt_kpi_warn" t-on-click="onClickPendingDelivery">
+                        <div class="o_mkt_kpi_label">Delivery Belum Selesai</div>
+                        <div class="o_mkt_kpi_value"><t t-esc="formatNumber(state.data.kpi.pending_delivery)"/></div>
+                        <div class="o_mkt_kpi_hint">confirmed, belum done</div>
+                    </div>
+                </div>
+
+                <!-- ============ Tren bulanan ============ -->
+                <div class="o_mkt_card">
+                    <div class="o_mkt_card_head">
+                        <h3>Tren Bulanan</h3>
+                        <small>nilai jual per bulan — klik batang untuk detail</small>
+                    </div>
+                    <div t-if="!trendBars.length" class="o_mkt_nodata">Belum ada data pada rentang ini.</div>
+                    <div t-else="" class="o_mkt_barchart">
+                        <t t-foreach="trendBars" t-as="bar" t-key="bar.label">
+                            <div class="o_mkt_bar_col o_mkt_clickable" t-on-click="() => this.onClickTrend(bar)">
+                                <div class="o_mkt_bar_value"><t t-esc="formatCompact(bar.value)"/></div>
+                                <div class="o_mkt_bar_track">
+                                    <div class="o_mkt_bar_fill" t-attf-style="height: {{bar.height}}%"/>
+                                </div>
+                                <div class="o_mkt_bar_label"><t t-esc="bar.label"/></div>
+                                <div class="o_mkt_bar_sub"><t t-esc="bar.count"/> MO</div>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+
+                <!-- ============ Requestor & Tipe ============ -->
+                <div class="o_mkt_grid2">
+                    <div class="o_mkt_card">
+                        <div class="o_mkt_card_head">
+                            <h3>Per Requestor</h3>
+                            <small>berdasarkan nilai jual</small>
+                        </div>
+                        <div t-if="!state.data.requestor.length" class="o_mkt_nodata">Tidak ada data.</div>
+                        <t t-foreach="state.data.requestor" t-as="row" t-key="row.label">
+                            <div class="o_mkt_hbar o_mkt_clickable" t-on-click="() => this.onClickRequestor(row)">
+                                <div class="o_mkt_hbar_head">
+                                    <span class="o_mkt_hbar_label"><t t-esc="row.label"/></span>
+                                    <span class="o_mkt_hbar_val">
+                                        Rp <t t-esc="formatCompact(row.value)"/>
+                                        <span class="o_mkt_muted">· <t t-esc="row.count"/> MO</span>
+                                    </span>
+                                </div>
+                                <div class="o_mkt_hbar_track">
+                                    <div class="o_mkt_hbar_fill"
+                                         t-attf-style="width: {{pct(row.value, state.data.requestor, 'value')}}%"/>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+
+                    <div class="o_mkt_card">
+                        <div class="o_mkt_card_head">
+                            <h3>Per Tipe</h3>
+                            <small>KOL, Support Customer, Sample, dst</small>
+                        </div>
+                        <div t-if="!state.data.type.length" class="o_mkt_nodata">Tidak ada data.</div>
+                        <t t-foreach="state.data.type" t-as="row" t-key="row.label">
+                            <div class="o_mkt_hbar o_mkt_clickable" t-on-click="() => this.onClickType(row)">
+                                <div class="o_mkt_hbar_head">
+                                    <span class="o_mkt_hbar_label"><t t-esc="row.label"/></span>
+                                    <span class="o_mkt_hbar_val">
+                                        Rp <t t-esc="formatCompact(row.value)"/>
+                                        <span class="o_mkt_muted">· <t t-esc="row.count"/> MO</span>
+                                    </span>
+                                </div>
+                                <div class="o_mkt_hbar_track">
+                                    <div class="o_mkt_hbar_fill o_mkt_hbar_alt"
+                                         t-attf-style="width: {{pct(row.value, state.data.type, 'value')}}%"/>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+
+                <!-- ============ Status ============ -->
+                <div class="o_mkt_grid2">
+                    <div class="o_mkt_card">
+                        <div class="o_mkt_card_head">
+                            <h3>Status Marketing Order</h3>
+                        </div>
+                        <div t-if="!stateSegments.length" class="o_mkt_nodata">Tidak ada data.</div>
+                        <t t-else="">
+                            <div class="o_mkt_stack">
+                                <t t-foreach="stateSegments" t-as="seg" t-key="seg.key">
+                                    <div class="o_mkt_stack_seg o_mkt_clickable"
+                                         t-attf-style="width: {{seg.share}}%; background-color: {{seg.color}};"
+                                         t-att-title="seg.label + ': ' + seg.count"
+                                         t-on-click="() => this.onClickState(seg)"/>
+                                </t>
+                            </div>
+                            <div class="o_mkt_legend">
+                                <t t-foreach="stateSegments" t-as="seg" t-key="seg.key">
+                                    <div class="o_mkt_legend_item o_mkt_clickable"
+                                         t-on-click="() => this.onClickState(seg)">
+                                        <span class="o_mkt_dot" t-attf-style="background-color: {{seg.color}};"/>
+                                        <span><t t-esc="seg.label"/></span>
+                                        <strong><t t-esc="seg.count"/></strong>
+                                    </div>
+                                </t>
+                            </div>
+                        </t>
+                    </div>
+
+                    <div class="o_mkt_card">
+                        <div class="o_mkt_card_head">
+                            <h3>Status Pengiriman</h3>
+                            <small>hanya order yang sudah Confirmed</small>
+                        </div>
+                        <div t-if="!deliverySegments.length" class="o_mkt_nodata">Belum ada order confirmed.</div>
+                        <t t-else="">
+                            <div class="o_mkt_stack">
+                                <t t-foreach="deliverySegments" t-as="seg" t-key="seg.key">
+                                    <div class="o_mkt_stack_seg o_mkt_clickable"
+                                         t-attf-style="width: {{seg.share}}%; background-color: {{seg.color}};"
+                                         t-att-title="seg.label + ': ' + seg.count"
+                                         t-on-click="() => this.onClickDelivery(seg)"/>
+                                </t>
+                            </div>
+                            <div class="o_mkt_legend">
+                                <t t-foreach="deliverySegments" t-as="seg" t-key="seg.key">
+                                    <div class="o_mkt_legend_item o_mkt_clickable"
+                                         t-on-click="() => this.onClickDelivery(seg)">
+                                        <span class="o_mkt_dot" t-attf-style="background-color: {{seg.color}};"/>
+                                        <span><t t-esc="seg.label"/></span>
+                                        <strong><t t-esc="seg.count"/></strong>
+                                    </div>
+                                </t>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+
+                <!-- ============ Produk & Analytic ============ -->
+                <div class="o_mkt_grid2">
+                    <div class="o_mkt_card">
+                        <div class="o_mkt_card_head">
+                            <h3>Top 10 Produk</h3>
+                            <small>berdasarkan qty keluar</small>
+                        </div>
+                        <div t-if="!state.data.product.length" class="o_mkt_nodata">Tidak ada baris produk.</div>
+                        <table t-else="" class="table table-sm o_mkt_table">
+                            <thead>
+                                <tr>
+                                    <th>Produk</th>
+                                    <th class="text-end">Qty</th>
+                                    <th class="text-end">Nilai</th>
+                                    <th class="text-end">Cost</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="state.data.product" t-as="row" t-key="row.label">
+                                    <tr>
+                                        <td><t t-esc="row.label"/></td>
+                                        <td class="text-end"><t t-esc="formatNumber(row.qty)"/></td>
+                                        <td class="text-end">Rp <t t-esc="formatNumber(row.value)"/></td>
+                                        <td class="text-end o_mkt_muted">Rp <t t-esc="formatNumber(row.cost)"/></td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="o_mkt_card">
+                        <div class="o_mkt_card_head">
+                            <h3>Serapan per Analytic Account</h3>
+                            <small>10 terbesar — klik baris untuk detail</small>
+                        </div>
+                        <div t-if="!state.data.analytic.length" class="o_mkt_nodata">Tidak ada data.</div>
+                        <table t-else="" class="table table-sm o_mkt_table">
+                            <thead>
+                                <tr>
+                                    <th>Analytic Account</th>
+                                    <th class="text-end">MO</th>
+                                    <th class="text-end">Nilai</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="state.data.analytic" t-as="row" t-key="row.label">
+                                    <tr class="o_mkt_clickable" t-on-click="() => this.onClickAnalytic(row)">
+                                        <td><t t-esc="row.label"/></td>
+                                        <td class="text-end"><t t-esc="row.count"/></td>
+                                        <td class="text-end">Rp <t t-esc="formatNumber(row.value)"/></td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+
+</templates>

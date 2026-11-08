@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="stock_picking_type_marketing_order_form" model="ir.ui.view">
+        <field name="name">stock.picking.type.marketing.order.form</field>
+        <field name="model">stock.picking.type</field>
+        <field name="inherit_id" ref="stock.view_picking_type_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='sequence_code']" position="after">
+                <field name="is_marketing_order"/>
+                <field name="internal_non_staging"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

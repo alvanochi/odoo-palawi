@@ -1,0 +1,41 @@
+# -*- coding: utf-8 -*
+{
+    'name' : 'Foom Marketing Order',
+    'version' : '1.0',
+    'summary': 'Foom Marketing Order',
+    'description': """Marketing Order""",
+    'website': 'https://www.odoo.com',
+    'depends' : ['base', 'mail', 'product', 'sale', 'stock'],
+    'data': [
+        # 'security/group.xml',
+        'security/ir.model.access.csv',
+        'data/ir_sequence.xml',
+        'views/marketing_order_views.xml',
+        'views/marketing_dashboard_views.xml',
+        'views/res_config_settings.xml',
+        'views/list_cust.xml',
+        'views/kode_akun.xml',
+        'views/type.xml',
+        'views/stock_picking_inherit.xml',
+        'views/stock_picking_type.xml',
+        'views/stock_warehouse.xml',
+        'report/report_delivery_slip_inherit.xml',
+        'report/label_mkt_order.xml',
+        'data/config_parameter.xml',
+    ],
+    'controllers': [
+        'controllers.marketing_order',
+    ],
+    'assets': {
+        'web.assets_backend': [
+            'foom_marketing_order/static/src/dashboard/dashboard.scss',
+            'foom_marketing_order/static/src/dashboard/dashboard.js',
+            'foom_marketing_order/static/src/dashboard/dashboard.xml',
+        ],
+    },
+    'demo': [],
+    'installable': True,
+    'application': True,
+    'auto_install': False,
+    'license': 'LGPL-3',
+}

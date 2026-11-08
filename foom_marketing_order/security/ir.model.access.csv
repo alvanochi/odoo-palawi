@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_marketing_order,access.marketing.order,model_marketing_order,,1,1,1,1
+access_marketing_order_line,access.marketing.order.line,model_marketing_order_line,,1,1,1,1
+access_marketing_order_cust,access.marketing.order.cust,model_marketing_order_cust,,1,1,1,1
+access_marketing_order_type,access.marketing.order.type,model_marketing_order_type,,1,1,1,1

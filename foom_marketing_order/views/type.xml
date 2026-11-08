@@ -1,0 +1,61 @@
+<odoo>
+    <data>
+        <!-- explicit list view definition -->
+        <record id="view_marketing_order_type_list" model="ir.ui.view">
+            <field name="name">view.marketing.order.type.list</field>
+            <field name="model">marketing.order.type</field>
+            <field name="arch" type="xml">
+                <list default_order='create_date desc'>
+                    <field name="id_type"/>
+                    <field name="subtype"/>
+                    <field name="type"/>
+                    <field name="name"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_marketing_order_type_form" model="ir.ui.view">
+            <field name="name">view.marketing.order.type.form</field>
+            <field name="model">marketing.order.type</field>
+            <field name="arch" type="xml">
+                <form duplicate="0">
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="name"/>
+                                <field name="id_type"/>
+                                <field name="subtype" widget="radio"/>
+                                <field name="type"/>
+                            </group>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- actions opening views on models -->
+        <record model="ir.actions.act_window" id="action_marketing_order_type">
+            <field name="name">Type</field>
+            <field name="res_model">marketing.order.type</field>
+            <field name="view_mode">list,form</field>
+        </record>
+        <record id="action_get_name_marketing_type" model="ir.actions.server">
+            <field name="name">Get Name</field>
+            <field name="model_id" ref="foom_marketing_order.model_marketing_order_type"/>
+            <field name="binding_model_id" ref="foom_marketing_order.model_marketing_order_type"/>
+            <field name="state">code</field>
+            <field name="code">
+                if records:
+                    action = records.get_name()
+            </field>
+        </record>
+        <menuitem
+                id="foom_marketing_order_type"
+                parent="foom_marketing_order.menu_root"
+                action="action_marketing_order_type"
+                name="Type"
+                sequence="30"
+        />
+
+    </data>
+</odoo>

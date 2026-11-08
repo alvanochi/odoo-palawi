@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="foom_marketing_order_picking_type_id" model="ir.config_parameter">
+            <field name="key">foom_marketing_order.marketing_order_picking_type_id</field>
+            <field name="value"></field>
+        </record>
+        <record id="foom_marketing_order_type_param" model="ir.config_parameter">
+            <field name="key">foom_marketing_order.marketing_type_generate_address</field>
+            <field name="value">['SC', 'HP']</field>
+        </record>
+        <record id="sample_location_id" model="ir.config_parameter">
+            <field name="key">foom_marketing_order.sample_location_id</field>
+            <field name="value">648</field>
+        </record>
+        <record id="sample_location_id_kmi" model="ir.config_parameter">
+            <field name="key">foom_marketing_order.sample_location_id_kmi</field>
+            <field name="value">1219</field>
+        </record>
+    </data>
+</odoo>

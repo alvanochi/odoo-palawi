@@ -1,0 +1,356 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="foom_sales_dashboard.KpiCard">
+        <div class="o_foom_kpi">
+            <div class="o_foom_kpi_head">
+                <span class="o_foom_kpi_label" t-esc="props.label"/>
+                <i t-if="props.icon" class="fa" t-att-class="props.icon" aria-hidden="true"/>
+            </div>
+            <div class="o_foom_kpi_value" t-att-title="props.value" t-esc="props.value"/>
+            <div class="o_foom_kpi_foot">
+                <span t-if="props.growthLabel"
+                      class="o_foom_delta"
+                      t-att-class="'o_foom_delta_' + direction">
+                    <i class="fa"
+                       t-att-class="{
+                           'fa-arrow-up': direction === 'up',
+                           'fa-arrow-down': direction === 'down',
+                           'fa-minus': direction === 'flat',
+                       }"
+                       aria-hidden="true"/>
+                    <span t-esc="props.growthLabel"/>
+                </span>
+                <span t-if="props.hint" class="o_foom_kpi_hint" t-esc="props.hint"/>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="foom_sales_dashboard.ChartCanvas">
+        <div class="o_foom_canvas_wrap" t-att-style="'height:' + (props.height or 260) + 'px'">
+            <canvas t-ref="canvas"/>
+        </div>
+    </t>
+
+    <t t-name="foom_sales_dashboard.RankList">
+        <div class="o_foom_card o_foom_rank">
+            <h3 class="o_foom_card_title" t-esc="props.title"/>
+            <div t-if="!props.rows.length" class="o_foom_empty_inline" t-esc="props.emptyLabel"/>
+            <ol t-else="" class="o_foom_rank_list">
+                <li t-foreach="props.rows" t-as="row" t-key="row.id + '_' + row_index"
+                    class="o_foom_rank_row"
+                    t-att-class="{ o_foom_clickable: props.onRowClick }"
+                    t-on-click="() => this.onClick(row)">
+                    <div class="o_foom_rank_top">
+                        <span class="o_foom_rank_name" t-esc="row.name" t-att-title="row.name"/>
+                        <span class="o_foom_rank_value"
+                              t-esc="props.formatter.money(row.amount, { compact: true })"/>
+                    </div>
+                    <div class="o_foom_rank_track">
+                        <div class="o_foom_rank_bar" t-att-style="'width:' + width(row) + '%'"/>
+                    </div>
+                    <div class="o_foom_rank_meta">
+                        <span t-esc="props.formatter.int(row.orders)"/>
+                        <span> orders</span>
+                        <t t-if="props.showQty">
+                            <span> · </span>
+                            <span t-esc="props.formatter.float(row.quantity)"/>
+                            <span> qty</span>
+                        </t>
+                    </div>
+                </li>
+            </ol>
+        </div>
+    </t>
+
+    <t t-name="foom_sales_dashboard.Dashboard">
+        <div class="o_foom_dashboard o_action" t-ref="root">
+
+            <div class="o_foom_header">
+                <div>
+                    <h1 class="o_foom_title">FOOM Sales Dashboard</h1>
+                    <p class="o_foom_subtitle">
+                        Posted customer invoices · time zone <t t-esc="state.options.tz"/>
+                    </p>
+                </div>
+                <div class="o_foom_header_actions">
+                    <button class="btn btn-secondary btn-sm" t-on-click="() => this.loadData()">
+                        <i class="fa fa-refresh me-1" aria-hidden="true"/>Refresh
+                    </button>
+                    <button class="btn btn-secondary btn-sm" t-on-click="exportCsv">
+                        <i class="fa fa-download me-1" aria-hidden="true"/>Export CSV
+                    </button>
+                    <button class="btn btn-primary btn-sm" t-on-click="openRawData">
+                        <i class="fa fa-table me-1" aria-hidden="true"/>Raw data
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filters: a single row above every chart -->
+            <div class="o_foom_filters">
+                <div class="o_foom_segment" role="group" aria-label="Period">
+                    <button t-foreach="presets" t-as="preset" t-key="preset.id"
+                            class="o_foom_segment_btn"
+                            t-att-class="{ active: state.preset === preset.id }"
+                            t-on-click="() => this.setPreset(preset.id)">
+                        <t t-esc="preset.label"/>
+                    </button>
+                </div>
+
+                <div class="o_foom_field">
+                    <label>From</label>
+                    <input type="date" class="o_foom_input"
+                           t-att-value="state.dateFrom"
+                           t-on-change="(ev) => this.onDateChange('dateFrom', ev)"/>
+                </div>
+                <div class="o_foom_field">
+                    <label>To</label>
+                    <input type="date" class="o_foom_input"
+                           t-att-value="state.dateTo"
+                           t-on-change="(ev) => this.onDateChange('dateTo', ev)"/>
+                </div>
+
+                <div class="o_foom_field">
+                    <label>Granularity</label>
+                    <select class="o_foom_input" t-on-change="onGranularityChange">
+                        <option t-foreach="granularities" t-as="g" t-key="g.id"
+                                t-att-value="g.id"
+                                t-att-selected="state.granularity === g.id">
+                            <t t-esc="g.label"/>
+                        </option>
+                    </select>
+                </div>
+
+                <div class="o_foom_field o_foom_dropdown" t-if="state.options.warehouses.length">
+                    <label>Warehouse</label>
+                    <button class="o_foom_input o_foom_dropdown_btn"
+                            t-att-class="{ o_foom_active: state.warehouseIds.length }"
+                            t-on-click.stop="() => this.toggleMenu('warehouse')">
+                        <span class="o_foom_dropdown_label" t-esc="warehouseSummary"/>
+                        <i class="fa fa-caret-down" aria-hidden="true"/>
+                    </button>
+                    <div t-if="state.openMenu === 'warehouse'" class="o_foom_dropdown_menu"
+                         t-on-click.stop="">
+                        <label t-foreach="state.options.warehouses" t-as="wh" t-key="wh.id"
+                               class="o_foom_check">
+                            <input type="checkbox"
+                                   t-att-checked="state.warehouseIds.includes(wh.id)"
+                                   t-on-change="() => this.toggleWarehouse(wh.id)"/>
+                            <span t-esc="wh.name"/>
+                        </label>
+                        <button class="o_foom_dropdown_clear"
+                                t-on-click="() => this.clearSelection('warehouseIds')">
+                            Show all warehouses
+                        </button>
+                    </div>
+                </div>
+
+                <div class="o_foom_field o_foom_dropdown" t-if="state.options.locations.length">
+                    <label>Location</label>
+                    <button class="o_foom_input o_foom_dropdown_btn"
+                            t-att-class="{ o_foom_active: state.locationIds.length }"
+                            t-on-click.stop="() => this.toggleMenu('location')">
+                        <span class="o_foom_dropdown_label" t-esc="locationSummary"/>
+                        <i class="fa fa-caret-down" aria-hidden="true"/>
+                    </button>
+                    <div t-if="state.openMenu === 'location'" class="o_foom_dropdown_menu"
+                         t-on-click.stop="">
+                        <label t-foreach="state.options.locations" t-as="loc" t-key="loc.id"
+                               class="o_foom_check">
+                            <input type="checkbox"
+                                   t-att-checked="state.locationIds.includes(loc.id)"
+                                   t-on-change="() => this.toggleLocation(loc.id)"/>
+                            <span t-esc="loc.name"/>
+                        </label>
+                        <button class="o_foom_dropdown_clear"
+                                t-on-click="() => this.clearSelection('locationIds')">
+                            Show all locations
+                        </button>
+                    </div>
+                </div>
+
+                <div class="o_foom_field o_foom_dropdown" t-if="state.options.multi_company">
+                    <label>Company</label>
+                    <button class="o_foom_input o_foom_dropdown_btn"
+                            t-att-class="{ o_foom_active: state.companyIds.length }"
+                            t-on-click.stop="() => this.toggleMenu('company')">
+                        <span class="o_foom_dropdown_label" t-esc="companySummary"/>
+                        <i class="fa fa-caret-down" aria-hidden="true"/>
+                    </button>
+                    <div t-if="state.openMenu === 'company'" class="o_foom_dropdown_menu"
+                         t-on-click.stop="">
+                        <label t-foreach="state.options.companies" t-as="company" t-key="company.id"
+                               class="o_foom_check">
+                            <input type="checkbox"
+                                   t-att-checked="state.companyIds.includes(company.id)"
+                                   t-on-change="() => this.toggleCompany(company.id)"/>
+                            <span t-esc="company.name"/>
+                        </label>
+                        <button class="o_foom_dropdown_clear"
+                                t-on-click="() => this.clearSelection('companyIds')">
+                            Show all companies
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status -->
+            <div t-if="state.error" class="alert alert-danger o_foom_alert" role="alert">
+                <strong>Could not load the data.</strong>
+                <span t-esc="state.error"/>
+            </div>
+
+            <div t-if="state.loading" class="o_foom_loading">
+                <span class="spinner-border" role="status" aria-hidden="true"/>
+                <span>Loading data…</span>
+            </div>
+
+            <t t-elif="state.data and !state.data.has_data">
+                <div class="o_foom_empty">
+                    <i class="fa fa-bar-chart" aria-hidden="true"/>
+                    <h2>No sales in this period</h2>
+                    <p>
+                        The range <t t-esc="state.dateFrom"/> to <t t-esc="state.dateTo"/>
+                        has no posted customer invoices.
+                        Try a wider period, or clear the warehouse and location filters.
+                    </p>
+                </div>
+            </t>
+
+            <t t-elif="state.data">
+
+                <!-- KPI -->
+                <div class="o_foom_kpi_grid">
+                    <KpiCard t-foreach="kpiCards" t-as="card" t-key="card.label"
+                             label="card.label"
+                             value="card.value"
+                             growth="card.growth"
+                             growthLabel="card.growth === null ? '' : growthLabel(card.growth)"
+                             hint="card.hint"
+                             icon="card.icon"/>
+                </div>
+
+                <!-- Heatmap -->
+                <div class="o_foom_card">
+                    <div class="o_foom_card_head">
+                        <div>
+                            <h3 class="o_foom_card_title">Sales rhythm: hour × weekday</h3>
+                            <p class="o_foom_card_sub">
+                                Each cell is one hour on one weekday, summed across the
+                                selected period.
+                            </p>
+                        </div>
+                        <div class="o_foom_segment o_foom_segment_sm">
+                            <button class="o_foom_segment_btn"
+                                    t-att-class="{ active: state.heatMetric === 'orders' }"
+                                    t-on-click="() => this.setHeatMetric('orders')">Orders</button>
+                            <button class="o_foom_segment_btn"
+                                    t-att-class="{ active: state.heatMetric === 'amount' }"
+                                    t-on-click="() => this.setHeatMetric('amount')">Revenue</button>
+                        </div>
+                    </div>
+
+                    <div class="o_foom_heat_scroll">
+                        <div class="o_foom_heat">
+                            <div class="o_foom_heat_corner"/>
+                            <div class="o_foom_heat_hours">
+                                <span t-foreach="hours" t-as="hour" t-key="hour"
+                                      class="o_foom_heat_hour">
+                                    <t t-if="hour % 3 === 0" t-esc="hour"/>
+                                </span>
+                            </div>
+
+                            <t t-foreach="heatmapRows" t-as="row" t-key="row.dow">
+                                <div class="o_foom_heat_day" t-esc="row.short"/>
+                                <div class="o_foom_heat_cells">
+                                    <div t-foreach="row.cells" t-as="cell" t-key="cell.hour"
+                                         class="o_foom_heat_cell"
+                                         t-att-class="'o_foom_heat_l' + cell.level"
+                                         t-on-mouseenter="(ev) => this.onCellEnter(row, cell, ev)"
+                                         t-on-mouseleave="onCellLeave"/>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+
+                    <div class="o_foom_heat_legend">
+                        <span class="o_foom_heat_cell o_foom_heat_l0"/>
+                        <span class="o_foom_legend_text">no transactions</span>
+                        <span t-foreach="heatLegendSteps" t-as="step" t-key="step"
+                              class="o_foom_heat_cell"
+                              t-att-class="'o_foom_heat_l' + step"/>
+                        <span class="o_foom_legend_text">busier</span>
+                    </div>
+                </div>
+
+                <!-- Trends: two separate charts rather than one dual-axis chart -->
+                <div class="o_foom_grid_2">
+                    <div class="o_foom_card">
+                        <h3 class="o_foom_card_title">Revenue trend</h3>
+                        <p class="o_foom_card_sub">
+                            By <t t-esc="state.data.granularity"/>, in company currency.
+                        </p>
+                        <ChartCanvas config="trendAmountConfig"
+                                     dataKey="dataKey + '|amount'"
+                                     height="260"/>
+                    </div>
+                    <div class="o_foom_card">
+                        <h3 class="o_foom_card_title">Order count trend</h3>
+                        <p class="o_foom_card_sub">
+                            By <t t-esc="state.data.granularity"/>, counted per unique invoice.
+                        </p>
+                        <ChartCanvas config="trendOrdersConfig"
+                                     dataKey="dataKey + '|orders'"
+                                     height="260"/>
+                    </div>
+                </div>
+
+                <!-- Hourly profile -->
+                <div class="o_foom_card">
+                    <h3 class="o_foom_card_title">Hourly profile</h3>
+                    <p class="o_foom_card_sub">
+                        All days in the period combined, following the heatmap metric above.
+                    </p>
+                    <ChartCanvas config="hourlyConfig"
+                                 dataKey="dataKey + '|hourly'"
+                                 height="220"/>
+                </div>
+
+                <!-- Rankings -->
+                <div class="o_foom_grid_3">
+                    <RankList title="'Top products'"
+                              rows="state.data.top_products"
+                              formatter="formatter"
+                              showQty="true"
+                              emptyLabel="'No products sold yet.'"
+                              onRowClick.bind="openProduct"/>
+                    <RankList title="'Top warehouses'"
+                              rows="state.data.top_warehouses"
+                              formatter="formatter"
+                              emptyLabel="'No warehouse data yet.'"
+                              onRowClick.bind="openWarehouse"/>
+                    <RankList title="'Top locations'"
+                              rows="state.data.top_locations"
+                              formatter="formatter"
+                              emptyLabel="'No location data yet.'"
+                              onRowClick.bind="openLocation"/>
+                    <RankList title="'Top customers'"
+                              rows="state.data.top_partners"
+                              formatter="formatter"
+                              emptyLabel="'No customer data yet.'"
+                              onRowClick.bind="openPartner"/>
+                </div>
+
+            </t>
+
+            <!-- Heatmap tooltip -->
+            <div t-if="state.tooltip" class="o_foom_tooltip"
+                 t-att-style="'left:' + state.tooltip.x + 'px; top:' + state.tooltip.y + 'px'">
+                <div class="o_foom_tooltip_title" t-esc="state.tooltip.title"/>
+                <div t-foreach="state.tooltip.lines" t-as="line" t-key="line" t-esc="line"/>
+            </div>
+
+        </div>
+    </t>
+
+</templates>

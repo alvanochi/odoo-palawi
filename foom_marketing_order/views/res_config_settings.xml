@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="res_config_settings_view_form_marketing_order" model="ir.ui.view">
+            <field name="name">res.config.settings.view.form.inherit.marketing.order</field>
+            <field name="model">res.config.settings</field>
+            <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//form" position="inside">
+                    <app string="Marketing Order" name="foom_marketing_order"
+                         logo="/foom_marketing_order/static/description/icon.png">
+                        <block title="Lokasi Sample"
+                               help="Menentukan lokasi tujuan barang saat Marketing Order di-Confirm.">
+                            <setting string="Lokasi Sample"
+                                     help="Delivery Order yang dibuat dari Marketing Order akan memakai lokasi ini sebagai Destination Location. Umumnya lokasi Inventory Loss bernama 'Sample'.">
+                                <field name="mkt_sample_location_id"
+                                       options="{'no_create': True, 'no_open': True}"/>
+                            </setting>
+                            <setting string="Lokasi Sample (KMI)"
+                                     help="Cadangan untuk company KMI. Belum dipakai oleh proses Confirm.">
+                                <field name="mkt_sample_location_kmi_id"
+                                       options="{'no_create': True, 'no_open': True}"/>
+                            </setting>
+                        </block>
+                    </app>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="action_marketing_order_config_settings" model="ir.actions.act_window">
+            <field name="name">Settings</field>
+            <field name="res_model">res.config.settings</field>
+            <field name="view_mode">form</field>
+            <field name="target">inline</field>
+            <field name="context">{'module': 'foom_marketing_order'}</field>
+        </record>
+
+        <menuitem
+                id="foom_marketing_order_menu_config"
+                parent="foom_marketing_order.menu_root"
+                name="Configuration"
+                sequence="90"
+                groups="base.group_system"/>
+
+        <menuitem
+                id="foom_marketing_order_menu_config_settings"
+                parent="foom_marketing_order.foom_marketing_order_menu_config"
+                action="foom_marketing_order.action_marketing_order_config_settings"
+                name="Settings"
+                sequence="10"
+                groups="base.group_system"/>
+
+    </data>
+</odoo>
