@@ -5,7 +5,7 @@
     'summary': 'Foom Marketing Order',
     'description': """Marketing Order""",
     'website': 'https://www.odoo.com',
-    'depends' : ['base', 'mail', 'product', 'sale', 'stock'],
+    'depends' : ['base', 'mail', 'product', 'sale', 'stock', 'stock_account'],
     'data': [
         # 'security/group.xml',
         'security/ir.model.access.csv',
