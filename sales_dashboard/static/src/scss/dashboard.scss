@@ -1,4 +1,4 @@
-// FOOM Sales Dashboard — token warna & tata letak.
+// Sales Dashboard — token warna & tata letak.
 //
 // Seluruh warna didefinisikan sebagai CSS custom property pada :root supaya
 // dapat dibaca kembali oleh JS (konfigurasi Chart.js) dan diganti dalam satu
@@ -8,67 +8,67 @@
 
 :root {
     // Permukaan & bidang
-    --foom-surface: #ffffff;
-    --foom-plane: #f9f9f7;
+    --sd-surface: #ffffff;
+    --sd-plane: #f9f9f7;
 
     // Tinta
-    --foom-ink: #0b0b0b;
-    --foom-ink-2: #52514e;
-    --foom-muted: #898781;
+    --sd-ink: #0b0b0b;
+    --sd-ink-2: #52514e;
+    --sd-muted: #898781;
 
     // Chrome grafik
-    --foom-grid: #e1e0d9;
-    --foom-baseline: #c3c2b7;
-    --foom-border: rgba(11, 11, 11, 0.10);
+    --sd-grid: #e1e0d9;
+    --sd-baseline: #c3c2b7;
+    --sd-border: rgba(11, 11, 11, 0.10);
 
     // Seri kategorikal
-    --foom-series-1: #2a78d6;
-    --foom-series-2: #eb6834;
+    --sd-series-1: #2a78d6;
+    --sd-series-2: #eb6834;
 
     // Status delta
-    --foom-up: #006300;
-    --foom-down: #d03b3b;
+    --sd-up: #006300;
+    --sd-down: #d03b3b;
 
     // Sel heatmap bernilai nol
-    --foom-zero: #f0efec;
+    --sd-zero: #f0efec;
 
     // Ramp sekuensial biru untuk heatmap
-    --foom-heat-1: #cde2fb;
-    --foom-heat-2: #b7d3f6;
-    --foom-heat-3: #9ec5f4;
-    --foom-heat-4: #6da7ec;
-    --foom-heat-5: #3987e5;
-    --foom-heat-6: #256abf;
+    --sd-heat-1: #cde2fb;
+    --sd-heat-2: #b7d3f6;
+    --sd-heat-3: #9ec5f4;
+    --sd-heat-4: #6da7ec;
+    --sd-heat-5: #3987e5;
+    --sd-heat-6: #256abf;
 }
 
 :root.o_dark,
 :root[data-color-scheme="dark"],
 :root:has(body.o_dark) {
-    --foom-surface: #1a1a19;
-    --foom-plane: #0d0d0d;
+    --sd-surface: #1a1a19;
+    --sd-plane: #0d0d0d;
 
-    --foom-ink: #ffffff;
-    --foom-ink-2: #c3c2b7;
-    --foom-muted: #898781;
+    --sd-ink: #ffffff;
+    --sd-ink-2: #c3c2b7;
+    --sd-muted: #898781;
 
-    --foom-grid: #2c2c2a;
-    --foom-baseline: #383835;
-    --foom-border: rgba(255, 255, 255, 0.10);
+    --sd-grid: #2c2c2a;
+    --sd-baseline: #383835;
+    --sd-border: rgba(255, 255, 255, 0.10);
 
-    --foom-series-1: #3987e5;
-    --foom-series-2: #d95926;
+    --sd-series-1: #3987e5;
+    --sd-series-2: #d95926;
 
-    --foom-up: #0ca30c;
-    --foom-down: #d03b3b;
+    --sd-up: #0ca30c;
+    --sd-down: #d03b3b;
 
-    --foom-zero: #2c2c2a;
+    --sd-zero: #2c2c2a;
 
-    --foom-heat-1: #0d366b;
-    --foom-heat-2: #104281;
-    --foom-heat-3: #184f95;
-    --foom-heat-4: #256abf;
-    --foom-heat-5: #3987e5;
-    --foom-heat-6: #86b6ef;
+    --sd-heat-1: #0d366b;
+    --sd-heat-2: #104281;
+    --sd-heat-3: #184f95;
+    --sd-heat-4: #256abf;
+    --sd-heat-5: #3987e5;
+    --sd-heat-6: #86b6ef;
 }
 
 // ---------------------------------------------------------------------------
@@ -87,8 +87,8 @@
 // Dashboard sendiri menjadi vertical scroll container.
 // ---------------------------------------------------------------------------
 
-.o_foom_dashboard {
-    --foom-radius: 8px;
+.o_sd_dashboard {
+    --sd-radius: 8px;
 
     box-sizing: border-box;
 
@@ -105,8 +105,8 @@
      */
     padding: 16px 20px 32px;
 
-    background: var(--foom-plane);
-    color: var(--foom-ink);
+    background: var(--sd-plane);
+    color: var(--sd-ink);
 
     font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
 
@@ -118,24 +118,24 @@
     }
 
     &::-webkit-scrollbar-track {
-        background: var(--foom-plane);
-        border-left: 1px solid var(--foom-border);
+        background: var(--sd-plane);
+        border-left: 1px solid var(--sd-border);
     }
 
     &::-webkit-scrollbar-thumb {
-        background: var(--foom-ink-2);
-        border: 4px solid var(--foom-plane);
+        background: var(--sd-ink-2);
+        border: 4px solid var(--sd-plane);
         border-radius: 10px;
         min-height: 48px;
     }
 
     &::-webkit-scrollbar-thumb:hover {
-        background: var(--foom-ink);
+        background: var(--sd-ink);
     }
 
     // ---------------------------------------------------------------- header
 
-    .o_foom_header {
+    .o_sd_header {
         display: flex;
         flex-wrap: wrap;
         gap: 12px;
@@ -144,39 +144,39 @@
         margin-bottom: 16px;
     }
 
-    .o_foom_title {
+    .o_sd_title {
         margin: 0;
         font-size: 20px;
         font-weight: 600;
         letter-spacing: -0.01em;
     }
 
-    .o_foom_subtitle {
+    .o_sd_subtitle {
         margin: 2px 0 0;
         font-size: 12px;
-        color: var(--foom-ink-2);
+        color: var(--sd-ink-2);
     }
 
-    .o_foom_header_actions {
+    .o_sd_header_actions {
         display: flex;
         gap: 8px;
     }
 
     // --------------------------------------------------------------- filters
 
-    .o_foom_filters {
+    .o_sd_filters {
         display: flex;
         flex-wrap: wrap;
         align-items: flex-end;
         gap: 12px;
         padding: 12px;
         margin-bottom: 16px;
-        background: var(--foom-surface);
-        border: 1px solid var(--foom-border);
-        border-radius: var(--foom-radius);
+        background: var(--sd-surface);
+        border: 1px solid var(--sd-border);
+        border-radius: var(--sd-radius);
     }
 
-    .o_foom_field {
+    .o_sd_field {
         display: flex;
         flex-direction: column;
         gap: 4px;
@@ -185,34 +185,34 @@
             margin: 0;
             font-size: 11px;
             font-weight: 500;
-            color: var(--foom-muted);
+            color: var(--sd-muted);
             text-transform: uppercase;
             letter-spacing: 0.04em;
         }
     }
 
-    .o_foom_input {
+    .o_sd_input {
         min-width: 130px;
         padding: 5px 8px;
         font-size: 13px;
-        color: var(--foom-ink);
-        background: var(--foom-surface);
-        border: 1px solid var(--foom-baseline);
+        color: var(--sd-ink);
+        background: var(--sd-surface);
+        border: 1px solid var(--sd-baseline);
         border-radius: 6px;
 
         &:focus {
-            outline: 2px solid var(--foom-series-1);
+            outline: 2px solid var(--sd-series-1);
             outline-offset: 1px;
         }
     }
 
     // ------------------------------------------------- dropdown multi-pilih
 
-    .o_foom_dropdown {
+    .o_sd_dropdown {
         position: relative;
     }
 
-    .o_foom_dropdown_btn {
+    .o_sd_dropdown_btn {
         display: flex;
         gap: 8px;
         align-items: center;
@@ -222,18 +222,18 @@
         text-align: left;
         cursor: pointer;
 
-        &.o_foom_active {
-            border-color: var(--foom-series-1);
+        &.o_sd_active {
+            border-color: var(--sd-series-1);
         }
     }
 
-    .o_foom_dropdown_label {
+    .o_sd_dropdown_label {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
 
-    .o_foom_dropdown_menu {
+    .o_sd_dropdown_menu {
         position: absolute;
         top: calc(100% + 4px);
         left: 0;
@@ -242,13 +242,13 @@
         max-height: 260px;
         padding: 6px;
         overflow-y: auto;
-        background: var(--foom-surface);
-        border: 1px solid var(--foom-border);
+        background: var(--sd-surface);
+        border: 1px solid var(--sd-border);
         border-radius: 6px;
         box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
     }
 
-    .o_foom_check {
+    .o_sd_check {
         display: flex;
         gap: 8px;
         align-items: center;
@@ -256,14 +256,14 @@
         margin: 0;
         font-size: 13px;
         font-weight: 400;
-        color: var(--foom-ink);
+        color: var(--sd-ink);
         text-transform: none;
         letter-spacing: normal;
         border-radius: 4px;
         cursor: pointer;
 
         &:hover {
-            background: var(--foom-plane);
+            background: var(--sd-plane);
         }
 
         input {
@@ -271,62 +271,62 @@
         }
     }
 
-    .o_foom_dropdown_clear {
+    .o_sd_dropdown_clear {
         width: 100%;
         padding: 6px;
         margin-top: 4px;
         font-size: 12px;
-        color: var(--foom-series-1);
+        color: var(--sd-series-1);
         background: transparent;
         border: 0;
-        border-top: 1px solid var(--foom-border);
+        border-top: 1px solid var(--sd-border);
         cursor: pointer;
     }
 
-    .o_foom_segment {
+    .o_sd_segment {
         display: inline-flex;
         padding: 2px;
-        background: var(--foom-plane);
-        border: 1px solid var(--foom-border);
+        background: var(--sd-plane);
+        border: 1px solid var(--sd-border);
         border-radius: 6px;
     }
 
-    .o_foom_segment_btn {
+    .o_sd_segment_btn {
         padding: 4px 10px;
         font-size: 13px;
-        color: var(--foom-ink-2);
+        color: var(--sd-ink-2);
         background: transparent;
         border: 0;
         border-radius: 4px;
         cursor: pointer;
 
         &:hover {
-            color: var(--foom-ink);
-            background: var(--foom-surface);
+            color: var(--sd-ink);
+            background: var(--sd-surface);
         }
 
         &.active {
             color: #ffffff;
-            background: var(--foom-series-1);
+            background: var(--sd-series-1);
         }
     }
 
-    .o_foom_segment_sm .o_foom_segment_btn {
+    .o_sd_segment_sm .o_sd_segment_btn {
         padding: 3px 8px;
         font-size: 12px;
     }
 
     // ----------------------------------------------------------------- cards
 
-    .o_foom_card {
+    .o_sd_card {
         padding: 16px;
         margin-bottom: 16px;
-        background: var(--foom-surface);
-        border: 1px solid var(--foom-border);
-        border-radius: var(--foom-radius);
+        background: var(--sd-surface);
+        border: 1px solid var(--sd-border);
+        border-radius: var(--sd-radius);
     }
 
-    .o_foom_card_head {
+    .o_sd_card_head {
         display: flex;
         flex-wrap: wrap;
         gap: 12px;
@@ -334,25 +334,25 @@
         justify-content: space-between;
     }
 
-    .o_foom_card_title {
+    .o_sd_card_title {
         margin: 0;
         font-size: 14px;
         font-weight: 600;
     }
 
-    .o_foom_card_sub {
+    .o_sd_card_sub {
         margin: 2px 0 12px;
         font-size: 12px;
-        color: var(--foom-muted);
+        color: var(--sd-muted);
     }
 
-    .o_foom_grid_2 {
+    .o_sd_grid_2 {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
         gap: 16px;
     }
 
-    .o_foom_grid_3 {
+    .o_sd_grid_3 {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
         gap: 16px;
@@ -360,7 +360,7 @@
 
     // ------------------------------------------------------------------- KPI
 
-    .o_foom_kpi_grid {
+    .o_sd_kpi_grid {
         display: grid;
 
         /*
@@ -371,38 +371,38 @@
         margin-bottom: 16px;
     }
 
-    .o_foom_kpi {
+    .o_sd_kpi {
         padding: 14px 16px;
-        background: var(--foom-surface);
-        border: 1px solid var(--foom-border);
-        border-radius: var(--foom-radius);
+        background: var(--sd-surface);
+        border: 1px solid var(--sd-border);
+        border-radius: var(--sd-radius);
     }
 
-    .o_foom_kpi_head {
+    .o_sd_kpi_head {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        color: var(--foom-muted);
+        color: var(--sd-muted);
     }
 
-    .o_foom_kpi_label {
+    .o_sd_kpi_label {
         font-size: 12px;
         font-weight: 500;
     }
 
-    .o_foom_kpi_value {
+    .o_sd_kpi_value {
         margin: 6px 0 4px;
         overflow: hidden;
         font-size: clamp(17px, 1.5vw, 22px);
         font-weight: 600;
         line-height: 1.2;
         letter-spacing: -0.02em;
-        color: var(--foom-ink);
+        color: var(--sd-ink);
         text-overflow: ellipsis;
         white-space: nowrap;
     }
 
-    .o_foom_kpi_foot {
+    .o_sd_kpi_foot {
         display: flex;
         flex-wrap: wrap;
         gap: 8px;
@@ -410,67 +410,67 @@
         font-size: 12px;
     }
 
-    .o_foom_kpi_hint {
-        color: var(--foom-muted);
+    .o_sd_kpi_hint {
+        color: var(--sd-muted);
     }
 
     // Arah perubahan dibawa ikon + teks, tidak hanya oleh warna.
 
-    .o_foom_delta {
+    .o_sd_delta {
         display: inline-flex;
         gap: 4px;
         align-items: center;
         font-weight: 600;
 
-        &.o_foom_delta_up {
-            color: var(--foom-up);
+        &.o_sd_delta_up {
+            color: var(--sd-up);
         }
 
-        &.o_foom_delta_down {
-            color: var(--foom-down);
+        &.o_sd_delta_down {
+            color: var(--sd-down);
         }
 
-        &.o_foom_delta_flat {
-            color: var(--foom-muted);
+        &.o_sd_delta_flat {
+            color: var(--sd-muted);
         }
     }
 
     // --------------------------------------------------------------- heatmap
 
-    .o_foom_heat_scroll {
+    .o_sd_heat_scroll {
         overflow-x: auto;
         padding-bottom: 4px;
     }
 
-    .o_foom_heat {
+    .o_sd_heat {
         display: grid;
         grid-template-columns: 34px minmax(560px, 1fr);
         gap: 2px;
         align-items: center;
     }
 
-    .o_foom_heat_hours,
-    .o_foom_heat_cells {
+    .o_sd_heat_hours,
+    .o_sd_heat_cells {
         display: grid;
         grid-template-columns: repeat(24, minmax(0, 1fr));
         gap: 2px;
     }
 
-    .o_foom_heat_hour {
+    .o_sd_heat_hour {
         font-size: 10px;
-        color: var(--foom-muted);
+        color: var(--sd-muted);
         text-align: left;
         font-variant-numeric: tabular-nums;
     }
 
-    .o_foom_heat_day {
+    .o_sd_heat_day {
         padding-right: 6px;
         font-size: 11px;
-        color: var(--foom-ink-2);
+        color: var(--sd-ink-2);
         text-align: right;
     }
 
-    .o_foom_heat_cell {
+    .o_sd_heat_cell {
         height: 20px;
         border-radius: 3px;
         cursor: default;
@@ -478,45 +478,45 @@
 
         &:hover {
             transform: scale(1.18);
-            outline: 2px solid var(--foom-surface);
+            outline: 2px solid var(--sd-surface);
         }
     }
 
-    .o_foom_heat_l0 {
-        background: var(--foom-zero);
+    .o_sd_heat_l0 {
+        background: var(--sd-zero);
     }
 
-    .o_foom_heat_l1 {
-        background: var(--foom-heat-1);
+    .o_sd_heat_l1 {
+        background: var(--sd-heat-1);
     }
 
-    .o_foom_heat_l2 {
-        background: var(--foom-heat-2);
+    .o_sd_heat_l2 {
+        background: var(--sd-heat-2);
     }
 
-    .o_foom_heat_l3 {
-        background: var(--foom-heat-3);
+    .o_sd_heat_l3 {
+        background: var(--sd-heat-3);
     }
 
-    .o_foom_heat_l4 {
-        background: var(--foom-heat-4);
+    .o_sd_heat_l4 {
+        background: var(--sd-heat-4);
     }
 
-    .o_foom_heat_l5 {
-        background: var(--foom-heat-5);
+    .o_sd_heat_l5 {
+        background: var(--sd-heat-5);
     }
 
-    .o_foom_heat_l6 {
-        background: var(--foom-heat-6);
+    .o_sd_heat_l6 {
+        background: var(--sd-heat-6);
     }
 
-    .o_foom_heat_legend {
+    .o_sd_heat_legend {
         display: flex;
         gap: 4px;
         align-items: center;
         margin-top: 12px;
 
-        .o_foom_heat_cell {
+        .o_sd_heat_cell {
             width: 18px;
             height: 12px;
 
@@ -527,107 +527,107 @@
         }
     }
 
-    .o_foom_legend_text {
+    .o_sd_legend_text {
         margin: 0 6px;
         font-size: 11px;
-        color: var(--foom-muted);
+        color: var(--sd-muted);
     }
 
     // ---------------------------------------------------------------- charts
 
-    .o_foom_canvas_wrap {
+    .o_sd_canvas_wrap {
         position: relative;
         width: 100%;
     }
 
     // -------------------------------------------------------------- ranking
 
-    .o_foom_rank_list {
+    .o_sd_rank_list {
         margin: 0;
         padding: 0;
         list-style: none;
     }
 
-    .o_foom_rank_row {
+    .o_sd_rank_row {
         padding: 8px 0;
-        border-bottom: 1px solid var(--foom-border);
+        border-bottom: 1px solid var(--sd-border);
 
         &:last-child {
             border-bottom: 0;
         }
 
-        &.o_foom_clickable {
+        &.o_sd_clickable {
             cursor: pointer;
 
-            &:hover .o_foom_rank_name {
+            &:hover .o_sd_rank_name {
                 text-decoration: underline;
             }
         }
     }
 
-    .o_foom_rank_top {
+    .o_sd_rank_top {
         display: flex;
         gap: 12px;
         align-items: baseline;
         justify-content: space-between;
     }
 
-    .o_foom_rank_name {
+    .o_sd_rank_name {
         overflow: hidden;
         font-size: 13px;
-        color: var(--foom-ink);
+        color: var(--sd-ink);
         text-overflow: ellipsis;
         white-space: nowrap;
     }
 
-    .o_foom_rank_value {
+    .o_sd_rank_value {
         flex: none;
         font-size: 13px;
         font-weight: 600;
-        color: var(--foom-ink);
+        color: var(--sd-ink);
         font-variant-numeric: tabular-nums;
     }
 
-    .o_foom_rank_track {
+    .o_sd_rank_track {
         height: 6px;
         margin: 6px 0 4px;
         overflow: hidden;
-        background: var(--foom-plane);
+        background: var(--sd-plane);
         border-radius: 4px;
     }
 
-    .o_foom_rank_bar {
+    .o_sd_rank_bar {
         height: 100%;
-        background: var(--foom-series-1);
+        background: var(--sd-series-1);
         border-radius: 4px;
     }
 
-    .o_foom_rank_meta {
+    .o_sd_rank_meta {
         font-size: 11px;
-        color: var(--foom-muted);
+        color: var(--sd-muted);
     }
 
     // ---------------------------------------------------------------- states
 
-    .o_foom_loading {
+    .o_sd_loading {
         display: flex;
         gap: 10px;
         align-items: center;
         justify-content: center;
         padding: 60px 0;
-        color: var(--foom-ink-2);
+        color: var(--sd-ink-2);
     }
 
-    .o_foom_empty {
+    .o_sd_empty {
         padding: 60px 20px;
         text-align: center;
-        background: var(--foom-surface);
-        border: 1px solid var(--foom-border);
-        border-radius: var(--foom-radius);
+        background: var(--sd-surface);
+        border: 1px solid var(--sd-border);
+        border-radius: var(--sd-radius);
 
         i {
             font-size: 32px;
-            color: var(--foom-muted);
+            color: var(--sd-muted);
         }
 
         h2 {
@@ -640,38 +640,38 @@
             max-width: 460px;
             margin: 0 auto;
             font-size: 13px;
-            color: var(--foom-ink-2);
+            color: var(--sd-ink-2);
         }
     }
 
-    .o_foom_empty_inline {
+    .o_sd_empty_inline {
         padding: 16px 0;
         font-size: 12px;
-        color: var(--foom-muted);
+        color: var(--sd-muted);
     }
 
-    .o_foom_alert {
+    .o_sd_alert {
         margin-bottom: 16px;
     }
 
     // --------------------------------------------------------------- tooltip
 
-    .o_foom_tooltip {
+    .o_sd_tooltip {
         position: fixed;
         z-index: 1080;
         padding: 8px 10px;
         font-size: 12px;
         line-height: 1.4;
-        color: var(--foom-ink);
+        color: var(--sd-ink);
         pointer-events: none;
-        background: var(--foom-surface);
-        border: 1px solid var(--foom-border);
+        background: var(--sd-surface);
+        border: 1px solid var(--sd-border);
         border-radius: 6px;
         box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
         transform: translate(12px, -50%);
     }
 
-    .o_foom_tooltip_title {
+    .o_sd_tooltip_title {
         margin-bottom: 2px;
         font-weight: 600;
     }
@@ -687,8 +687,8 @@
 // ---------------------------------------------------------------------------
 
 @supports (-moz-appearance: none) {
-    .o_foom_dashboard {
+    .o_sd_dashboard {
         scrollbar-width: auto;
-        scrollbar-color: var(--foom-ink-2) var(--foom-plane);
+        scrollbar-color: var(--sd-ink-2) var(--sd-plane);
     }
 }

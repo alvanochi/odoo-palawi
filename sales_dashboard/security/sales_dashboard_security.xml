@@ -2,37 +2,37 @@
 <odoo>
     <data noupdate="0">
 
-        <record id="module_category_foom_dashboard" model="ir.module.category">
-            <field name="name">FOOM Sales Dashboard</field>
-            <field name="description">Access to the FOOM sales analysis dashboard.</field>
+        <record id="module_category_sales_dashboard" model="ir.module.category">
+            <field name="name">Sales Dashboard</field>
+            <field name="description">Access to the sales analysis dashboard.</field>
             <field name="sequence">40</field>
         </record>
 
-        <record id="group_foom_dashboard_user" model="res.groups">
+        <record id="group_sales_dashboard_user" model="res.groups">
             <field name="name">User</field>
-            <field name="category_id" ref="module_category_foom_dashboard"/>
+            <field name="category_id" ref="module_category_sales_dashboard"/>
             <field name="comment">Can open the dashboard and read sales data.</field>
         </record>
 
-        <record id="group_foom_dashboard_manager" model="res.groups">
+        <record id="group_sales_dashboard_manager" model="res.groups">
             <field name="name">Manager</field>
-            <field name="category_id" ref="module_category_foom_dashboard"/>
-            <field name="implied_ids" eval="[(4, ref('group_foom_dashboard_user'))]"/>
+            <field name="category_id" ref="module_category_sales_dashboard"/>
+            <field name="implied_ids" eval="[(4, ref('group_sales_dashboard_user'))]"/>
             <field name="comment">Full dashboard access, reserved for future configuration.</field>
         </record>
 
         <!-- Sales users and managers get dashboard access out of the box. -->
-        <record id="sales_team.group_sale_salesman" model="res.groups">
-            <field name="implied_ids" eval="[(4, ref('group_foom_dashboard_user'))]"/>
+        <record id="point_of_sale.group_pos_user" model="res.groups">
+            <field name="implied_ids" eval="[(4, ref('group_sales_dashboard_user'))]"/>
         </record>
-        <record id="sales_team.group_sale_manager" model="res.groups">
-            <field name="implied_ids" eval="[(4, ref('group_foom_dashboard_manager'))]"/>
+        <record id="point_of_sale.group_pos_manager" model="res.groups">
+            <field name="implied_ids" eval="[(4, ref('group_sales_dashboard_manager'))]"/>
         </record>
 
         <!-- Multi-company: restrict rows to the user's active companies. -->
-        <record id="foom_sales_report_company_rule" model="ir.rule">
-            <field name="name">FOOM Sales Report: multi-company</field>
-            <field name="model_id" ref="model_foom_sales_report"/>
+        <record id="sales_report_company_rule" model="ir.rule">
+            <field name="name">Sales Report: multi-company</field>
+            <field name="model_id" ref="model_sales_report"/>
             <field name="global" eval="True"/>
             <field name="domain_force">
                 ['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]

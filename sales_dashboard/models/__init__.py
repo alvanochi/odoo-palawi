@@ -1,1 +1,1 @@
-from . import foom_sales_report
+from . import sales_report

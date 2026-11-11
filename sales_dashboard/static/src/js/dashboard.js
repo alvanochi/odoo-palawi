@@ -1,8 +1,8 @@
 /** @odoo-module **/
 /**
- * FOOM Sales Dashboard — client action OWL.
+ * Sales Dashboard — client action OWL.
  *
- * Seluruh agregasi dilakukan di sisi server (model foom.sales.report).
+ * Seluruh agregasi dilakukan di sisi server (model sales.report).
  * Komponen di sini hanya bertugas memilih filter, memanggil satu RPC,
  * dan menggambar hasilnya.
  */
@@ -235,7 +235,7 @@ class RankList extends Component {
 // Komponen utama
 // ---------------------------------------------------------------------------
 
-export class FoomDashboard extends Component {
+export class SalesDashboard extends Component {
     static template = "sales_dashboard.Dashboard";
     static components = { KpiCard, ChartCanvas, RankList };
     static props = ["*"];
@@ -257,13 +257,11 @@ export class FoomDashboard extends Component {
             granularity: "auto",
             heatMetric: "orders",
             companyIds: [],
-            warehouseIds: [],
-            locationIds: [],
+            configIds: [],
             openMenu: null,
             options: {
                 companies: [],
-                warehouses: [],
-                locations: [],
+                outlets: [],
                 multi_company: false,
             },
             data: null,
@@ -359,14 +357,13 @@ export class FoomDashboard extends Component {
     async loadOptions() {
         try {
             const options = await this.orm.call(
-                "foom.sales.report",
+                "sales.report",
                 "get_filter_options",
                 []
             );
             this.state.options = this._withDefaults(options, {
                 companies: [],
-                warehouses: [],
-                locations: [],
+                outlets: [],
                 multi_company: false,
                 tz: "",
                 lang: "en-US",
@@ -386,7 +383,7 @@ export class FoomDashboard extends Component {
         this.state.error = null;
         try {
             const payload = await this.orm.call(
-                "foom.sales.report",
+                "sales.report",
                 "get_dashboard_data",
                 [],
                 {
@@ -394,8 +391,7 @@ export class FoomDashboard extends Component {
                     date_to: this.state.dateTo,
                     granularity: this.state.granularity,
                     company_ids: this.state.companyIds,
-                    warehouse_ids: this.state.warehouseIds,
-                    location_ids: this.state.locationIds,
+                    config_ids: this.state.configIds,
                 }
             );
             this.state.data = this._withDefaults(payload, {
@@ -405,8 +401,6 @@ export class FoomDashboard extends Component {
                 hourly: [],
                 trend: [],
                 top_products: [],
-                top_warehouses: [],
-                top_locations: [],
                 top_partners: [],
                 tax_breakdown: [],
                 kpi: null,
@@ -466,21 +460,14 @@ export class FoomDashboard extends Component {
         return _t("%s selected", selected.length);
     }
 
-    get warehouseSummary() {
+    get outletSummary() {
         return this._summary(
-            this.state.warehouseIds,
-            this.state.options.warehouses,
-            _t("All warehouses")
+            this.state.configIds,
+            this.state.options.outlets,
+            _t("All outlets")
         );
     }
 
-    get locationSummary() {
-        return this._summary(
-            this.state.locationIds,
-            this.state.options.locations,
-            _t("All locations")
-        );
-    }
 
     get companySummary() {
         return this._summary(
@@ -498,12 +485,8 @@ export class FoomDashboard extends Component {
         await this.loadData();
     }
 
-    async toggleWarehouse(id) {
-        await this._toggleId("warehouseIds", id);
-    }
-
-    async toggleLocation(id) {
-        await this._toggleId("locationIds", id);
+    async toggleOutlet(id) {
+        await this._toggleId("configIds", id);
     }
 
     async toggleCompany(id) {
@@ -599,8 +582,7 @@ export class FoomDashboard extends Component {
             d.granularity,
             this.state.heatMetric,
             this.state.companyIds.join("."),
-            this.state.warehouseIds.join("."),
-            this.state.locationIds.join("."),
+            this.state.configIds.join("."),
             d.trend.length,
         ].join("|");
     }
@@ -670,11 +652,11 @@ export class FoomDashboard extends Component {
 
     get chartInk() {
         return {
-            grid: this._cssVar("--foom-grid", "#e1e0d9"),
-            text: this._cssVar("--foom-muted", "#898781"),
-            amount: this._cssVar("--foom-series-1", "#2a78d6"),
-            orders: this._cssVar("--foom-series-2", "#eb6834"),
-            surface: this._cssVar("--foom-surface", "#ffffff"),
+            grid: this._cssVar("--sd-grid", "#e1e0d9"),
+            text: this._cssVar("--sd-muted", "#898781"),
+            amount: this._cssVar("--sd-series-1", "#2a78d6"),
+            orders: this._cssVar("--sd-series-2", "#eb6834"),
+            surface: this._cssVar("--sd-surface", "#ffffff"),
         };
     }
 
@@ -806,7 +788,7 @@ export class FoomDashboard extends Component {
         this.action.doAction({
             type: "ir.actions.act_window",
             name,
-            res_model: "foom.sales.report",
+            res_model: "sales.report",
             view_mode: "list,pivot,graph",
             views: [[false, "list"], [false, "pivot"], [false, "graph"]],
             domain,
@@ -816,14 +798,6 @@ export class FoomDashboard extends Component {
 
     openProduct(row) {
         this._openList(row.name, [["product_tmpl_id", "=", row.id]]);
-    }
-
-    openWarehouse(row) {
-        this._openList(row.name, [["warehouse_id", "=", row.id || false]]);
-    }
-
-    openLocation(row) {
-        this._openList(row.name, [["location_id", "=", row.id || false]]);
     }
 
     openPartner(row) {
@@ -851,8 +825,6 @@ export class FoomDashboard extends Component {
         }
         const sections = [
             ["top_product", data.top_products],
-            ["top_warehouse", data.top_warehouses],
-            ["top_location", data.top_locations],
             ["top_partner", data.top_partners],
         ];
         for (const [section, list] of sections) {
@@ -871,11 +843,11 @@ export class FoomDashboard extends Component {
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.download = `foom_sales_${this.state.dateFrom}_${this.state.dateTo}.csv`;
+        link.download = `sales_dashboard_${this.state.dateFrom}_${this.state.dateTo}.csv`;
         link.click();
         URL.revokeObjectURL(url);
         this.notification.add(_t("The CSV file is downloading."), { type: "success" });
     }
 }
 
-registry.category("actions").add("sales_dashboard.dashboard", FoomDashboard);
+registry.category("actions").add("sales_dashboard.dashboard", SalesDashboard);

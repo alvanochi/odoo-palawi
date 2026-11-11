@@ -1,4 +1,4 @@
-# Design — FOOM Sales Dashboard
+# Design — Sales Dashboard
 
 Odoo 18.0 · modul `sales_dashboard` · depends: `base`, `web`, `account`, `sale`
 
@@ -10,13 +10,13 @@ sales_dashboard/
 ├── __manifest__.py
 ├── models/
 │   ├── __init__.py
-│   └── foom_sales_report.py
+│   └── sales_report.py
 ├── security/
-│   ├── foom_security.xml
+│   ├── sales_dashboard_security.xml
 │   └── ir.model.access.csv
 ├── views/
-│   ├── foom_sales_report_views.xml
-│   └── foom_dashboard_menus.xml
+│   ├── sales_report_views.xml
+│   └── sales_dashboard_menus.xml
 ├── static/
 │   ├── lib/chartjs/chart.umd.js
 │   ├── src/
@@ -32,7 +32,7 @@ sales_dashboard/
 
 ## 2. Model layer
 
-### 2.1 `foom.sales.report` (SQL view, `_auto = False`)
+### 2.1 `sales.report` (SQL view, `_auto = False`)
 
 Satu baris = satu baris produk pada invoice/credit note yang sudah posted.
 
@@ -59,7 +59,7 @@ Satu baris = satu baris produk pada invoice/credit note yang sudah posted.
 ### 2.2 Definisi SQL view
 
 ```sql
-CREATE OR REPLACE VIEW foom_sales_report AS (
+CREATE OR REPLACE VIEW sales_report AS (
     SELECT
         aml.id                                   AS id,
         am.id                                    AS move_id,
@@ -170,10 +170,10 @@ def get_filter_options(self)   # daftar company & sales team yang boleh dilihat 
 
 ```mermaid
 flowchart LR
-    A[account.move.line<br/>posted invoice/refund] --> B[SQL view<br/>foom_sales_report]
+    A[account.move.line<br/>posted invoice/refund] --> B[SQL view<br/>sales_report]
     S[sale.order.date_order] -.timestamp asli.-> B
     B --> C[get_dashboard_data<br/>agregasi SQL + tz user]
-    C --> D[OWL FoomDashboard<br/>state.data]
+    C --> D[OWL SalesDashboard<br/>state.data]
     D --> E1[KPI cards]
     D --> E2[Heatmap 7x24]
     D --> E3[Chart.js tren & per jam]
@@ -187,14 +187,14 @@ flowchart LR
 
 | Komponen | Berkas | Tanggung jawab |
 |---|---|---|
-| `FoomDashboard` | `static/src/js/dashboard.js` | Root client action: state, filter, orkestrasi fetch |
+| `SalesDashboard` | `static/src/js/dashboard.js` | Root client action: state, filter, orkestrasi fetch |
 | `KpiCard` | idem | Satu kartu: label, nilai, badge growth |
 | `HeatmapGrid` | idem | Grid 7 × 24 murni HTML/CSS + tooltip |
 | `TrendChart` | idem | Wrapper Chart.js, mengelola lifecycle canvas |
 | `HourlyChart` | idem | Wrapper Chart.js bar |
 | `RankList` | idem | Daftar bar horizontal untuk top produk/outlet/pelanggan |
 
-Registrasi: `registry.category("actions").add("sales_dashboard.dashboard", FoomDashboard)`.
+Registrasi: `registry.category("actions").add("sales_dashboard.dashboard", SalesDashboard)`.
 
 Service yang dipakai: `orm` (fetch data), `action` (drill-down ke view list), `notification` (error). Setiap komponen memakai `static template`, `static props`, dan `static components` sesuai gaya Odoo 17+/OWL 2.
 
@@ -224,14 +224,14 @@ Mengikuti panduan skill `dataviz`: satu palet konsisten, kontras cukup di tema t
 
 ## 5. Security
 
-| Objek | `group_foom_dashboard_user` | `group_foom_dashboard_manager` |
+| Objek | `group_sales_dashboard_user` | `group_sales_dashboard_manager` |
 |---|---|---|
-| `foom.sales.report` | read | read |
-| Menu FOOM Sales | ✓ | ✓ |
+| `sales.report` | read | read |
+| Menu Sales Dashboard | ✓ | ✓ |
 
 - `ir.model.access.csv` memberi `perm_read=1`, sisanya `0`.
-- Record rule `foom_sales_report_company_rule`: `['|', ('company_id','=',False), ('company_id','in',company_ids)]`, `global=True`.
-- `sales_team.group_sale_salesman` mendapat `group_foom_dashboard_user` lewat `implied_ids` agar tim sales tidak perlu di-assign manual.
+- Record rule `sales_report_company_rule`: `['|', ('company_id','=',False), ('company_id','in',company_ids)]`, `global=True`.
+- `sales_team.group_sale_salesman` mendapat `group_sales_dashboard_user` lewat `implied_ids` agar tim sales tidak perlu di-assign manual.
 
 ## 6. Dampak migrasi & upgrade
 

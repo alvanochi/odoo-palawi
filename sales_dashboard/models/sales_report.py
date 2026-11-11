@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
-"""Model laporan penjualan FOOM.
+"""Model laporan penjualan POS.
 
-Model ini adalah SQL view read-only di atas baris invoice pelanggan yang sudah
-posted. Semua method agregasi untuk dashboard OWL ada di sini supaya perhitungan
-tetap terjadi di sisi database, bukan dengan mengiterasi record di Python.
+Model ini adalah SQL view read-only di atas baris order POS (`pos.order.line`)
+yang sudah dibayar. Semua method agregasi untuk dashboard OWL ada di sini supaya
+perhitungan tetap terjadi di sisi database, bukan dengan mengiterasi record di
+Python.
 """
 
 import logging
+from collections import defaultdict
 from datetime import datetime, time, timedelta
 
 import pytz
@@ -28,12 +30,15 @@ AUTO_GRANULARITY_STEPS = (
     (1095, "month"),
 )
 
+# Status order POS yang dihitung sebagai penjualan.
+SALE_STATES = ("paid", "done", "invoiced")
 
-class FoomSalesReport(models.Model):
-    """Satu baris = satu baris produk pada invoice / credit note yang posted."""
 
-    _name = "foom.sales.report"
-    _description = "FOOM Sales Report"
+class SalesReport(models.Model):
+    """Satu baris = satu baris produk pada order POS yang sudah dibayar."""
+
+    _name = "sales.report"
+    _description = "Sales Report"
     _auto = False
     _rec_name = "date_ts"
     _order = "date_ts desc"
@@ -41,54 +46,43 @@ class FoomSalesReport(models.Model):
     date_ts = fields.Datetime(
         string="Transaction Time",
         readonly=True,
-        help="Order date from the Sales Order when available, "
-             "otherwise the invoice creation time.",
+        help="Order date of the POS order.",
     )
-    invoice_date = fields.Date(string="Invoice Date", readonly=True)
-    move_id = fields.Many2one("account.move", string="Invoice", readonly=True)
-    move_type = fields.Selection(
-        [("out_invoice", "Customer Invoice"), ("out_refund", "Credit Note")],
-        string="Document Type",
-        readonly=True,
-    )
+    order_id = fields.Many2one("pos.order", string="POS Order", readonly=True)
     partner_id = fields.Many2one("res.partner", string="Customer", readonly=True)
     product_id = fields.Many2one("product.product", string="Product", readonly=True)
     product_tmpl_id = fields.Many2one(
         "product.template", string="Product Template", readonly=True
     )
     categ_id = fields.Many2one("product.category", string="Product Category", readonly=True)
-    user_id = fields.Many2one("res.users", string="Salesperson", readonly=True)
-    team_id = fields.Many2one("crm.team", string="Sales Team", readonly=True)
-    warehouse_id = fields.Many2one(
-        "stock.warehouse",
-        string="Warehouse",
+    user_id = fields.Many2one("res.users", string="Cashier", readonly=True)
+    config_id = fields.Many2one(
+        "pos.config",
+        string="Outlet",
         readonly=True,
-        help="Warehouse of the delivery that fulfilled this invoice line.",
+        help="Point of Sale (outlet) where the order was made.",
     )
-    location_id = fields.Many2one(
-        "stock.location",
-        string="Source Location",
-        readonly=True,
-        help="Stock location the goods were actually shipped from.",
-    )
-    journal_id = fields.Many2one("account.journal", string="Journal", readonly=True)
     company_id = fields.Many2one("res.company", string="Company", readonly=True)
     quantity = fields.Float(string="Qty", readonly=True)
     price_subtotal = fields.Float(
         string="Revenue",
         readonly=True,
-        help="Untaxed amount, expressed in the company currency.",
+        help="Untaxed amount.",
     )
     price_tax = fields.Float(
         string="Sales Tax",
         readonly=True,
-        help="Tax amount of the line in company currency "
-             "(negative for credit notes).",
+        help="Tax amount of the line (negative for refunds).",
     )
     price_total = fields.Float(
         string="Revenue incl. Tax",
         readonly=True,
-        help="Revenue plus tax, in company currency.",
+        help="Revenue plus tax.",
+    )
+    tax_key = fields.Char(
+        string="Tax Set",
+        readonly=True,
+        help="Comma separated ids of the taxes applied on the line.",
     )
     order_count = fields.Integer(string="Lines", readonly=True)
 
@@ -96,94 +90,43 @@ class FoomSalesReport(models.Model):
     # Definisi SQL view
     # ------------------------------------------------------------------
 
-    def _has_move_team_column(self):
-        """`account.move.team_id` disediakan oleh modul lain dan tidak selalu ada.
-
-        Dicek langsung ke information_schema supaya view tetap bisa dibuat pada
-        instance yang tidak memilikinya, dengan team_id bernilai NULL.
-        """
-        self.env.cr.execute(
-            """
-            SELECT 1 FROM information_schema.columns
-            WHERE table_name = 'account_move' AND column_name = 'team_id'
-            """
-        )
-        return bool(self.env.cr.fetchone())
-
     def _select_clause(self):
-        team_expr = "am.team_id" if self._has_move_team_column() else "NULL::integer"
         return """
-            aml.id                                      AS id,
-            am.id                                       AS move_id,
-            am.move_type                                AS move_type,
-            am.invoice_date                             AS invoice_date,
-            COALESCE(so.date_order, am.create_date)     AS date_ts,
-            am.partner_id                               AS partner_id,
-            am.invoice_user_id                          AS user_id,
-            {team_expr}                                 AS team_id,
-            dlv.warehouse_id                            AS warehouse_id,
-            dlv.location_id                             AS location_id,
-            am.journal_id                               AS journal_id,
-            am.company_id                               AS company_id,
-            aml.product_id                              AS product_id,
+            pol.id                                      AS id,
+            po.id                                       AS order_id,
+            po.date_order                               AS date_ts,
+            po.partner_id                               AS partner_id,
+            po.user_id                                  AS user_id,
+            ps.config_id                                AS config_id,
+            po.company_id                               AS company_id,
+            pol.product_id                              AS product_id,
             pp.product_tmpl_id                          AS product_tmpl_id,
             pt.categ_id                                 AS categ_id,
-            CASE WHEN am.move_type = 'out_refund'
-                 THEN -aml.quantity ELSE aml.quantity END   AS quantity,
-            -aml.balance                                AS price_subtotal,
-            CASE WHEN COALESCE(aml.price_subtotal, 0) = 0 THEN 0.0
-                 ELSE -aml.balance
-                      * (aml.price_total - aml.price_subtotal)
-                      / aml.price_subtotal END              AS price_tax,
-            CASE WHEN COALESCE(aml.price_subtotal, 0) = 0 THEN -aml.balance
-                 ELSE -aml.balance * aml.price_total
-                      / aml.price_subtotal END              AS price_total,
-            1                                         AS order_count
-        """.format(team_expr=team_expr)
+            pol.qty                                     AS quantity,
+            pol.price_subtotal                          AS price_subtotal,
+            pol.price_subtotal_incl - pol.price_subtotal AS price_tax,
+            pol.price_subtotal_incl                     AS price_total,
+            (SELECT string_agg(rel.account_tax_id::text, ','
+                               ORDER BY tx.sequence, tx.id)
+               FROM account_tax_pos_order_line_rel rel
+               JOIN account_tax tx ON tx.id = rel.account_tax_id
+              WHERE rel.pos_order_line_id = pol.id)     AS tax_key,
+            1                                           AS order_count
+        """
 
     def _from_clause(self):
         return """
-            FROM account_move_line aml
-            JOIN account_move am           ON am.id = aml.move_id
-            LEFT JOIN product_product pp   ON pp.id = aml.product_id
+            FROM pos_order_line pol
+            JOIN pos_order po              ON po.id = pol.order_id
+            LEFT JOIN pos_session ps       ON ps.id = po.session_id
+            LEFT JOIN product_product pp   ON pp.id = pol.product_id
             LEFT JOIN product_template pt  ON pt.id = pp.product_tmpl_id
-            LEFT JOIN LATERAL (
-                SELECT so2.date_order
-                  FROM sale_order_line_invoice_rel rel
-                  JOIN sale_order_line sol ON sol.id = rel.order_line_id
-                  JOIN sale_order so2      ON so2.id = sol.order_id
-                 WHERE rel.invoice_line_id = aml.id
-                 ORDER BY so2.date_order
-                 LIMIT 1
-            ) so ON TRUE
-            -- Outlet dipisah per warehouse/location, jadi keduanya diambil dari
-            -- pengiriman yang BENAR-BENAR terjadi: invoice line -> sale order
-            -- line -> stock.move yang sudah `done`, bukan dari warehouse yang
-            -- dipilih di Sales Order.
-            --
-            -- Satu baris invoice bisa terpenuhi oleh beberapa pengiriman
-            -- (kirim bertahap). Karena satu baris report harus tetap satu baris
-            -- agar omzet tidak terhitung ganda, diambil pengiriman PERTAMA.
-            -- Untuk order yang dikirim dari lebih dari satu lokasi, lokasi
-            -- berikutnya tidak terwakili.
-            LEFT JOIN LATERAL (
-                SELECT sm.location_id, spt.warehouse_id
-                  FROM sale_order_line_invoice_rel rel2
-                  JOIN stock_move sm            ON sm.sale_line_id = rel2.order_line_id
-                  LEFT JOIN stock_picking_type spt ON spt.id = sm.picking_type_id
-                 WHERE rel2.invoice_line_id = aml.id
-                   AND sm.state = 'done'
-                 ORDER BY sm.date
-                 LIMIT 1
-            ) dlv ON TRUE
         """
 
     def _where_clause(self):
         return """
-            WHERE am.move_type IN ('out_invoice', 'out_refund')
-              AND am.state = 'posted'
-              AND aml.display_type = 'product'
-        """
+            WHERE po.state IN {states}
+        """.format(states=str(SALE_STATES))
 
     def init(self):
         tools.drop_view_if_exists(self.env.cr, self._table)
@@ -247,9 +190,7 @@ class FoomSalesReport(models.Model):
 
         # Nama kolom diambil dari peta tetap, tidak pernah dari input client.
         for key, column in (
-            ("warehouse_ids", "r.warehouse_id"),
-            ("location_ids", "r.location_id"),
-            ("team_ids", "r.team_id"),
+            ("config_ids", "r.config_id"),
             ("user_ids", "r.user_id"),
         ):
             values = filters.get(key)
@@ -276,7 +217,7 @@ class FoomSalesReport(models.Model):
         self.env.cr.execute(
             """
             SELECT COALESCE(SUM(r.price_subtotal), 0.0)  AS amount,
-                   COUNT(DISTINCT r.move_id)             AS orders,
+                   COUNT(DISTINCT r.order_id)             AS orders,
                    COUNT(DISTINCT r.partner_id)          AS customers,
                    COALESCE(SUM(r.quantity), 0.0)        AS quantity,
                    COALESCE(SUM(r.price_tax), 0.0)       AS tax
@@ -300,24 +241,15 @@ class FoomSalesReport(models.Model):
 
     @api.model
     def get_filter_options(self):
-        """Daftar company, warehouse, dan location yang boleh dilihat user aktif."""
+        """Daftar company dan outlet (pos.config) yang boleh dilihat user aktif."""
         companies = self.env.companies
-        warehouses = self.env["stock.warehouse"].search(
-            [("company_id", "in", companies.ids + [False])]
-        )
-        # Hanya lokasi internal: lokasi pemasok/pelanggan/inventory-loss bukan
-        # tempat jualan dan hanya akan mengotori daftar filter.
-        locations = self.env["stock.location"].search(
-            [
-                ("usage", "=", "internal"),
-                ("company_id", "in", companies.ids + [False]),
-            ]
+        outlets = self.env["pos.config"].search(
+            [("company_id", "in", companies.ids)]
         )
         currency = self.env.company.currency_id
         return {
             "companies": [{"id": c.id, "name": c.name} for c in companies],
-            "warehouses": [{"id": w.id, "name": w.display_name} for w in warehouses],
-            "locations": [{"id": l.id, "name": l.display_name} for l in locations],
+            "outlets": [{"id": o.id, "name": o.display_name} for o in outlets],
             "multi_company": len(companies) > 1,
             "tz": str(self._user_tz()),
             # BCP-47 untuk Intl.NumberFormat di sisi client (id_ID -> id-ID).
@@ -336,9 +268,7 @@ class FoomSalesReport(models.Model):
         date_to,
         granularity="auto",
         company_ids=None,
-        warehouse_ids=None,
-        location_ids=None,
-        team_ids=None,
+        config_ids=None,
         user_ids=None,
         limit=10,
     ):
@@ -350,9 +280,7 @@ class FoomSalesReport(models.Model):
         limit = max(3, min(int(limit or 10), 50))
 
         filters = {
-            "warehouse_ids": warehouse_ids,
-            "location_ids": location_ids,
-            "team_ids": team_ids,
+            "config_ids": config_ids,
             "user_ids": user_ids,
         }
         where, params = self._base_domain_sql(start, end, company_ids, filters)
@@ -378,8 +306,6 @@ class FoomSalesReport(models.Model):
             "hourly": self._fetch_hourly(where, params),
             "trend": self._fetch_trend(where, params, granularity),
             "top_products": self._fetch_top_products(where, params, limit),
-            "top_warehouses": self._fetch_top_warehouses(where, params, limit),
-            "top_locations": self._fetch_top_locations(where, params, limit),
             "top_partners": self._fetch_top_partners(where, params, limit),
             "tax_breakdown": self._fetch_tax_breakdown(where, params),
         }
@@ -425,7 +351,7 @@ class FoomSalesReport(models.Model):
             """
             SELECT EXTRACT(ISODOW FROM {local})::int  AS dow,
                    EXTRACT(HOUR  FROM {local})::int   AS hour,
-                   COUNT(DISTINCT r.move_id)          AS orders,
+                   COUNT(DISTINCT r.order_id)          AS orders,
                    COALESCE(SUM(r.price_subtotal), 0.0) AS amount
               FROM {table} r
              WHERE {where}
@@ -451,7 +377,7 @@ class FoomSalesReport(models.Model):
         self.env.cr.execute(
             """
             SELECT EXTRACT(HOUR FROM {local})::int    AS hour,
-                   COUNT(DISTINCT r.move_id)          AS orders,
+                   COUNT(DISTINCT r.order_id)          AS orders,
                    COALESCE(SUM(r.price_subtotal), 0.0) AS amount
               FROM {table} r
              WHERE {where}
@@ -475,7 +401,7 @@ class FoomSalesReport(models.Model):
         self.env.cr.execute(
             """
             SELECT DATE_TRUNC(%(granularity)s, {local})   AS bucket,
-                   COUNT(DISTINCT r.move_id)              AS orders,
+                   COUNT(DISTINCT r.order_id)              AS orders,
                    COALESCE(SUM(r.price_subtotal), 0.0)   AS amount
               FROM {table} r
              WHERE {where}
@@ -519,7 +445,7 @@ class FoomSalesReport(models.Model):
         self.env.cr.execute(
             """
             SELECT {column}                             AS group_id,
-                   COUNT(DISTINCT r.move_id)            AS orders,
+                   COUNT(DISTINCT r.order_id)            AS orders,
                    COALESCE(SUM(r.quantity), 0.0)       AS quantity,
                    COALESCE(SUM(r.price_subtotal), 0.0) AS amount
               FROM {table} r
@@ -553,55 +479,78 @@ class FoomSalesReport(models.Model):
     def _fetch_tax_breakdown(self, where, params):
         """Total pajak per jenis pajak (PNBP, PBJT, PPN, dst).
 
-        Diambil dari baris pajak invoice (`tax_line_id`). Satu invoice bisa
-        mencakup beberapa warehouse/lokasi, jadi pajaknya dialokasikan
-        proporsional terhadap porsi subtotal baris yang lolos filter, supaya
-        totalnya konsisten dengan KPI Sales Tax.
+        Baris dikelompokkan per kombinasi pajak (`tax_key`) di SQL, lalu tiap
+        kombinasi dihitung ulang dengan `compute_all` supaya pajak majemuk
+        (include_base_amount, fixed, dll) dipecah per jenis sesuai aturan Odoo.
+        Pajak yang sudah masuk di harga (price include) tidak jadi masalah
+        karena dasar yang dipakai adalah subtotal tanpa pajak.
         """
         self.env.cr.execute(
             """
-            WITH f AS (
-                SELECT r.move_id, SUM(r.price_subtotal) AS amt
-                  FROM {table} r
-                 WHERE {where}
-                 GROUP BY r.move_id
-            ),
-            t AS (
-                SELECT r.move_id, SUM(r.price_subtotal) AS amt
-                  FROM {table} r
-                 WHERE r.move_id IN (SELECT move_id FROM f)
-                 GROUP BY r.move_id
-            )
-            SELECT tl.tax_line_id                         AS group_id,
-                   COUNT(DISTINCT tl.move_id)             AS orders,
-                   SUM(-tl.balance * CASE WHEN COALESCE(t.amt, 0) = 0
-                                          THEN 1.0 ELSE f.amt / t.amt END) AS amount
-              FROM account_move_line tl
-              JOIN f ON f.move_id = tl.move_id
-              JOIN t ON t.move_id = tl.move_id
-             WHERE tl.tax_line_id IS NOT NULL
-             GROUP BY 1
-             ORDER BY amount DESC NULLS LAST
+            SELECT r.tax_key                                AS tax_key,
+                   COALESCE(SUM(r.price_subtotal), 0.0)     AS base,
+                   COALESCE(SUM(r.quantity), 0.0)           AS quantity
+              FROM {table} r
+             WHERE {where} AND r.tax_key IS NOT NULL
+             GROUP BY r.tax_key
             """.format(table=self._table, where=where),
             params,
         )
-        rows = [dict(r, quantity=0.0) for r in self.env.cr.dictfetchall()]
+        groups = self.env.cr.dictfetchall()
+
+        Tax = self.env["account.tax"]
+        currency = self.env.company.currency_id
+        amounts = defaultdict(float)
+        for grp in groups:
+            ids = [int(i) for i in grp["tax_key"].split(",")]
+            taxes = Tax.browse(ids).exists()
+            if not taxes:
+                continue
+            qty = grp["quantity"] or 0.0
+            base = grp["base"] or 0.0
+            if not qty:
+                qty, price_unit = 1.0, base
+            else:
+                price_unit = base / qty
+            res = taxes.compute_all(
+                price_unit,
+                currency=currency,
+                quantity=qty,
+                handle_price_include=False,
+            )
+            for tax in res["taxes"]:
+                amounts[tax["id"]] += tax["amount"]
+
+        # Jumlah order per jenis pajak (satu order dihitung sekali per pajak).
+        self.env.cr.execute(
+            """
+            SELECT tx::int                      AS tax_id,
+                   COUNT(DISTINCT r.order_id)   AS orders
+              FROM {table} r,
+                   unnest(string_to_array(r.tax_key, ',')) AS tx
+             WHERE {where} AND r.tax_key IS NOT NULL
+             GROUP BY 1
+            """.format(table=self._table, where=where),
+            params,
+        )
+        orders = {r["tax_id"]: r["orders"] for r in self.env.cr.dictfetchall()}
+
+        rows = [
+            {
+                "group_id": tax_id,
+                "orders": orders.get(tax_id, 0),
+                "quantity": 0.0,
+                "amount": amount,
+            }
+            for tax_id, amount in sorted(
+                amounts.items(), key=lambda kv: kv[1], reverse=True
+            )
+        ]
         return self._label_rows(rows, "account.tax", _("No Tax"))
 
     def _fetch_top_products(self, where, params, limit):
         rows = self._fetch_grouped(where, params, "r.product_tmpl_id", limit)
         return self._label_rows(rows, "product.template", _("No Product"))
-
-    def _fetch_top_warehouses(self, where, params, limit):
-        rows = self._fetch_grouped(where, params, "r.warehouse_id", limit)
-        # "No Warehouse" muncul untuk baris tanpa pengiriman ber-status done:
-        # produk jasa, invoice manual tanpa sale order, atau barang yang belum
-        # dikirim saat invoice sudah di-posting.
-        return self._label_rows(rows, "stock.warehouse", _("No Warehouse"))
-
-    def _fetch_top_locations(self, where, params, limit):
-        rows = self._fetch_grouped(where, params, "r.location_id", limit)
-        return self._label_rows(rows, "stock.location", _("No Location"))
 
     def _fetch_top_partners(self, where, params, limit):
         rows = self._fetch_grouped(where, params, "r.partner_id", limit)

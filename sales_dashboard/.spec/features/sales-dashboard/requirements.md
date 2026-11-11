@@ -1,4 +1,4 @@
-# Requirements — FOOM Sales Dashboard
+# Requirements — Sales Dashboard
 
 ## Konteks environment
 
@@ -15,7 +15,7 @@
 ## User stories
 
 **US-1 — Melihat ritme penjualan per jam**
-> Sebagai manajer penjualan FOOM, saya ingin melihat heatmap jam × hari, sehingga saya tahu jam berapa toko ramai dan bisa mengatur shift staf.
+> Sebagai manajer penjualan, saya ingin melihat heatmap jam × hari, sehingga saya tahu jam berapa toko ramai dan bisa mengatur shift staf.
 
 **US-2 — Melihat tren jangka panjang**
 > Sebagai manajer penjualan, saya ingin melihat grafik tren jumlah order dan total omzet per jam/hari/minggu/bulan/tahun, sehingga saya bisa melihat pertumbuhan dan musiman.
@@ -36,7 +36,7 @@
 
 **Data & agregasi**
 
-- REQ-1: WHEN modul di-install THEN system SHALL membuat SQL view `foom_sales_report` yang hanya memuat baris produk (`display_type = 'product'`) dari `account.move` bertipe `out_invoice`/`out_refund` dengan `state = 'posted'`.
+- REQ-1: WHEN modul di-install THEN system SHALL membuat SQL view `sales_report` yang hanya memuat baris produk (`display_type = 'product'`) dari `account.move` bertipe `out_invoice`/`out_refund` dengan `state = 'posted'`.
 - REQ-2: WHEN sebuah baris berasal dari credit note (`out_refund`) THEN system SHALL menghitung amount dan quantity-nya sebagai nilai negatif, sehingga retur mengurangi omzet.
 - REQ-3: WHEN menghitung amount THEN system SHALL menggunakan `-account_move_line.balance` (mata uang company), BUKAN `price_subtotal` mata uang dokumen, sehingga penjualan multi-currency dapat dijumlahkan.
 - REQ-4: WHEN sebuah invoice line terhubung ke sale order line THEN system SHALL memakai `sale_order.date_order` sebagai waktu transaksi; OTHERWISE system SHALL memakai `account_move.create_date`.
@@ -45,7 +45,7 @@
 
 **Dashboard**
 
-- REQ-7: WHEN user membuka menu FOOM Sales → Dashboard THEN system SHALL menampilkan client action OWL berisi: baris KPI card, heatmap jam × hari, grafik tren, grafik profil per jam, top produk, top outlet/tim, dan top pelanggan.
+- REQ-7: WHEN user membuka menu Sales Dashboard → Dashboard THEN system SHALL menampilkan client action OWL berisi: baris KPI card, heatmap jam × hari, grafik tren, grafik profil per jam, top produk, top outlet/tim, dan top pelanggan.
 - REQ-8: WHEN dashboard dimuat pertama kali THEN system SHALL memakai preset periode "30 hari terakhir".
 - REQ-9: WHEN user mengganti preset periode, granularitas tren, company, atau tim THEN system SHALL memuat ulang data via satu panggilan ORM dan memperbarui seluruh visual tanpa reload halaman.
 - REQ-10: WHEN KPI dihitung THEN system SHALL juga menghitung nilai periode sebelumnya yang panjangnya sama dan persis mendahului `date_from`, lalu menampilkan persentase perubahan dengan indikator naik/turun.
@@ -67,7 +67,7 @@
 
 | Model | Jenis | Keterangan |
 |---|---|---|
-| `foom.sales.report` | `models.Model`, `_auto = False` | SQL view read-only; menampung semua field analisis dan method `get_dashboard_data` |
+| `sales.report` | `models.Model`, `_auto = False` | SQL view read-only; menampung semua field analisis dan method `get_dashboard_data` |
 
 Tidak ada model core yang di-inherit → risiko konflik dengan addon lain minimal.
 
@@ -75,18 +75,18 @@ Tidak ada model core yang di-inherit → risiko konflik dengan addon lain minima
 
 | Group | XML id | Hak |
 |---|---|---|
-| FOOM Dashboard / User | `group_foom_dashboard_user` | read `foom.sales.report`, akses menu |
-| FOOM Dashboard / Manager | `group_foom_dashboard_manager` | implied `group_foom_dashboard_user`; disiapkan untuk konfigurasi lanjutan |
+| Sales Dashboard / User | `group_sales_dashboard_user` | read `sales.report`, akses menu |
+| Sales Dashboard / Manager | `group_sales_dashboard_manager` | implied `group_sales_dashboard_user`; disiapkan untuk konfigurasi lanjutan |
 
 - `ir.model.access.csv`: read-only (`1,0,0,0`) untuk kedua group. Tidak ada create/write/unlink karena model adalah SQL view.
 - Record rule multi-company pada `company_id` (`in company_ids`).
-- `group_foom_dashboard_user` otomatis diberikan ke `sales_team.group_sale_salesman` via `implied_ids` agar tim sales langsung punya akses.
+- `group_sales_dashboard_user` otomatis diberikan ke `sales_team.group_sale_salesman` via `implied_ids` agar tim sales langsung punya akses.
 
 **Views & menu**
 
 - `ir.actions.client` tag `sales_dashboard.dashboard`.
-- Menu root `FOOM Sales` (web icon sendiri) → item `Dashboard` dan `Data Penjualan`.
-- View `list`, `pivot`, `graph`, dan `search` untuk `foom.sales.report` (Odoo 18 memakai tag `<list>`, bukan `<tree>`).
+- Menu root `Sales Dashboard` (web icon sendiri) → item `Dashboard` dan `Data Penjualan`.
+- View `list`, `pivot`, `graph`, dan `search` untuk `sales.report` (Odoo 18 memakai tag `<list>`, bukan `<tree>`).
 
 **Assets**
 

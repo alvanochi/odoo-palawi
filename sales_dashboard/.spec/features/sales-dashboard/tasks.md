@@ -1,4 +1,4 @@
-# Tasks — FOOM Sales Dashboard
+# Tasks — Sales Dashboard
 
 Urutan dijaga agar modul tetap installable setelah setiap kelompok task.
 
@@ -12,28 +12,28 @@ Urutan dijaga agar modul tetap installable setelah setiap kelompok task.
       - Covers: risiko "Chart.js versi Odoo berubah"
       - Done when: file UMD Chart.js 4.x ada dan terdaftar di `web.assets_backend`
 
-- [x] **3. Model SQL view `foom.sales.report`**
-      - Files: `models/foom_sales_report.py`, `models/__init__.py`
+- [x] **3. Model SQL view `sales.report`**
+      - Files: `models/sales_report.py`, `models/__init__.py`
       - Covers: REQ-1, REQ-2, REQ-3, REQ-4, REQ-6
-      - Done when: upgrade bersih dan `SELECT * FROM foom_sales_report LIMIT 5` mengembalikan baris
+      - Done when: upgrade bersih dan `SELECT * FROM sales_report LIMIT 5` mengembalikan baris
 
 - [x] **4. Security: group, akses, record rule**
-      - Files: `security/foom_security.xml`, `security/ir.model.access.csv`
+      - Files: `security/sales_dashboard_security.xml`, `security/ir.model.access.csv`
       - Covers: REQ-18
       - Done when: user non-admin di group dashboard bisa membaca report, user di luar group tidak
 
 - [x] **5. Method agregasi `get_dashboard_data` + `get_filter_options`**
-      - Files: `models/foom_sales_report.py`
+      - Files: `models/sales_report.py`
       - Covers: REQ-5, REQ-10, REQ-11, REQ-13, REQ-16
       - Done when: dipanggil dari shell Odoo mengembalikan dict lengkap dengan nilai yang masuk akal
 
 - [x] **6. View list/pivot/graph/search + action `ir.actions.client`**
-      - Files: `views/foom_sales_report_views.xml`
+      - Files: `views/sales_report_views.xml`
       - Covers: US-6, REQ-7
       - Done when: view "Data Penjualan" bisa dibuka, difilter, dan di-export
 
-- [x] **7. Menu FOOM Sales**
-      - Files: `views/foom_dashboard_menus.xml`
+- [x] **7. Menu Sales Dashboard**
+      - Files: `views/sales_dashboard_menus.xml`
       - Covers: REQ-7
       - Done when: menu root dan dua submenu muncul untuk user yang berhak
 
@@ -108,9 +108,9 @@ Urutan dijaga agar modul tetap installable setelah setiap kelompok task.
    ditambahkan di luar tinggi yang dipasang dan bagian bawah kembali terpotong.
 
 5. **Kontras scrollbar** — setelah scroll berfungsi, thumb-nya tetap tidak terlihat
-   sampai halaman di-zoom 175%. Penyebabnya pilihan warna: thumb `--foom-baseline`
-   (#c3c2b7) di atas track `--foom-plane` (#f9f9f7) — abu-abu muda di atas
-   hampir-putih. Thumb diganti ke `--foom-ink-2` dan lebar dinaikkan ke 16px.
+   sampai halaman di-zoom 175%. Penyebabnya pilihan warna: thumb `--sd-baseline`
+   (#c3c2b7) di atas track `--sd-plane` (#f9f9f7) — abu-abu muda di atas
+   hampir-putih. Thumb diganti ke `--sd-ink-2` dan lebar dinaikkan ke 16px.
 
    Padanan Firefox (`scrollbar-width`/`scrollbar-color`) harus dikurung
    `@supports (-moz-appearance: none)`. Tanpa kurungan itu Chrome ikut membacanya,
@@ -120,7 +120,7 @@ Urutan dijaga agar modul tetap installable setelah setiap kelompok task.
    `CSS.supports('(scrollbar-color: red blue)')` bernilai true.
 
 6. **Outlet dipetakan ulang: dari Sales Team ke warehouse + location** — asumsi
-   awal (`crm.team` sebagai outlet) ternyata salah; di FOOM outlet dipisah per
+   awal (`crm.team` sebagai outlet) ternyata salah; di Palawi outlet dipisah per
    warehouse dan stock location. Keduanya kini diambil dari `stock.move` yang
    sudah `done` lewat `sale_line_id`, bukan dari `sale_order.warehouse_id`, agar
    mencerminkan pengiriman yang benar-benar terjadi. Modul menambah dependency
