@@ -98,6 +98,69 @@ class TestFoomSalesReport(AccountTestInvoicingCommon):
         self.assertAlmostEqual(data["kpi"]["amount"]["value"], 600.0, places=2)
 
     # ------------------------------------------------------------------
+    # Sales tax
+    # ------------------------------------------------------------------
+
+    def _make_taxed_invoice(self, move_type="out_invoice", amount=1000.0):
+        invoice = self.init_invoice(
+            move_type,
+            partner=self.partner_a,
+            invoice_date=self.today,
+            amounts=[amount],
+            taxes=self.tax_sale_a,
+        )
+        invoice.action_post()
+        return invoice
+
+    def _today_data(self):
+        return self.report.get_dashboard_data(
+            date_from=self.today.isoformat(),
+            date_to=self.today.isoformat(),
+        )
+
+    def test_tax_amount_in_view(self):
+        """price_tax = pajak baris, price_total = subtotal + pajak."""
+        invoice = self._make_taxed_invoice(amount=1000.0)
+        lines = self._lines_for(invoice)
+        expected_tax = invoice.amount_tax
+        self.assertAlmostEqual(sum(lines.mapped("price_tax")), expected_tax, places=2)
+        self.assertAlmostEqual(
+            sum(lines.mapped("price_total")), 1000.0 + expected_tax, places=2
+        )
+
+    def test_tax_zero_without_tax(self):
+        """Invoice tanpa pajak menghasilkan price_tax nol."""
+        invoice = self._make_invoice(amounts=[500.0])
+        self.assertAlmostEqual(sum(self._lines_for(invoice).mapped("price_tax")), 0.0)
+
+    def test_refund_tax_negative(self):
+        """Pajak credit note bernilai negatif."""
+        refund = self._make_taxed_invoice(move_type="out_refund")
+        self.assertLess(sum(self._lines_for(refund).mapped("price_tax")), 0.0)
+
+    def test_kpi_tax(self):
+        """KPI Sales Tax sama dengan total pajak invoice."""
+        invoice = self._make_taxed_invoice()
+        data = self._today_data()
+        self.assertAlmostEqual(
+            data["kpi"]["tax"]["value"], invoice.amount_tax, places=2
+        )
+
+    def test_tax_breakdown_matches_total(self):
+        """Breakdown per jenis pajak berjumlah sama dengan KPI Sales Tax."""
+        invoice = self._make_taxed_invoice()
+        data = self._today_data()
+        breakdown = data["tax_breakdown"]
+        self.assertTrue(breakdown)
+        self.assertIn(self.tax_sale_a.id, [r["id"] for r in breakdown])
+        self.assertAlmostEqual(
+            sum(r["amount"] for r in breakdown), invoice.amount_tax, places=2
+        )
+        self.assertAlmostEqual(
+            sum(r["amount"] for r in breakdown), data["kpi"]["tax"]["value"], places=2
+        )
+
+    # ------------------------------------------------------------------
     # Timezone
     # ------------------------------------------------------------------
 

@@ -5,7 +5,7 @@ Urutan dijaga agar modul tetap installable setelah setiap kelompok task.
 - [x] **1. Scaffold modul + manifest**
       - Files: `__init__.py`, `__manifest__.py`, `models/__init__.py`, `static/description/icon.png`
       - Covers: REQ-17
-      - Done when: `odoo-bin -u foom_sales_dashboard` sukses, modul tampil di Apps
+      - Done when: `odoo-bin -u sales_dashboard` sukses, modul tampil di Apps
 
 - [x] **2. Bundle Chart.js**
       - Files: `static/lib/chartjs/chart.umd.js`

@@ -141,7 +141,7 @@ class Formatter {
 // ---------------------------------------------------------------------------
 
 class KpiCard extends Component {
-    static template = "foom_sales_dashboard.KpiCard";
+    static template = "sales_dashboard.KpiCard";
     static props = {
         label: String,
         value: String,
@@ -165,7 +165,7 @@ class KpiCard extends Component {
  * supaya tidak ada canvas yang bocor saat filter berubah.
  */
 class ChartCanvas extends Component {
-    static template = "foom_sales_dashboard.ChartCanvas";
+    static template = "sales_dashboard.ChartCanvas";
     static props = {
         config: Object,
         // Kunci stabil yang hanya berubah saat data berubah. Tanpa ini, setiap
@@ -206,7 +206,7 @@ class ChartCanvas extends Component {
 }
 
 class RankList extends Component {
-    static template = "foom_sales_dashboard.RankList";
+    static template = "sales_dashboard.RankList";
     static props = {
         title: String,
         rows: Array,
@@ -236,7 +236,7 @@ class RankList extends Component {
 // ---------------------------------------------------------------------------
 
 export class FoomDashboard extends Component {
-    static template = "foom_sales_dashboard.Dashboard";
+    static template = "sales_dashboard.Dashboard";
     static components = { KpiCard, ChartCanvas, RankList };
     static props = ["*"];
 
@@ -408,6 +408,7 @@ export class FoomDashboard extends Component {
                 top_warehouses: [],
                 top_locations: [],
                 top_partners: [],
+                tax_breakdown: [],
                 kpi: null,
             });
             if (!this.state.data.kpi) {
@@ -535,6 +536,13 @@ export class FoomDashboard extends Component {
                 growth: kpi.amount.growth,
                 hint: _t("Previous: %s", f.money(kpi.amount.previous, { compact: true })),
                 icon: "fa-money",
+            },
+            {
+                label: _t("Sales Tax"),
+                value: f.money((kpi.tax || {}).value || 0),
+                growth: (kpi.tax || {}).growth ?? null,
+                hint: _t("Previous: %s", f.money((kpi.tax || {}).previous || 0, { compact: true })),
+                icon: "fa-percent",
             },
             {
                 label: _t("Orders"),
@@ -870,4 +878,4 @@ export class FoomDashboard extends Component {
     }
 }
 
-registry.category("actions").add("foom_sales_dashboard.dashboard", FoomDashboard);
+registry.category("actions").add("sales_dashboard.dashboard", FoomDashboard);

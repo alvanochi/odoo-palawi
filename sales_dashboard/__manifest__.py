@@ -42,10 +42,10 @@ otherwise. All hour and weekday aggregation is converted to the user's timezone.
     ],
     "assets": {
         "web.assets_backend": [
-            "foom_sales_dashboard/static/lib/chartjs/chart.umd.js",
-            "foom_sales_dashboard/static/src/scss/dashboard.scss",
-            "foom_sales_dashboard/static/src/js/dashboard.js",
-            "foom_sales_dashboard/static/src/xml/dashboard.xml",
+            "sales_dashboard/static/lib/chartjs/chart.umd.js",
+            "sales_dashboard/static/src/scss/dashboard.scss",
+            "sales_dashboard/static/src/js/dashboard.js",
+            "sales_dashboard/static/src/xml/dashboard.xml",
         ],
     },
     "installable": True,

@@ -79,6 +79,17 @@ class FoomSalesReport(models.Model):
         readonly=True,
         help="Untaxed amount, expressed in the company currency.",
     )
+    price_tax = fields.Float(
+        string="Sales Tax",
+        readonly=True,
+        help="Tax amount of the line in company currency "
+             "(negative for credit notes).",
+    )
+    price_total = fields.Float(
+        string="Revenue incl. Tax",
+        readonly=True,
+        help="Revenue plus tax, in company currency.",
+    )
     order_count = fields.Integer(string="Lines", readonly=True)
 
     # ------------------------------------------------------------------
@@ -120,7 +131,14 @@ class FoomSalesReport(models.Model):
             CASE WHEN am.move_type = 'out_refund'
                  THEN -aml.quantity ELSE aml.quantity END   AS quantity,
             -aml.balance                                AS price_subtotal,
-            1                                           AS order_count
+            CASE WHEN COALESCE(aml.price_subtotal, 0) = 0 THEN 0.0
+                 ELSE -aml.balance
+                      * (aml.price_total - aml.price_subtotal)
+                      / aml.price_subtotal END              AS price_tax,
+            CASE WHEN COALESCE(aml.price_subtotal, 0) = 0 THEN -aml.balance
+                 ELSE -aml.balance * aml.price_total
+                      / aml.price_subtotal END              AS price_total,
+            1                                         AS order_count
         """.format(team_expr=team_expr)
 
     def _from_clause(self):
@@ -260,7 +278,8 @@ class FoomSalesReport(models.Model):
             SELECT COALESCE(SUM(r.price_subtotal), 0.0)  AS amount,
                    COUNT(DISTINCT r.move_id)             AS orders,
                    COUNT(DISTINCT r.partner_id)          AS customers,
-                   COALESCE(SUM(r.quantity), 0.0)        AS quantity
+                   COALESCE(SUM(r.quantity), 0.0)        AS quantity,
+                   COALESCE(SUM(r.price_tax), 0.0)       AS tax
               FROM {table} r
              WHERE {where}
             """.format(table=self._table, where=where),
@@ -268,6 +287,7 @@ class FoomSalesReport(models.Model):
         )
         row = self.env.cr.dictfetchone() or {}
         return {
+            "tax": row.get("tax") or 0.0,
             "amount": row.get("amount") or 0.0,
             "orders": row.get("orders") or 0,
             "customers": row.get("customers") or 0,
@@ -361,6 +381,7 @@ class FoomSalesReport(models.Model):
             "top_warehouses": self._fetch_top_warehouses(where, params, limit),
             "top_locations": self._fetch_top_locations(where, params, limit),
             "top_partners": self._fetch_top_partners(where, params, limit),
+            "tax_breakdown": self._fetch_tax_breakdown(where, params),
         }
         data["has_data"] = bool(totals["orders"])
         data["kpi"]["peak_hour"] = self._peak_hour(data["hourly"])
@@ -375,6 +396,7 @@ class FoomSalesReport(models.Model):
             "avg_order": (avg_now, avg_prev),
             "customers": (totals["customers"], previous["customers"]),
             "quantity": (totals["quantity"], previous["quantity"]),
+            "tax": (totals["tax"], previous["tax"]),
         }
         return {
             key: {
@@ -527,6 +549,44 @@ class FoomSalesReport(models.Model):
             }
             for r in rows
         ]
+
+    def _fetch_tax_breakdown(self, where, params):
+        """Total pajak per jenis pajak (PNBP, PBJT, PPN, dst).
+
+        Diambil dari baris pajak invoice (`tax_line_id`). Satu invoice bisa
+        mencakup beberapa warehouse/lokasi, jadi pajaknya dialokasikan
+        proporsional terhadap porsi subtotal baris yang lolos filter, supaya
+        totalnya konsisten dengan KPI Sales Tax.
+        """
+        self.env.cr.execute(
+            """
+            WITH f AS (
+                SELECT r.move_id, SUM(r.price_subtotal) AS amt
+                  FROM {table} r
+                 WHERE {where}
+                 GROUP BY r.move_id
+            ),
+            t AS (
+                SELECT r.move_id, SUM(r.price_subtotal) AS amt
+                  FROM {table} r
+                 WHERE r.move_id IN (SELECT move_id FROM f)
+                 GROUP BY r.move_id
+            )
+            SELECT tl.tax_line_id                         AS group_id,
+                   COUNT(DISTINCT tl.move_id)             AS orders,
+                   SUM(-tl.balance * CASE WHEN COALESCE(t.amt, 0) = 0
+                                          THEN 1.0 ELSE f.amt / t.amt END) AS amount
+              FROM account_move_line tl
+              JOIN f ON f.move_id = tl.move_id
+              JOIN t ON t.move_id = tl.move_id
+             WHERE tl.tax_line_id IS NOT NULL
+             GROUP BY 1
+             ORDER BY amount DESC NULLS LAST
+            """.format(table=self._table, where=where),
+            params,
+        )
+        rows = [dict(r, quantity=0.0) for r in self.env.cr.dictfetchall()]
+        return self._label_rows(rows, "account.tax", _("No Tax"))
 
     def _fetch_top_products(self, where, params, limit):
         rows = self._fetch_grouped(where, params, "r.product_tmpl_id", limit)

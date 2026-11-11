@@ -3,14 +3,14 @@
 
     <menuitem id="menu_foom_root"
               name="FOOM Sales"
-              web_icon="foom_sales_dashboard,static/description/icon.png"
+              web_icon="sales_dashboard,static/description/icon.png"
               groups="group_foom_dashboard_user"
               sequence="15"/>
 
     <menuitem id="menu_foom_dashboard"
               name="Dashboard"
               parent="menu_foom_root"
-              action="action_foom_sales_dashboard"
+              action="action_sales_dashboard"
               groups="group_foom_dashboard_user"
               sequence="10"/>
 

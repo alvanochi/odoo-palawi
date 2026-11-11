@@ -19,11 +19,11 @@ hour level up to the year, for both order count and revenue.
 
 ## Installation
 
-1. Extract the `foom_sales_dashboard/` folder into one of your Odoo addons paths,
+1. Extract the `sales_dashboard/` folder into one of your Odoo addons paths,
    for example:
 
    ```
-   /opt/odoo/custom_addons/foom_sales_dashboard
+   /opt/odoo/custom_addons/sales_dashboard
    ```
 
 2. Restart the Odoo service, then go to **Apps → Update Apps List**.
@@ -32,13 +32,13 @@ hour level up to the year, for both order count and revenue.
 Or from the command line:
 
 ```bash
-odoo-bin -d <database> -i foom_sales_dashboard --stop-after-init
+odoo-bin -d <database> -i sales_dashboard --stop-after-init
 ```
 
 To upgrade after a code change:
 
 ```bash
-odoo-bin -d <database> -u foom_sales_dashboard --stop-after-init
+odoo-bin -d <database> -u sales_dashboard --stop-after-init
 ```
 
 The menu appears as **FOOM Sales** in the main menu.
@@ -125,7 +125,7 @@ global record rule restricts rows to the user's active companies.
 ## Module layout
 
 ```
-foom_sales_dashboard/
+sales_dashboard/
 ├── __manifest__.py
 ├── models/foom_sales_report.py     SQL view + all dashboard aggregation
 ├── security/                       groups, access rights, multi-company rule
@@ -156,10 +156,10 @@ CREATE INDEX IF NOT EXISTS account_move_line_foom_idx
 ## Testing
 
 ```bash
-odoo-bin -d <database> -u foom_sales_dashboard --test-enable --stop-after-init
+odoo-bin -d <database> -u sales_dashboard --test-enable --stop-after-init
 # or
 pytest -s --odoo-database=<database> --odoo-log-level=warn \
-       addons/foom_sales_dashboard/tests
+       addons/sales_dashboard/tests
 ```
 
 ## Language

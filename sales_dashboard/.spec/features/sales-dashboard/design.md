@@ -1,11 +1,11 @@
 # Design — FOOM Sales Dashboard
 
-Odoo 18.0 · modul `foom_sales_dashboard` · depends: `base`, `web`, `account`, `sale`
+Odoo 18.0 · modul `sales_dashboard` · depends: `base`, `web`, `account`, `sale`
 
 ## 1. Struktur modul
 
 ```
-foom_sales_dashboard/
+sales_dashboard/
 ├── __init__.py
 ├── __manifest__.py
 ├── models/
@@ -194,7 +194,7 @@ flowchart LR
 | `HourlyChart` | idem | Wrapper Chart.js bar |
 | `RankList` | idem | Daftar bar horizontal untuk top produk/outlet/pelanggan |
 
-Registrasi: `registry.category("actions").add("foom_sales_dashboard.dashboard", FoomDashboard)`.
+Registrasi: `registry.category("actions").add("sales_dashboard.dashboard", FoomDashboard)`.
 
 Service yang dipakai: `orm` (fetch data), `action` (drill-down ke view list), `notification` (error). Setiap komponen memakai `static template`, `static props`, dan `static components` sesuai gaya Odoo 17+/OWL 2.
 
@@ -256,9 +256,9 @@ Mengikuti panduan skill `dataviz`: satu palet konsisten, kontras cukup di tema t
 Perintah:
 
 ```bash
-odoo-bin -d <db> -u foom_sales_dashboard --test-enable --stop-after-init
+odoo-bin -d <db> -u sales_dashboard --test-enable --stop-after-init
 # atau
-pytest -s --odoo-database=<db> --odoo-log-level=warn addons/foom_sales_dashboard/tests
+pytest -s --odoo-database=<db> --odoo-log-level=warn addons/sales_dashboard/tests
 ```
 
 ## 8. Risiko yang diketahui

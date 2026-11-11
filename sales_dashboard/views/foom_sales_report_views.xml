@@ -19,6 +19,8 @@
                 <field name="journal_id" optional="hide"/>
                 <field name="quantity" sum="Total Qty"/>
                 <field name="price_subtotal" sum="Total Revenue"/>
+                <field name="price_tax" sum="Total Tax"/>
+                <field name="price_total" sum="Total incl. Tax" optional="hide"/>
                 <field name="company_id" groups="base.group_multi_company" optional="hide"/>
             </list>
         </field>
@@ -32,6 +34,7 @@
                 <field name="date_ts" interval="month" type="row"/>
                 <field name="warehouse_id" type="col"/>
                 <field name="price_subtotal" type="measure"/>
+                <field name="price_tax" type="measure"/>
             </pivot>
         </field>
     </record>
@@ -101,9 +104,9 @@
         </field>
     </record>
 
-    <record id="action_foom_sales_dashboard" model="ir.actions.client">
+    <record id="action_sales_dashboard" model="ir.actions.client">
         <field name="name">Sales Dashboard</field>
-        <field name="tag">foom_sales_dashboard.dashboard</field>
+        <field name="tag">sales_dashboard.dashboard</field>
     </record>
 
 </odoo>

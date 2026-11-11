@@ -5,7 +5,7 @@
 | Item | Nilai |
 |---|---|
 | Odoo version | 18.0 |
-| Modul baru | `foom_sales_dashboard` |
+| Modul baru | `sales_dashboard` |
 | Environment | Remote instance (odoo.rel.id), modul dikirim sebagai ZIP untuk di-extract ke addons path |
 | Dependency | `base`, `web`, `account`, `sale` |
 | Sumber data | Customer Invoice / Credit Note yang sudah **posted** (`account.move` + `account.move.line`) |
@@ -84,7 +84,7 @@ Tidak ada model core yang di-inherit → risiko konflik dengan addon lain minima
 
 **Views & menu**
 
-- `ir.actions.client` tag `foom_sales_dashboard.dashboard`.
+- `ir.actions.client` tag `sales_dashboard.dashboard`.
 - Menu root `FOOM Sales` (web icon sendiri) → item `Dashboard` dan `Data Penjualan`.
 - View `list`, `pivot`, `graph`, dan `search` untuk `foom.sales.report` (Odoo 18 memakai tag `<list>`, bukan `<tree>`).
 
