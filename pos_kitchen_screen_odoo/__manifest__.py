@@ -60,6 +60,7 @@
             'pos_kitchen_screen_odoo/static/src/js/fields_load.js',
             'pos_kitchen_screen_odoo/static/src/js/order_pay.js',
             'pos_kitchen_screen_odoo/static/src/js/order_button.js',
+            'pos_kitchen_screen_odoo/static/src/js/closing_popup_patch.js',
         ],
         'web.assets_backend': [
             'pos_kitchen_screen_odoo/static/src/css/kitchen_screen.css',
