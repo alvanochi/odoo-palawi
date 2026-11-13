@@ -740,6 +740,12 @@ class PosSessionApi(http.Controller):
         # Default False, hanya untuk emergency. Jika accounting benar-benar belum dipakai, tetap lebih aman pakai allow_unposted.
         force_close = bool(values.get("force_close") or values.get("forceClose"))
 
+        # auto_balance: sama seperti klik "Close Session" di wizard "Force Close Session" Odoo.
+        # Kalau jurnal penutupan tidak balance, selisih diposting ke akun penyeimbang default Odoo.
+        # Default False supaya selisih tidak diposting diam-diam; response selalu melaporkan nilainya.
+        auto_balance = bool(values.get("auto_balance") or values.get("autoBalance"))
+        auto_balanced = None
+
         # STRICT: tidak ada fast/safe mode implisit
         safe_close = False
         fast_close = False
@@ -915,9 +921,49 @@ class PosSessionApi(http.Controller):
                 except Exception:
                     _logger.exception("[CLOSE_SESSION] force_fix_online_payment_partner failed session=%s", session.id)
 
-                session.sudo().action_pos_session_validate()
+                validate_res = session.sudo().action_pos_session_validate()
                 session = self._cr_flush_reload(session)
                 validated = True
+
+                # Jurnal tidak balance -> Odoo mengembalikan action wizard "Force Close Session"
+                # (bukan raise). Tanpa ini session menggantung di closing_control.
+                if (
+                    isinstance(validate_res, dict)
+                    and validate_res.get("res_model") == "pos.close.session.wizard"
+                    and getattr(session, "state", None) != "closed"
+                ):
+                    validated = False
+                    wizard = api_env["pos.close.session.wizard"].sudo().browse(validate_res.get("res_id"))
+                    amount_to_balance = wizard.amount_to_balance
+                    balancing_account = wizard.account_id
+                    unbalanced = {
+                        "session_id": session.id,
+                        "amount_to_balance": amount_to_balance,
+                        "account_id": balancing_account.id,
+                        "account_name": balancing_account.display_name,
+                    }
+                    if not auto_balance:
+                        return fail(
+                            "Tidak bisa close: jurnal penutupan tidak balance. "
+                            "Kirim auto_balance=true untuk memposting selisih ke akun penyeimbang.",
+                            code="UNBALANCED_SESSION",
+                            data=unbalanced,
+                        )
+                    _logger.warning(
+                        "[CLOSE_SESSION] auto_balance session=%s amount=%s account=%s",
+                        session.id, amount_to_balance, balancing_account.display_name,
+                    )
+                    session.sudo().action_pos_session_closing_control(balancing_account, amount_to_balance)
+                    session = self._cr_flush_reload(session)
+                    validated = True
+                    auto_balanced = unbalanced
+                    try:
+                        session.sudo().message_post(
+                            body="Auto-balance via API: %s diposting ke %s"
+                            % (amount_to_balance, balancing_account.display_name)
+                        )
+                    except Exception:
+                        _logger.exception("[CLOSE_SESSION] message_post failed session=%s", session.id)
 
             elif hasattr(session, "_validate_session"):
                 _logger.warning("[CLOSE_SESSION] calling _validate_session session=%s", session.id)
@@ -964,7 +1010,7 @@ class PosSessionApi(http.Controller):
         # If validate already closed
         session = self._cr_flush_reload(session)
         if getattr(session, "state", None) == "closed":
-            return ok_success(session, extra={"validated": True})
+            return ok_success(session, extra={"validated": True, "auto_balanced": auto_balanced})
 
         # -------------------------
         # Re-check remaining paid after validate
