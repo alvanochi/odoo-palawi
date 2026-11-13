@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="menu_visibility_rule_view_list" model="ir.ui.view">
+        <field name="name">menu.visibility.rule.list</field>
+        <field name="model">menu.visibility.rule</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="menu_id"/>
+                <field name="apply_to"/>
+                <field name="group_ids" widget="many2many_tags" optional="show"/>
+                <field name="user_ids" widget="many2many_tags" optional="show"/>
+                <field name="note" optional="show"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="menu_visibility_rule_view_form" model="ir.ui.view">
+        <field name="name">menu.visibility.rule.form</field>
+        <field name="model">menu.visibility.rule</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="menu_id" options="{'no_create': True}"/>
+                        <field name="apply_to" widget="radio"/>
+                        <field name="group_ids" widget="many2many_tags"
+                               invisible="apply_to != 'groups'"
+                               required="apply_to == 'groups'"/>
+                        <field name="user_ids" widget="many2many_tags"
+                               invisible="apply_to != 'users'"
+                               required="apply_to == 'users'"/>
+                        <field name="note"/>
+                        <field name="active"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="menu_visibility_rule_view_search" model="ir.ui.view">
+        <field name="name">menu.visibility.rule.search</field>
+        <field name="model">menu.visibility.rule</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="menu_id"/>
+                <filter name="inactive" string="Archived" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="menu_visibility_rule_action" model="ir.actions.act_window">
+        <field name="name">Menu Visibility</field>
+        <field name="res_model">menu.visibility.rule</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_visibility_rule_menu"
+              name="Menu Visibility"
+              parent="base.menu_administration"
+              action="menu_visibility_rule_action"
+              groups="base.group_system"
+              sequence="90"/>
+</odoo>
