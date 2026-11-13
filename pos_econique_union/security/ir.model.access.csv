@@ -1,4 +1,5 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_pos_econique_transaction_gw_manager,pos.econique.transaction gateway manager,model_pos_econique_transaction,pos_payment_gateway.group_pos_payment_gateway_manager,1,1,1,1
+access_pos_econique_config_manager,pos.econique.config manager,model_pos_econique_config,group_pos_econique_manager,1,1,1,1
+access_pos_econique_payment_map_manager,pos.econique.payment.map manager,model_pos_econique_payment_map,group_pos_econique_manager,1,1,1,1
+access_pos_econique_transaction_manager,pos.econique.transaction manager,model_pos_econique_transaction,group_pos_econique_manager,1,1,1,1
 access_pos_econique_transaction_pos_manager,pos.econique.transaction pos manager,model_pos_econique_transaction,point_of_sale.group_pos_manager,1,0,0,0
-access_pos_econique_payment_map_gw_manager,pos.econique.payment.map gateway manager,model_pos_econique_payment_map,pos_payment_gateway.group_pos_payment_gateway_manager,1,1,1,1

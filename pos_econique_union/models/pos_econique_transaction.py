@@ -12,16 +12,16 @@ from ..services.econique_client import EconiqueError, EconiqueLoginError, Econiq
 _logger = logging.getLogger(__name__)
 
 CRON_XMLID = "pos_econique_union.ir_cron_econique_send"
-# Kode error Econique yang masuk akal dicoba lagi.
+# Econique error codes that are reasonable to retry.
 RETRYABLE_CODES = {"E.TC.PT.003"}
 CRON_BATCH = 50
 
 
 class PosEconiqueTransaction(models.Model):
-    """Antrian + log pengiriman satu order POS ke Econique.
+    """Queue + log of sending one POS order to Econique.
 
-    Dibuat saat order lunas (lihat pos_order.py), dikirim oleh cron. Pengiriman
-    tidak pernah memblokir atau menggagalkan pembayaran di POS.
+    Created when an order is paid (see pos_order.py) and sent by a cron.
+    Sending never blocks or fails the payment in the POS.
     """
 
     _name = "pos.econique.transaction"
@@ -33,8 +33,12 @@ class PosEconiqueTransaction(models.Model):
     )
     pos_config_id = fields.Many2one(related="order_id.config_id", store=True, index=True)
     company_id = fields.Many2one(related="order_id.company_id", store=True)
-    credential_id = fields.Many2one(
-        "pos.payment.gateway.credential", required=True, ondelete="restrict", readonly=True
+    econique_config_id = fields.Many2one(
+        "pos.econique.config",
+        string="Econique Config",
+        required=True,
+        ondelete="restrict",
+        readonly=True,
     )
     invoice_number = fields.Char(readonly=True, index=True)
     state = fields.Selection(
@@ -60,39 +64,35 @@ class PosEconiqueTransaction(models.Model):
     response_payload = fields.Text(readonly=True)
 
     _sql_constraints = [
-        ("order_uniq", "unique(order_id)", "Order ini sudah punya antrian Econique."),
+        ("order_uniq", "unique(order_id)", "This order already has an Econique queue entry."),
     ]
 
     # ------------------------------------------------------------------ #
-    # Antrian
+    # Queue
     # ------------------------------------------------------------------ #
     @api.model
     def _enqueue_order(self, order):
-        """Buat antrian untuk order bila POS-nya punya credential Econique aktif.
+        """Queue the order if its POS has an active Econique configuration.
 
-        :return: True bila ada antrian pending baru (cron perlu dipicu).
+        :return: True if a new pending entry was created (the cron should be triggered).
         """
-        cred = self.env["pos.payment.gateway.credential"].sudo().search(
-            [
-                ("pos_config_id", "=", order.config_id.id),
-                ("gateway_code", "=", "econique"),
-                ("econique_auto_send", "=", True),
-            ],
+        config = self.env["pos.econique.config"].sudo().search(
+            [("pos_config_id", "=", order.config_id.id), ("auto_send", "=", True)],
             limit=1,
         )
-        if not cred or self.search_count([("order_id", "=", order.id)]):
+        if not config or self.search_count([("order_id", "=", order.id)]):
             return False
 
         vals = {
             "order_id": order.id,
-            "credential_id": cred.id,
-            "invoice_number": order.pos_reference if cred.econique_invoice_source == "pos_reference"
+            "econique_config_id": config.id,
+            "invoice_number": order.pos_reference if config.invoice_source == "pos_reference"
             and order.pos_reference else order.name,
         }
         if order.amount_total <= 0:
             vals.update(
                 state="skipped",
-                last_error=_("Order dengan total nol atau negatif (refund) tidak dikirim."),
+                last_error=_("Orders with a zero or negative total (refunds) are not sent."),
             )
         self.create(vals)
         return vals.get("state") != "skipped"
@@ -106,13 +106,13 @@ class PosEconiqueTransaction(models.Model):
     @api.model
     def _cron_process_pending(self):
         now = fields.Datetime.now()
-        # active_test=False: credential yang diarsipkan tetap ikut diproses agar
-        # antriannya ditandai Failed dengan pesan jelas, bukan menggantung.
-        # Kirim Otomatis dimatikan: antrian dibiarkan pending, tidak dikirim.
+        # active_test=False: archived configurations are still processed so their queue
+        # entries are marked Failed with a clear message instead of hanging.
+        # Auto Send turned off: entries stay pending and are not sent.
         recs = self.with_context(active_test=False).search(
             [
                 ("state", "=", "pending"),
-                ("credential_id.econique_auto_send", "=", True),
+                ("econique_config_id.auto_send", "=", True),
                 "|",
                 ("next_attempt", "=", False),
                 ("next_attempt", "<=", now),
@@ -124,16 +124,16 @@ class PosEconiqueTransaction(models.Model):
             try:
                 rec._send()
             except Exception:
-                _logger.exception("Econique: error tak terduga pada transaksi %s", rec.id)
+                _logger.exception("Econique: unexpected error on transaction %s", rec.id)
                 self.env.cr.rollback()
                 rec = self.browse(rec.id)
-                rec._mark_retry(_("Error tak terduga, lihat log server."))
+                rec._mark_retry(_("Unexpected error, see the server log."))
             self.env.cr.commit()
         if len(recs) == CRON_BATCH:
             self._trigger_cron()
 
     # ------------------------------------------------------------------ #
-    # Tombol
+    # Buttons
     # ------------------------------------------------------------------ #
     def action_send_now(self):
         for rec in self.filtered(lambda r: r.state in ("pending", "failed")):
@@ -149,37 +149,37 @@ class PosEconiqueTransaction(models.Model):
 
     def action_skip(self):
         self.filtered(lambda r: r.state in ("pending", "failed")).write(
-            {"state": "skipped", "last_error": _("Dilewati manual.")}
+            {"state": "skipped", "last_error": _("Skipped manually.")}
         )
         return True
 
     # ------------------------------------------------------------------ #
-    # Pengiriman
+    # Sending
     # ------------------------------------------------------------------ #
     def _send(self):
         self.ensure_one()
         if self.state in ("sent", "skipped"):
             return
-        cred = self.credential_id.sudo()
-        if not cred.active:
-            return self._mark_failed(_("Credential Econique sudah diarsipkan."))
+        config = self.econique_config_id.sudo()
+        if not config.active:
+            return self._mark_failed(_("The Econique configuration has been archived."))
 
         try:
             payload = self._build_payload()
         except ValueError as e:
-            # Data order belum lengkap (mis. pembayaran belum tercatat): coba lagi nanti.
+            # Order data not complete yet (e.g. payment not recorded): try again later.
             return self._mark_retry(str(e))
         except Exception as e:
-            _logger.exception("Econique: gagal menyusun payload transaksi %s", self.id)
-            return self._mark_failed(_("Gagal menyusun payload: %s") % e)
+            _logger.exception("Econique: failed to build the payload of transaction %s", self.id)
+            return self._mark_failed(_("Failed to build the payload: %s") % e)
         self.request_payload = json.dumps(payload, indent=2, ensure_ascii=False)
 
-        client = cred._econique_client()
+        client = config._client()
         try:
-            token = cred.econique_token or cred._econique_login(client)
+            token = config.token or config._login(client)
             status, data, text = client.post_transaction(token, payload)
             if status == 401:
-                token = cred._econique_login(client)
+                token = config._login(client)
                 status, data, text = client.post_transaction(token, payload)
         except (EconiqueNetworkError, EconiqueLoginError) as e:
             return self._mark_retry(str(e))
@@ -187,9 +187,9 @@ class PosEconiqueTransaction(models.Model):
             return self._mark_failed(str(e))
 
         self.response_payload = text[:20000]
-        self._handle_response(cred, status, data)
+        self._handle_response(status, data)
 
-    def _handle_response(self, cred, status, data):
+    def _handle_response(self, status, data):
         code = data.get("code") or False
         message = data.get("message") or ""
         if 200 <= status < 300 and str(data.get("status", "")).lower() == "success":
@@ -213,7 +213,7 @@ class PosEconiqueTransaction(models.Model):
     def _mark_retry(self, error):
         self.ensure_one()
         attempts = self.attempts + 1
-        if attempts >= (self.credential_id.sudo().econique_max_attempts or 5):
+        if attempts >= (self.econique_config_id.sudo().max_attempts or 5):
             return self.write({"state": "failed", "attempts": attempts, "last_error": error})
         delay = min(2 ** attempts, 60)
         self.write(
@@ -243,27 +243,27 @@ class PosEconiqueTransaction(models.Model):
         return pytz.UTC.localize(dt).astimezone(tz).strftime("%Y-%m-%d %H:%M:%S")
 
     def _build_payload(self):
-        """Kumpulkan data order lalu serahkan ke services.union_payload.
+        """Collect the order data, then hand it to services.union_payload.
 
-        Override method ini bila aturan pemetaan perlu diubah.
+        Override this method when the mapping rules need to change.
         """
         self.ensure_one()
         order = self.order_id.sudo()
-        cred = self.credential_id.sudo()
+        config = self.econique_config_id.sudo()
         tz = self._tz(order)
 
         pricelist = order.pricelist_id if "pricelist_id" in order._fields else False
-        if cred.econique_price_from_pricelist and pricelist:
+        if config.price_from_pricelist and pricelist:
             price_code, price_name = str(pricelist.id), pricelist.name
         else:
-            price_code = cred.econique_price_code or "STANDARD"
-            price_name = cred.econique_price_name or "Standard Price"
+            price_code = config.price_code or "STANDARD"
+            price_name = config.price_name or "Standard Price"
 
         lines = []
         voucher_code = False
         for line in order.lines:
             product = line.product_id
-            source = cred.econique_product_code_source or "default_code"
+            source = config.product_code_source or "default_code"
             code = (
                 (product.id if source == "id" else getattr(product, source, False))
                 or product.default_code
@@ -290,18 +290,18 @@ class PosEconiqueTransaction(models.Model):
 
         payments = order.payment_ids.filtered(lambda p: p.amount > 0)
         if not payments:
-            raise ValueError(_("Order belum punya pembayaran."))
+            raise ValueError(_("The order has no payment yet."))
         pay = max(payments, key=lambda p: p.amount)
         method = pay.payment_method_id
-        mapping = cred.econique_payment_map_ids.filtered(lambda m: m.payment_method_id == method)[:1]
+        mapping = config.payment_map_ids.filtered(lambda m: m.payment_method_id == method)[:1]
         if mapping:
             pay_type = mapping.payment_type
             pay_provider = mapping.payment_provider or method.name
-            pay_issuer = mapping.payment_issuer or cred.econique_default_issuer
+            pay_issuer = mapping.payment_issuer or config.default_issuer
         else:
             pay_type = "Cash" if method.is_cash_count else method.name
             pay_provider = method.name
-            pay_issuer = cred.econique_default_issuer
+            pay_issuer = config.default_issuer
         pay_date = pay.payment_date or order.date_order
 
         data = {
@@ -325,10 +325,10 @@ class PosEconiqueTransaction(models.Model):
             },
         }
         cfg = {
-            "version": cred.econique_api_version,
-            "tenant_code": cred.econique_tenant_code,
-            "tenant_name": cred.econique_tenant_name,
-            "service_fee_percent": cred.econique_service_fee_percent,
-            "send_payment_vendor": cred.econique_send_payment_vendor,
+            "version": config.api_version,
+            "tenant_code": config.tenant_code,
+            "tenant_name": config.tenant_name,
+            "service_fee_percent": config.service_fee_percent,
+            "send_payment_vendor": config.send_payment_vendor,
         }
         return union_payload.build_payload(data, cfg)

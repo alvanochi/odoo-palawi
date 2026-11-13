@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
-"""Penyusun payload POST /api/kuliner/transaction (Union Kuliner Econique).
+"""Builds the POST /api/kuliner/transaction payload (Union Kuliner Econique).
 
-Modul ini sengaja tidak meng-import odoo: semua masukan berupa dict biasa,
-supaya aturan hitungnya bisa dites tanpa server Odoo.
+This module deliberately does not import odoo: every input is a plain dict,
+so the calculation rules can be tested without an Odoo server.
 
-Rumus (dari tabel dan contoh di dokumentasi Econique, lihat README):
+Formulas (from the table and example in the Econique documentation, see README):
 
-    bruto            = sum(unit_price * qty) semua baris barang
-    discount_nominal = diskon persen per baris + baris potongan/reward
-    discount         = discount_nominal / bruto * 100   (persen, maks 100)
+    bruto            = sum(unit_price * qty) over all item lines
+    discount_nominal = per-line percent discount + discount/reward lines
+    discount         = discount_nominal / bruto * 100   (percent, max 100)
     service_fee      = (bruto - discount_nominal) * service_fee_percent / 100
-    ppn              = pajak order (rupiah)
+    ppn              = order tax (rupiah)
     netto            = bruto - discount_nominal - service_fee - ppn
 """
 from decimal import ROUND_HALF_UP, Decimal
@@ -27,17 +27,17 @@ def quantize(value):
 
 
 def money(value):
-    """Nominal sebagai string 2 desimal, sesuai 'decimal 2 digit after (,)'."""
+    """Amount as a 2-decimal string, per 'decimal 2 digit after (,)'."""
     return "%.2f" % quantize(value)
 
 
 def build_items(lines):
     """-> (items, bruto, line_discount, reward_discount)
 
-    lines: list dict dengan kunci product_code, product_name, price_code,
+    lines: list of dicts with keys product_code, product_name, price_code,
     price_name, qty, unit_price, discount_percent, is_discount_line.
-    Baris dengan is_discount_line=True (potongan/reward, nilainya negatif)
-    tidak menjadi item; nilainya dihitung sebagai diskon order.
+    Lines with is_discount_line=True (discount/reward, negative value) do not
+    become items; their value is counted as an order discount.
     """
     items = []
     bruto = Decimal(0)
@@ -56,8 +56,8 @@ def build_items(lines):
         pct = to_decimal(line.get("discount_percent") or 0)
         discount_nominal = gross * pct / 100
 
-        # 'amount' di API bertipe Int. Qty pecahan (mis. 0,5 kg) dikirim sebagai
-        # 1 item bernilai total baris, supaya total_price tetap benar.
+        # 'amount' in the API is an Int. A fractional qty (e.g. 0.5 kg) is sent as
+        # 1 item worth the whole line, so total_price stays correct.
         if qty == qty.to_integral_value():
             amount = int(qty)
             item_unit = unit
@@ -83,7 +83,7 @@ def build_items(lines):
 
 
 def build_payload(order, cfg):
-    """order/cfg: dict (lihat kunci di bawah) -> dict siap di-POST.
+    """order/cfg: dicts (keys below) -> dict ready to POST.
 
     order: invoice_number, transaction_date, voucher_code, ppn, lines[],
            payment{issuer, transaction_id, type, provider, status, date}
@@ -92,7 +92,7 @@ def build_payload(order, cfg):
     """
     items, bruto, line_discount, reward_discount = build_items(order["lines"])
     if not items:
-        raise ValueError("Order tidak punya baris barang.")
+        raise ValueError("The order has no item lines.")
 
     discount_nominal = line_discount + reward_discount
     discount_percent = Decimal(0)
@@ -125,7 +125,7 @@ def build_payload(order, cfg):
         "items": items,
     }
     if cfg.get("send_payment_vendor"):
-        # Contoh request di dokumentasi memakai 'payment_vendor', sedangkan
-        # tabel field memakai 'payment_issuer'. Keduanya dikirim.
+        # The example request in the documentation uses 'payment_vendor' while the
+        # field table uses 'payment_issuer'. Both are sent.
         payload["payment_vendor"] = pay["issuer"]
     return payload

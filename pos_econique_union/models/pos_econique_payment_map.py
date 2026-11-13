@@ -2,34 +2,34 @@ from odoo import fields, models
 
 
 class PosEconiquePaymentMap(models.Model):
-    """Pemetaan metode pembayaran Odoo ke payment_type/provider/issuer Econique."""
+    """Maps an Odoo payment method to Econique payment_type/provider/issuer."""
 
     _name = "pos.econique.payment.map"
     _description = "Econique Payment Method Mapping"
-    _order = "credential_id, id"
+    _order = "config_id, id"
 
-    credential_id = fields.Many2one(
-        "pos.payment.gateway.credential", required=True, ondelete="cascade", index=True
+    config_id = fields.Many2one(
+        "pos.econique.config", required=True, ondelete="cascade", index=True
     )
     payment_method_id = fields.Many2one(
-        "pos.payment.method", string="Metode Pembayaran", required=True, ondelete="cascade"
+        "pos.payment.method", string="Payment Method", required=True, ondelete="cascade"
     )
     payment_type = fields.Char(
-        required=True, help="Dikirim sebagai payment_type. Contoh: Cash, QRIS, Debit."
+        required=True, help="Sent as payment_type. Example: Cash, QRIS, Debit."
     )
     payment_provider = fields.Char(
-        help="Dikirim sebagai payment_provider. Contoh: Gopay, BCA. "
-        "Bila kosong dipakai nama metode pembayaran."
+        help="Sent as payment_provider. Example: Gopay, BCA. "
+        "When empty, the payment method name is used."
     )
     payment_issuer = fields.Char(
-        help="Dikirim sebagai payment_issuer. Contoh: Paper.id, doku. "
-        "Bila kosong dipakai Default payment_issuer pada credential."
+        help="Sent as payment_issuer. Example: Paper.id, doku. "
+        "When empty, the configuration's Default payment_issuer is used."
     )
 
     _sql_constraints = [
         (
             "method_uniq",
-            "unique(credential_id, payment_method_id)",
-            "Metode pembayaran hanya boleh dipetakan sekali per credential.",
+            "unique(config_id, payment_method_id)",
+            "A payment method can only be mapped once per configuration.",
         ),
     ]

@@ -1,15 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo noupdate="1">
-    <record id="gateway_econique" model="pos.payment.gateway">
-        <field name="name">Union Kuliner Econique</field>
-        <field name="code">econique</field>
-        <field name="sequence">20</field>
-        <!-- Staging: https://stg-api.econique.id, ubah di credential, bukan di sini. -->
-        <field name="default_base_url">https://api.econique.co.id</field>
-    </record>
-
     <record id="ir_cron_econique_send" model="ir.cron">
-        <field name="name">Econique: kirim transaksi POS</field>
+        <field name="name">Econique: send POS transactions</field>
         <field name="model_id" ref="model_pos_econique_transaction"/>
         <field name="state">code</field>
         <field name="code">model._cron_process_pending()</field>

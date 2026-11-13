@@ -1,63 +1,143 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- ============ Credential: halaman pengaturan Econique ============ -->
-    <record id="pos_payment_gateway_credential_view_form_econique" model="ir.ui.view">
-        <field name="name">pos.payment.gateway.credential.form.econique</field>
-        <field name="model">pos.payment.gateway.credential</field>
-        <field name="inherit_id" ref="pos_payment_gateway.pos_payment_gateway_credential_view_form"/>
+    <!-- ============ Econique config (one per POS config) ============ -->
+    <record id="pos_econique_config_view_list" model="ir.ui.view">
+        <field name="name">pos.econique.config.list</field>
+        <field name="model">pos.econique.config</field>
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='active']" position="after">
-                <field name="gateway_code" invisible="1"/>
-            </xpath>
-            <xpath expr="//notebook" position="inside">
-                <page string="Union / Econique" name="econique" invisible="gateway_code != 'econique'">
-                    <button name="action_econique_test_login" type="object"
-                            string="Test Login" class="btn-secondary"/>
-                    <group>
-                        <group string="Tenant">
-                            <field name="econique_tenant_code"/>
-                            <field name="econique_tenant_name"/>
-                        </group>
-                        <group string="Pengiriman">
-                            <field name="econique_auto_send"/>
-                            <field name="econique_api_version"/>
-                            <field name="econique_max_attempts"/>
-                            <field name="econique_timeout"/>
-                            <field name="econique_login_basic_auth"/>
-                        </group>
-                        <group string="Aturan Pemetaan">
-                            <field name="econique_invoice_source"/>
-                            <field name="econique_product_code_source"/>
-                            <field name="econique_price_from_pricelist"/>
-                            <field name="econique_price_code" invisible="econique_price_from_pricelist"/>
-                            <field name="econique_price_name" invisible="econique_price_from_pricelist"/>
-                            <field name="econique_service_fee_percent"/>
-                            <field name="econique_default_issuer"/>
-                            <field name="econique_send_payment_vendor"/>
-                        </group>
-                    </group>
-                    <separator string="Pemetaan Metode Pembayaran"/>
-                    <field name="econique_payment_map_ids">
-                        <list editable="bottom">
-                            <field name="payment_method_id" options="{'no_create': True}"/>
-                            <field name="payment_type"/>
-                            <field name="payment_provider"/>
-                            <field name="payment_issuer"/>
-                        </list>
-                    </field>
-                </page>
-            </xpath>
+            <list>
+                <field name="pos_config_id"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="environment"/>
+                <field name="base_url"/>
+                <field name="tenant_code"/>
+                <field name="tenant_name"/>
+                <field name="auto_send" widget="boolean_toggle"/>
+            </list>
         </field>
     </record>
 
-    <!-- ============ Transaksi ============ -->
+    <record id="pos_econique_config_view_form" model="ir.ui.view">
+        <field name="name">pos.econique.config.form</field>
+        <field name="model">pos.econique.config</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_test_login" type="object" string="Test Login"
+                            class="btn-primary" invisible="not id"/>
+                    <button name="action_clear_token" type="object" string="Clear Token"
+                            invisible="not id"
+                            confirmation="The cached token will be removed. The next send logs in again."/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_transactions" type="object"
+                                class="oe_stat_button" icon="fa-exchange" invisible="not id">
+                            <field name="transaction_count" widget="statinfo" string="Transactions"/>
+                        </button>
+                    </div>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <field name="active" invisible="1"/>
+                    <group>
+                        <group string="POS">
+                            <field name="pos_config_id" options="{'no_create': True}"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="auto_send" widget="boolean_toggle"/>
+                        </group>
+                        <group string="Tenant">
+                            <field name="tenant_code"/>
+                            <field name="tenant_name"/>
+                        </group>
+                        <group string="Connection">
+                            <field name="environment"/>
+                            <field name="base_url" widget="url"/>
+                            <field name="username"/>
+                            <field name="password" password="True"/>
+                            <field name="token_date"/>
+                        </group>
+                        <group string="Sending">
+                            <field name="api_version"/>
+                            <field name="max_attempts"/>
+                            <field name="timeout"/>
+                            <field name="login_basic_auth"/>
+                            <field name="basic_auth_user" invisible="not login_basic_auth"/>
+                            <field name="basic_auth_password" password="True"
+                                   invisible="not login_basic_auth"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Mapping Rules" name="mapping">
+                            <group>
+                                <group>
+                                    <field name="invoice_source"/>
+                                    <field name="product_code_source"/>
+                                    <field name="service_fee_percent"/>
+                                </group>
+                                <group>
+                                    <field name="price_from_pricelist"/>
+                                    <field name="price_code" invisible="price_from_pricelist"/>
+                                    <field name="price_name" invisible="price_from_pricelist"/>
+                                    <field name="default_issuer"/>
+                                    <field name="send_payment_vendor"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Payment Methods" name="payment_methods">
+                            <field name="payment_map_ids">
+                                <list editable="bottom">
+                                    <field name="payment_method_id" options="{'no_create': True}"/>
+                                    <field name="payment_type"/>
+                                    <field name="payment_provider"/>
+                                    <field name="payment_issuer"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Notes" name="notes">
+                            <field name="note" placeholder="Internal notes (optional)..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="pos_econique_config_view_search" model="ir.ui.view">
+        <field name="name">pos.econique.config.search</field>
+        <field name="model">pos.econique.config</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="pos_config_id"/>
+                <field name="tenant_code"/>
+                <field name="tenant_name"/>
+                <filter name="auto_send_on" string="Auto Send On" domain="[('auto_send', '=', True)]"/>
+                <filter name="archived" string="Archived" domain="[('active', '=', False)]"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_environment" string="Environment" context="{'group_by': 'environment'}"/>
+                    <filter name="group_company" string="Company" context="{'group_by': 'company_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="pos_econique_config_action" model="ir.actions.act_window">
+        <field name="name">Econique Integration</field>
+        <field name="res_model">pos.econique.config</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Set up the Econique integration for a POS config</p>
+            <p>A POS config without an active Econique configuration sends nothing to Econique.</p>
+        </field>
+    </record>
+
+    <!-- ============ Transactions ============ -->
     <record id="pos_econique_transaction_view_list" model="ir.ui.view">
         <field name="name">pos.econique.transaction.list</field>
         <field name="model">pos.econique.transaction</field>
         <field name="arch" type="xml">
             <list decoration-danger="state == 'failed'" decoration-success="state == 'sent'"
                   decoration-muted="state == 'skipped'" create="0">
-                <field name="create_date" string="Dibuat"/>
+                <field name="create_date" string="Created"/>
                 <field name="invoice_number"/>
                 <field name="pos_config_id"/>
                 <field name="company_id" groups="base.group_multi_company"/>
@@ -78,13 +158,13 @@
         <field name="arch" type="xml">
             <form create="0">
                 <header>
-                    <button name="action_send_now" type="object" string="Kirim Sekarang"
+                    <button name="action_send_now" type="object" string="Send Now"
                             class="btn-primary" invisible="state not in ('pending', 'failed')"/>
-                    <button name="action_reset" type="object" string="Kembalikan ke Pending"
+                    <button name="action_reset" type="object" string="Reset to Pending"
                             invisible="state not in ('failed', 'skipped')"/>
-                    <button name="action_skip" type="object" string="Lewati"
+                    <button name="action_skip" type="object" string="Skip"
                             invisible="state not in ('pending', 'failed')"
-                            confirmation="Transaksi ini tidak akan dikirim ke Econique. Lanjutkan?"/>
+                            confirmation="This transaction will not be sent to Econique. Continue?"/>
                     <field name="state" widget="statusbar" statusbar_visible="pending,sent"/>
                 </header>
                 <sheet>
@@ -92,7 +172,7 @@
                         <group>
                             <field name="order_id"/>
                             <field name="invoice_number"/>
-                            <field name="credential_id"/>
+                            <field name="econique_config_id"/>
                             <field name="pos_config_id"/>
                             <field name="company_id" groups="base.group_multi_company"/>
                         </group>
@@ -147,15 +227,23 @@
         <field name="view_mode">list,form</field>
         <field name="context">{'search_default_failed': 1}</field>
         <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">Belum ada transaksi Econique</p>
-            <p>Transaksi muncul di sini otomatis saat order di POS yang punya credential Econique lunas.</p>
+            <p class="o_view_nocontent_smiling_face">No Econique transactions yet</p>
+            <p>Transactions appear here automatically when an order is paid in a POS that has an active Econique configuration.</p>
         </field>
     </record>
+
+    <!-- ============ Menu ============ -->
+    <menuitem id="pos_econique_config_menu"
+              name="Econique Integration"
+              parent="point_of_sale.menu_point_config_product"
+              action="pos_econique_config_action"
+              groups="group_pos_econique_manager"
+              sequence="92"/>
 
     <menuitem id="pos_econique_transaction_menu"
               name="Econique Transactions"
               parent="point_of_sale.menu_point_config_product"
               action="pos_econique_transaction_action"
-              groups="pos_payment_gateway.group_pos_payment_gateway_manager"
-              sequence="92"/>
+              groups="group_pos_econique_manager"
+              sequence="93"/>
 </odoo>

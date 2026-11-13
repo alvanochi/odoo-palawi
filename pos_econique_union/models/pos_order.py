@@ -10,9 +10,9 @@ PAID_STATES = ("paid", "done", "invoiced")
 class PosOrder(models.Model):
     _inherit = "pos.order"
 
-    # Hook di level model, bukan di UI atau controller: order yang dilunasi lewat
-    # kasir POS maupun lewat REST API (rest_api_odoo) sama-sama menulis
-    # state 'paid' ke pos.order, jadi keduanya tertangkap di sini.
+    # The hook lives on the model, not in the POS UI or a controller: orders
+    # paid from the cashier screen and orders paid through the REST API
+    # (rest_api_odoo) both write state 'paid' to pos.order, so both are caught here.
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -30,7 +30,7 @@ class PosOrder(models.Model):
         return res
 
     def _econique_enqueue(self):
-        """Masukkan order ke antrian Econique. Tidak pernah menggagalkan pembayaran."""
+        """Queue orders for Econique. Never makes a payment fail."""
         Transaction = self.env["pos.econique.transaction"].sudo()
         queued = False
         for order in self.sudo():
@@ -38,9 +38,9 @@ class PosOrder(models.Model):
                 with self.env.cr.savepoint():
                     queued = Transaction._enqueue_order(order) or queued
             except Exception:
-                _logger.exception("Econique: gagal memasukkan order %s ke antrian", order.id)
+                _logger.exception("Econique: failed to queue order %s", order.id)
         if queued:
             try:
                 Transaction._trigger_cron()
             except Exception:
-                _logger.exception("Econique: gagal memicu cron pengiriman")
+                _logger.exception("Econique: failed to trigger the send cron")

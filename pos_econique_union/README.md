@@ -1,90 +1,116 @@
 # POS Union Econique Integration (Odoo 18)
 
-Mengirim transaksi POS yang sudah lunas ke API **Union Kuliner Econique**
-(`POST /api/kuliner/login`, `POST /api/kuliner/transaction`). Credential dan semua
-aturan pemetaan disimpan per POS config lewat modul `pos_payment_gateway`.
+Sends paid POS orders to the **Union Kuliner Econique** API
+(`POST /api/kuliner/login`, `POST /api/kuliner/transaction`).
 
-## Cara kerja
+This module is standalone. It has its own configuration model, menu and access group,
+and does **not** depend on or share data with the payment gateway modules
+(`pos_payment_gateway`). Depends only on `point_of_sale` and `mail`.
+
+## How it works
 
 ```
-order lunas (kasir POS atau REST API)
-  -> pos.order.write(state=paid)        hook di level model
-  -> pos.econique.transaction (pending) antrian + log
-  -> cron tiap 5 menit (dipicu langsung saat antrian dibuat)
-       -> login (token di-cache, login ulang bila 401)
+order paid (cashier screen or REST API)
+  -> pos.order.write(state=paid)        model-level hook
+  -> pos.econique.transaction (pending) queue + log
+  -> cron every 5 minutes (also triggered right when the entry is created)
+       -> login (token cached, logs in again on 401)
        -> POST /api/kuliner/transaction
-       -> sent | retry (jaringan, 5xx) | failed
+       -> sent | retry (network, 5xx) | failed
 ```
 
-- Hook ada di `pos.order`, bukan di UI POS. Order yang dilunasi lewat `rest_api_odoo`
-  (`/api/pos/order/pay`) ikut terkirim karena sama-sama menulis `state = paid`.
-- Pembayaran di POS **tidak pernah** diblokir atau digagalkan oleh integrasi ini.
-- Satu order = satu transaksi (unique `order_id`), jadi tidak terkirim dobel.
-- Gagal sementara dicoba ulang dengan jeda 2, 4, 8 ... maksimal 60 menit, sampai
-  `Maks Percobaan`, lalu `Failed`. Error validasi (4xx) langsung `Failed`.
-- Refund dan order total nol dicatat `Skipped` (API tidak punya endpoint refund).
+- The hook is on `pos.order`, not in the POS UI. Orders paid through `rest_api_odoo`
+  (`/api/pos/order/pay`) are sent too, because both write `state = paid`.
+- Payment in the POS is **never** blocked or failed by this integration.
+- One order = one transaction (unique `order_id`), so nothing is sent twice.
+- Temporary failures are retried after 2, 4, 8 ... up to 60 minutes, until
+  `Max Attempts`, then `Failed`. Validation errors (4xx) go straight to `Failed`.
+- Refunds and zero-total orders are recorded as `Skipped` (the API has no refund endpoint).
+
+## Where to configure (per POS config)
+
+**Point of Sale > Configuration > Econique Integration** (needs the group
+*Econique Integration Manager*; it implies *Point of Sale: User*). Create one record per
+POS config:
+
+| Setting | Field |
+|---|---|
+| POS config this applies to | **POS Config** (one active record per POS) |
+| Enabled or disabled | **Auto Send** toggle, or archive the record (Action > Archive) |
+| Production or staging | **Environment** (fills **Base URL**: `https://api.econique.co.id` / `https://stg-api.econique.id`; editable) |
+| API login | **API Username**, **API Password** |
+| Token | Not typed in. **Test Login** gets and stores it, **Clear Token** forgets it, **Token Obtained At** shows when it was last obtained. A send logs in by itself when there is no token or it returns 401. |
+| Tenant | **Tenant Code**, **Tenant Name** |
+| Retry and timeout | **Max Attempts**, **Timeout (seconds)** |
+| Basic Auth on login | **Login with Basic Auth**, optional **Basic Auth Username/Password** (empty = same as the API login) |
+| Mapping rules | **Mapping Rules** tab |
+| Payment methods | **Payment Methods** tab (Odoo payment method to `payment_type` / provider / issuer) |
+
+When a POS config has no active Econique record, or **Auto Send** is off, orders are not
+queued and nothing is sent. Entries already queued stay pending while **Auto Send** is
+off and continue when it is turned on again. Changes to the record are tracked in the
+chatter; the API password is never written to the chatter or logs.
+
+Monitor in **Point of Sale > Configuration > Econique Transactions** (buttons:
+*Send Now*, *Reset to Pending*, *Skip*; the Request and Response tabs show exactly what
+was sent and received), or through the **Transactions** button on a configuration.
 
 ## Setup
 
-1. Install modul: `odoo-bin -d <db> -i pos_econique_union --stop-after-init`
-   (otomatis memasang `pos_payment_gateway`).
-2. **Point of Sale > Configuration > Payment Gateway Credentials > New**:
-   - Payment Gateway: *Union Kuliner Econique*, pilih POS config.
-   - Base URL: produksi `https://api.econique.co.id`, staging `https://stg-api.econique.id`.
-   - Client ID = username API, Client Secret = password API.
-3. Tab **Union / Econique**: isi Tenant Code dan Tenant Name, atur pemetaan, isi
-   **Pemetaan Metode Pembayaran**, lalu klik **Test Login**.
-4. Pantau di **Point of Sale > Configuration > Econique Transactions** (tombol
-   *Kirim Sekarang*, *Kembalikan ke Pending*, *Lewati*).
+1. Install: `odoo-bin -d <db> -i pos_econique_union --stop-after-init`.
+2. Add your user to the group **Econique Integration Manager**.
+3. Create the configuration as described above and click **Test Login**.
+4. Fill in the **Payment Methods** tab.
+5. Pay a test order on staging and check **Econique Transactions**.
 
-Tanpa credential Econique aktif (atau `Kirim Otomatis` mati), order POS itu tidak
-masuk antrian. Order yang lunas sebelum modul dipasang tidak dikirim otomatis.
+Orders paid before the module was installed are not sent automatically.
 
-## Pemetaan field (bisa diubah per credential)
+## Field mapping (adjustable per configuration)
 
-| Field Econique | Sumber di Odoo |
+| Econique field | Odoo source |
 |---|---|
-| `invoice_number` | `pos_reference` (atau nama order) |
-| `tenant_code`, `tenant_name` | pengaturan credential |
-| `voucher_code` | kode kupon dari baris reward, selain itu `null` |
-| `transaction_date`, `payment_date` | `date_order` / tanggal payment, zona waktu company (default Asia/Jakarta) |
-| `bruto` | jumlah `price_unit * qty` baris barang |
-| `discount` | persen (maks 100) dari diskon baris + baris reward terhadap bruto |
-| `service_fee` | `Service Fee (%)` x (bruto - diskon) |
-| `ppn` | `amount_tax` order |
-| `netto` | `bruto - diskon - service_fee - ppn` (cocok dengan contoh di dokumentasi) |
-| `payment_type`, `payment_provider`, `payment_issuer` | tabel pemetaan metode pembayaran; tanpa pemetaan: tunai = `Cash`, selain itu nama metode; issuer = Default payment_issuer (`PT PHI`) |
-| `payment_transactions_id` | `transaction_id` payment, lalu nama payment, lalu `pos_reference` |
-| `items[].product_code` | Internal Reference / Barcode / ID produk |
-| `items[].price_code`, `price_name` | nilai tetap, atau ID dan nama pricelist |
+| `invoice_number` | `pos_reference` (or the order name) |
+| `tenant_code`, `tenant_name` | configuration |
+| `voucher_code` | coupon code of a reward line, otherwise `null` |
+| `transaction_date`, `payment_date` | `date_order` / payment date, company time zone (default Asia/Jakarta) |
+| `bruto` | sum of `price_unit * qty` of item lines |
+| `discount` | percent (max 100) of line discounts + reward lines relative to bruto |
+| `service_fee` | `Service Fee (%)` x (bruto - discount) |
+| `ppn` | order `amount_tax` |
+| `netto` | `bruto - discount - service_fee - ppn` (matches the example in the documentation) |
+| `payment_type`, `payment_provider`, `payment_issuer` | payment method mapping table; without a mapping: cash = `Cash`, otherwise the method name; issuer = Default payment_issuer (`PT PHI`) |
+| `payment_transactions_id` | payment `transaction_id`, then payment name, then `pos_reference` |
+| `items[].product_code` | product Internal Reference / Barcode / ID |
+| `items[].price_code`, `price_name` | fixed values, or the pricelist ID and name |
 
-Baris reward/potongan (nilai negatif) tidak dikirim sebagai item; nilainya masuk ke
-`discount`. Qty pecahan dikirim sebagai 1 item bernilai total baris karena `amount`
-bertipe Int. Order dengan lebih dari satu pembayaran dikirim memakai pembayaran
-terbesar (API hanya punya satu set field payment).
+Reward/discount lines (negative value) are not sent as items; their value goes into
+`discount`. A fractional qty is sent as 1 item worth the whole line because `amount`
+is an Int. An order with more than one payment is sent with its largest payment (the
+API has a single set of payment fields).
 
-## Hal di dokumentasi Econique yang ambigu (dan pilihan modul ini)
+## Ambiguities in the Econique documentation (and what this module does)
 
-- Contoh request memakai `payment_vendor`, tabel field memakai `payment_issuer`:
-  dua-duanya dikirim (bisa dimatikan).
-- Login disebut memakai Basic Auth, tanpa menyebut kredensialnya: dikirim Basic dengan
-  username/password yang sama (bisa dimatikan atau di-override lewat Extra Parameters
-  `basic_auth_user` / `basic_auth_password`).
-- `amount` pada contoh item berisi nominal, tetapi tabel mendefinisikannya sebagai
-  jumlah barang: modul mengikuti tabel (qty).
-- `discount_nominal` per item dihitung untuk seluruh baris
-  (`unit_price * qty * persen`), bukan per unit.
-- Dokumentasi tidak menjelaskan respons bila `invoice_number` dikirim dua kali.
+- The example request uses `payment_vendor`, the field table uses `payment_issuer`:
+  both are sent (can be turned off).
+- Login is said to use Basic Auth without naming the credentials: a Basic header is sent
+  with the API username/password (can be turned off or overridden with the Basic Auth
+  fields).
+- `amount` in the example item holds an amount of money, but the table defines it as the
+  item quantity: the module follows the table (qty).
+- `discount_nominal` per item is computed for the whole line
+  (`unit_price * qty * percent`), not per unit.
+- The documentation does not say how the API answers when an `invoice_number` is sent twice.
 
-## Menyesuaikan aturan
+## Adjusting the rules
 
-Seluruh penyusunan payload ada di `pos.econique.transaction._build_payload()`
-(mengumpulkan data Odoo) dan `services/union_payload.py` (rumus, tanpa dependensi
-Odoo). Override salah satunya bila aturan Econique berubah.
+All payload building is in `pos.econique.transaction._build_payload()` (collects the
+Odoo data) and `services/union_payload.py` (formulas, no Odoo dependency). Override
+either when the Econique rules change.
 
-## Test
+## Tests
 
-Tes yang ada hanya menguji rumus dan klien HTTP (HTTP di-mock), tidak menyentuh data order:
+The existing tests only cover the formulas and the HTTP client (HTTP is mocked); they do
+not touch order data:
 
 ```bash
 odoo-bin -d <db> -u pos_econique_union --test-enable --test-tags /pos_econique_union --stop-after-init

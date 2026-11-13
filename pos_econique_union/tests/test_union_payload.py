@@ -17,7 +17,7 @@ CFG = {
 def _line(qty=1, unit=20000, pct=0, discount=False, code="P1"):
     return {
         "product_code": code,
-        "product_name": "Produk %s" % code,
+        "product_name": "Product %s" % code,
         "price_code": "STANDARD",
         "price_name": "Standard Price",
         "qty": qty,
@@ -46,8 +46,8 @@ def _order(lines, ppn=2200):
 
 
 class TestUnionPayload(unittest.TestCase):
-    def test_contoh_dokumentasi(self):
-        """bruto 20000, service 200, ppn 2200 -> netto 17600 (contoh Econique)."""
+    def test_documentation_example(self):
+        """bruto 20000, service 200, ppn 2200 -> netto 17600 (Econique example)."""
         p = union_payload.build_payload(_order([_line()]), CFG)
         self.assertEqual(p["bruto"], "20000.00")
         self.assertEqual(p["service_fee"], "200.00")
@@ -56,7 +56,7 @@ class TestUnionPayload(unittest.TestCase):
         self.assertEqual(p["discount"], "0.00")
         self.assertIsNone(p["voucher_code"])
 
-    def test_field_wajib_ada(self):
+    def test_required_fields_present(self):
         p = union_payload.build_payload(_order([_line()]), CFG)
         for key in (
             "version", "invoice_number", "tenant_code", "tenant_name", "voucher_code",
@@ -72,11 +72,11 @@ class TestUnionPayload(unittest.TestCase):
         ):
             self.assertIn(key, p["items"][0])
 
-    def test_payment_vendor_bisa_dimatikan(self):
+    def test_payment_vendor_can_be_disabled(self):
         p = union_payload.build_payload(_order([_line()]), dict(CFG, send_payment_vendor=False))
         self.assertNotIn("payment_vendor", p)
 
-    def test_diskon_persen_per_baris(self):
+    def test_percent_discount_per_line(self):
         p = union_payload.build_payload(
             _order([_line(qty=2, unit=10000, pct=10)], ppn=0), dict(CFG, service_fee_percent=0))
         item = p["items"][0]
@@ -87,7 +87,7 @@ class TestUnionPayload(unittest.TestCase):
         self.assertEqual(p["discount"], "10.00")
         self.assertEqual(p["netto"], "18000.00")
 
-    def test_baris_reward_menjadi_diskon_bukan_item(self):
+    def test_reward_line_is_a_discount_not_an_item(self):
         lines = [_line(unit=16500, code="A"), _line(unit=33000, code="B"),
                  _line(unit=-5445, code="REWARD", discount=True)]
         p = union_payload.build_payload(_order(lines, ppn=0), dict(CFG, service_fee_percent=0))
@@ -96,7 +96,7 @@ class TestUnionPayload(unittest.TestCase):
         self.assertEqual(p["discount"], "11.00")
         self.assertEqual(p["netto"], "44055.00")
 
-    def test_qty_pecahan_total_tetap_benar(self):
+    def test_fractional_qty_keeps_the_total(self):
         p = union_payload.build_payload(
             _order([_line(qty=0.5, unit=30000)], ppn=0), dict(CFG, service_fee_percent=0))
         item = p["items"][0]
@@ -105,12 +105,12 @@ class TestUnionPayload(unittest.TestCase):
         self.assertEqual(item["total_price"], "15000.00")
         self.assertEqual(p["bruto"], "15000.00")
 
-    def test_diskon_tidak_lebih_dari_100_persen(self):
+    def test_discount_never_exceeds_100_percent(self):
         lines = [_line(unit=10000), _line(unit=-15000, discount=True)]
         p = union_payload.build_payload(_order(lines, ppn=0), dict(CFG, service_fee_percent=0))
         self.assertEqual(p["discount"], "100.00")
 
-    def test_tanpa_barang_ditolak(self):
+    def test_order_without_items_is_rejected(self):
         with self.assertRaises(ValueError):
             union_payload.build_payload(_order([_line(unit=-100, discount=True)]), CFG)
 
@@ -137,13 +137,13 @@ class TestEconiqueClient(unittest.TestCase):
         self.assertEqual(kwargs["json"], {"username": "u", "password": "p"})
         self.assertEqual(kwargs["auth"], ("u", "p"))
 
-    def test_login_gagal(self):
-        data = {"status": "Error", "message": "Password salah"}
+    def test_login_failure(self):
+        data = {"status": "Error", "message": "Wrong password"}
         with mock.patch.object(requests, "post", return_value=_response(401, data)):
             with self.assertRaises(econique_client.EconiqueLoginError):
                 self._client().login()
 
-    def test_transaction_pakai_bearer(self):
+    def test_transaction_uses_bearer_token(self):
         data = {"status": "success", "code": "S.TC.PT.001"}
         with mock.patch.object(requests, "post", return_value=_response(200, data)) as post:
             status, body, _text = self._client().post_transaction("tok", {"a": 1})
@@ -152,12 +152,12 @@ class TestEconiqueClient(unittest.TestCase):
         self.assertEqual(args[0], "https://stg-api.econique.id/api/kuliner/transaction")
         self.assertEqual(kwargs["headers"]["Authorization"], "Bearer tok")
 
-    def test_jaringan_gagal(self):
-        with mock.patch.object(requests, "post", side_effect=requests.Timeout("lambat")):
+    def test_network_failure(self):
+        with mock.patch.object(requests, "post", side_effect=requests.Timeout("slow")):
             with self.assertRaises(econique_client.EconiqueNetworkError):
                 self._client().post_transaction("tok", {})
 
-    def test_respons_bukan_json(self):
+    def test_non_json_response(self):
         res = _response(502, text="<html>Bad Gateway</html>")
         res.json.side_effect = ValueError("no json")
         with mock.patch.object(requests, "post", return_value=res):

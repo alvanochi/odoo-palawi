@@ -1,11 +1,11 @@
 {
     "name": "POS Union Econique Integration",
-    "summary": "Kirim transaksi POS lunas ke API Union Kuliner Econique (credential per POS, bisa dikonfigurasi)",
+    "summary": "Send paid POS orders to the Union Kuliner Econique API (configurable per POS config)",
     "version": "18.0.1.0.0",
     "category": "Sales/Point of Sale",
     "author": "Alvan",
     "license": "LGPL-3",
-    "depends": ["point_of_sale", "pos_payment_gateway"],
+    "depends": ["point_of_sale", "mail"],
     "external_dependencies": {"python": ["requests"]},
     "data": [
         "security/pos_econique_security.xml",
