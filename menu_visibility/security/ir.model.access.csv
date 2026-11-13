@@ -1,0 +1,2 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_menu_visibility_rule_admin,menu.visibility.rule admin,model_menu_visibility_rule,base.group_system,1,1,1,1
