@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_sales_report_list" model="ir.ui.view">
+        <field name="name">sales.report.list</field>
+        <field name="model">sales.report</field>
+        <field name="arch" type="xml">
+            <list string="Sales Data" create="false" edit="false" delete="false"
+                  sample="1" default_order="date_ts desc">
+                <field name="date_ts" widget="datetime"/>
+                <field name="order_id"/>
+                <field name="config_id" optional="show"/>
+                <field name="partner_id"/>
+                <field name="product_id"/>
+                <field name="categ_id" optional="hide"/>
+                <field name="user_id" optional="hide"/>
+                <field name="quantity" sum="Total Qty"/>
+                <field name="price_subtotal" sum="Total Revenue"/>
+                <field name="price_tax" sum="Total Tax"/>
+                <field name="price_total" sum="Total incl. Tax" optional="hide"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_sales_report_pivot" model="ir.ui.view">
+        <field name="name">sales.report.pivot</field>
+        <field name="model">sales.report</field>
+        <field name="arch" type="xml">
+            <pivot string="Sales Analysis" sample="1">
+                <field name="date_ts" interval="month" type="row"/>
+                <field name="config_id" type="col"/>
+                <field name="price_subtotal" type="measure"/>
+                <field name="price_tax" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_sales_report_graph" model="ir.ui.view">
+        <field name="name">sales.report.graph</field>
+        <field name="model">sales.report</field>
+        <field name="arch" type="xml">
+            <graph string="Sales Analysis" type="line" sample="1">
+                <field name="date_ts" interval="day"/>
+                <field name="price_subtotal" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_sales_report_search" model="ir.ui.view">
+        <field name="name">sales.report.search</field>
+        <field name="model">sales.report</field>
+        <field name="arch" type="xml">
+            <search string="Search Sales">
+                <field name="partner_id"/>
+                <field name="product_id"/>
+                <field name="order_id"/>
+                <field name="config_id"/>
+                <field name="user_id"/>
+
+                <filter name="filter_sales" string="Sales"
+                        domain="[('quantity', '&gt;=', 0)]"/>
+                <filter name="filter_refunds" string="Refunds"
+                        domain="[('quantity', '&lt;', 0)]"/>
+                <separator/>
+                <filter name="filter_last_30" string="Last 30 Days"
+                        domain="[('date_ts', '&gt;=', (context_today() - datetime.timedelta(days=30)).strftime('%Y-%m-%d 00:00:00'))]"/>
+                <filter name="filter_this_year" string="This Year"
+                        domain="[('date_ts', '&gt;=', (context_today().replace(month=1, day=1)).strftime('%Y-%m-%d 00:00:00'))]"/>
+                <separator/>
+                <filter name="group_by_date" string="Transaction Time"
+                        context="{'group_by': 'date_ts:day'}"/>
+                <filter name="group_by_product" string="Product"
+                        context="{'group_by': 'product_id'}"/>
+                <filter name="group_by_categ" string="Product Category"
+                        context="{'group_by': 'categ_id'}"/>
+                <filter name="group_by_partner" string="Customer"
+                        context="{'group_by': 'partner_id'}"/>
+                <filter name="group_by_config" string="Outlet"
+                        context="{'group_by': 'config_id'}"/>
+                <filter name="group_by_user" string="Cashier"
+                        context="{'group_by': 'user_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_sales_report" model="ir.actions.act_window">
+        <field name="name">Sales Data</field>
+        <field name="res_model">sales.report</field>
+        <field name="view_mode">list,pivot,graph</field>
+        <field name="search_view_id" ref="view_sales_report_search"/>
+        <field name="context">{'search_default_filter_last_30': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No sales data yet</p>
+            <p>This data comes from paid Point of Sale orders.</p>
+        </field>
+    </record>
+
+    <record id="action_sales_dashboard" model="ir.actions.client">
+        <field name="name">Sales Dashboard</field>
+        <field name="tag">sales_dashboard.dashboard</field>
+    </record>
+
+</odoo>

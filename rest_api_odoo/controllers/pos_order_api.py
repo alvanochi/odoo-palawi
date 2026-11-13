@@ -969,8 +969,12 @@ class PosOrderApi(http.Controller):
                 return self._err("Line qty must be > 0", 400)
 
             effective_unit = price_unit * (1.0 - (discount / 100.0))
-            subtotal = effective_unit * qty
-            subtotal_incl = subtotal  # tax = 0
+            # Harga dari FE sudah termasuk pajak, jadi total yang dibayar
+            # customer tetap `subtotal_incl`; pajak hanya diekstrak darinya.
+            line_taxes, subtotal, subtotal_incl = self._extract_line_taxes(
+                product, session.company_id, effective_unit, qty
+            )
+            tax += subtotal_incl - subtotal
 
             note_txt = (ln.get("note") or "").strip()
             base_name = (product.display_name or product.name or "").strip() or "Item"
@@ -1000,6 +1004,8 @@ class PosOrderApi(http.Controller):
                 line_vals["price_subtotal"] = subtotal
             if has_price_subtotal_incl:
                 line_vals["price_subtotal_incl"] = subtotal_incl
+            if line_taxes and "tax_ids" in PosLine._fields:
+                line_vals["tax_ids"] = [(6, 0, line_taxes.ids)]
 
             # ✅ coba isi saat create (best effort)
             if note_txt:
@@ -1298,6 +1304,32 @@ class PosOrderApi(http.Controller):
     # kemampuan MENCATAT promo yang sudah dihitung frontend, supaya baris
     # potongan tercatat sebagai baris reward Odoo dan laporan loyalty benar.
     # ==========================================================
+
+    def _extract_line_taxes(self, product, company, unit_incl, qty):
+        """Pecah harga FE (sudah termasuk pajak) menjadi subtotal dan pajak.
+
+        -> (taxes, subtotal tanpa pajak, subtotal incl pajak)
+
+        `subtotal_incl` selalu sama dengan harga FE x qty, jadi total yang
+        dibayar customer tidak berubah. Rasio incl/excl diambil dari
+        `compute_all` pajak produk (Odoo yang menentukan urutan, include base
+        dan price-included), lalu dipakai untuk mengekstrak dasar tanpa pajak.
+        """
+        currency = company.currency_id
+        subtotal_incl = currency.round(unit_incl * qty)
+        taxes = product.taxes_id.filtered_domain(
+            product.env["account.tax"]._check_company_domain(company)
+        )
+        if not taxes or not subtotal_incl:
+            return product.taxes_id.browse(), subtotal_incl, subtotal_incl
+
+        res = taxes.compute_all(unit_incl, currency=currency, quantity=1.0, product=product)
+        excl = res["total_excluded"]
+        if not excl:
+            return taxes, subtotal_incl, subtotal_incl
+        ratio = res["total_included"] / excl
+        subtotal = currency.round(subtotal_incl / ratio)
+        return taxes, subtotal, subtotal_incl
 
     LOYALTY_LINE_KEYS = (
         "reward_id", "coupon_id", "is_reward_line",
