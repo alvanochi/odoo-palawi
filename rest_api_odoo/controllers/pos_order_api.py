@@ -1329,13 +1329,27 @@ class PosOrderApi(http.Controller):
         if not taxes or not subtotal_incl:
             return product.taxes_id.browse(), subtotal_incl, subtotal_incl
 
-        res = taxes.compute_all(unit_incl, currency=currency, quantity=1.0, product=product)
-        excl = res["total_excluded"]
-        if not excl:
+        ratio = self._tax_ratio(taxes, product, company)
+        if not ratio:
             return taxes, subtotal_incl, subtotal_incl
-        ratio = res["total_included"] / excl
         subtotal = currency.round(subtotal_incl / ratio)
         return taxes, subtotal, subtotal_incl
+
+    # Basis besar untuk rasio pajak: pembulatan pajak per baris di compute_all
+    # (mis. 2,5% x 16.875 = 421,875 -> 421,88) jadi tidak berarti, sehingga
+    # 16.875 / rasio = tepat 15.000 dan hitungan ulang Odoo saat session ditutup
+    # sama persis dengan uang yang dibayar.
+    TAX_RATIO_BASE = 1000000000.0
+
+    def _tax_ratio(self, taxes, product, company):
+        """Rasio total incl / total excl pajak, tanpa efek pembulatan."""
+        res = taxes.compute_all(
+            self.TAX_RATIO_BASE, currency=company.currency_id, quantity=1.0, product=product)
+        excl = res["total_excluded"]
+        incl = res["total_included"]
+        if not excl or not incl:
+            return None
+        return incl / excl
 
     @staticmethod
     def _line_unit_incl(line):
@@ -1362,13 +1376,10 @@ class PosOrderApi(http.Controller):
         """
         if not taxes or not unit_incl or any(taxes.mapped("price_include")):
             return unit_incl
-        res = taxes.compute_all(
-            unit_incl, currency=company.currency_id, quantity=1.0, product=product)
-        excl = res["total_excluded"]
-        incl = res["total_included"]
-        if not excl or not incl:
+        ratio = self._tax_ratio(taxes, product, company)
+        if not ratio:
             return unit_incl
-        return unit_incl * excl / incl
+        return unit_incl / ratio
 
     LOYALTY_LINE_KEYS = (
         "reward_id", "coupon_id", "is_reward_line",
