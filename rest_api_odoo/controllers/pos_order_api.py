@@ -605,7 +605,7 @@ class PosOrderApi(http.Controller):
                     "product_id": l.product_id.id if l.product_id else None,
                     "product_name": l.product_id.display_name if l.product_id else None,
                     "qty": l.qty,
-                    "price_unit": l.price_unit,
+                    "price_unit": self._line_unit_incl(l),
                     "discount": l.discount,
                     "price_subtotal": l.price_subtotal,
                     "price_subtotal_incl": l.price_subtotal_incl,
@@ -975,6 +975,12 @@ class PosOrderApi(http.Controller):
                 product, session.company_id, effective_unit, qty
             )
             tax += subtotal_incl - subtotal
+            # Odoo menghitung ulang pajak dari price_unit saat session ditutup.
+            # Harga FE sudah termasuk pajak, jadi untuk pajak tax-excluded
+            # price_unit harus disimpan tanpa pajak; kalau tidak, pajak dihitung
+            # dua kali dan jurnal penutupan tidak balance.
+            line_price_unit = self._price_unit_excl(
+                line_taxes, product, session.company_id, price_unit)
 
             note_txt = (ln.get("note") or "").strip()
             base_name = (product.display_name or product.name or "").strip() or "Item"
@@ -986,7 +992,7 @@ class PosOrderApi(http.Controller):
             line_vals = {
                 "product_id": product_id,
                 "qty": qty,
-                "price_unit": price_unit,
+                "price_unit": line_price_unit,
                 "discount": discount,
                 "name": base_name,
             }
@@ -1249,7 +1255,7 @@ class PosOrderApi(http.Controller):
                     "product_id": l.product_id.id if l.product_id else None,
                     "product_name": l.product_id.display_name if l.product_id else None,
                     "qty": float(l.qty or 0.0),
-                    "price_unit": float(l.price_unit or 0.0),
+                    "price_unit": self._line_unit_incl(l),
                     "discount": float(l.discount or 0.0),
                     "note": getattr(l, "note", False) or False,
                     "name": l.name,
@@ -1330,6 +1336,39 @@ class PosOrderApi(http.Controller):
         ratio = res["total_included"] / excl
         subtotal = currency.round(subtotal_incl / ratio)
         return taxes, subtotal, subtotal_incl
+
+    @staticmethod
+    def _line_unit_incl(line):
+        """Harga satuan termasuk pajak, seperti yang dikirim FE.
+
+        price_unit di DB bisa tanpa pajak (order baru) atau termasuk pajak
+        (order lama); price_subtotal_incl selalu termasuk pajak, jadi harga
+        untuk FE diturunkan dari situ supaya responsnya konsisten.
+        """
+        qty = float(line.qty or 0.0)
+        discount = float(line.discount or 0.0)
+        incl = float(getattr(line, "price_subtotal_incl", 0.0) or 0.0)
+        if qty and discount < 100.0 and incl:
+            return incl / qty / (1.0 - discount / 100.0)
+        return float(line.price_unit or 0.0)
+
+    def _price_unit_excl(self, taxes, product, company, unit_incl):
+        """price_unit yang disimpan di baris order.
+
+        Semua pajak tax-excluded -> harga FE dikembalikan ke harga tanpa pajak
+        (tidak dibulatkan, supaya hitungan ulang Odoo = subtotal yang dibayar).
+        Ada pajak price-included -> harga FE disimpan apa adanya, karena Odoo
+        sendiri yang mengekstrak pajak itu dari harga.
+        """
+        if not taxes or not unit_incl or any(taxes.mapped("price_include")):
+            return unit_incl
+        res = taxes.compute_all(
+            unit_incl, currency=company.currency_id, quantity=1.0, product=product)
+        excl = res["total_excluded"]
+        incl = res["total_included"]
+        if not excl or not incl:
+            return unit_incl
+        return unit_incl * excl / incl
 
     LOYALTY_LINE_KEYS = (
         "reward_id", "coupon_id", "is_reward_line",

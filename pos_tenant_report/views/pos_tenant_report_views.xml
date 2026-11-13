@@ -76,6 +76,9 @@
                 <field name="tanggal_pembayaran" optional="show"/>
                 <field name="pendapatan_minus_pb1" sum="Total" optional="show"/>
                 <field name="netto" sum="Total"/>
+                <field name="amount_paid" sum="Total" optional="show"/>
+                <field name="selisih" sum="Total" optional="show"
+                       decoration-danger="selisih != 0"/>
                 <field name="order_id" optional="hide"/>
             </list>
         </field>
