@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="pos_econique_transaction_company_rule" model="ir.rule">
+        <field name="name">Econique Transaction: multi-company</field>
+        <field name="model_id" ref="model_pos_econique_transaction"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="pos_econique_payment_map_company_rule" model="ir.rule">
+        <field name="name">Econique Payment Map: multi-company</field>
+        <field name="model_id" ref="model_pos_econique_payment_map"/>
+        <field name="domain_force">['|', ('credential_id.company_id', '=', False), ('credential_id.company_id', 'in', company_ids)]</field>
+    </record>
+</odoo>
