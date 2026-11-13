@@ -51,6 +51,9 @@ COLUMNS = [
     ("tanggal_pembayaran", "Tanggal Pembayaran", "date"),
     ("pendapatan_minus_pb1", "Pendapatan (-) Tax", "money"),
     ("netto", "Pendapatan (-) Pnbp+PB1 atau Netto", "money"),
+    # Control columns: what Odoo actually recorded as paid vs the report formula.
+    ("amount_paid", "Dibayar (Odoo)", "money"),
+    ("selisih", "Selisih (Pendapatan - Dibayar)", "money"),
 ]
 MONEY_KEYS = [key for key, _header, kind in COLUMNS if kind == "money"]
 
@@ -131,29 +134,52 @@ class PosTenantReportWizard(models.TransientModel):
             and line.product_id == config.discount_product_id
         )
 
+    @staticmethod
+    def _line_gross(line):
+        """Line value before discount and before tax.
+
+        Derived from the stored price_subtotal (after discount, before tax) so
+        the result does not depend on the current tax configuration.
+        """
+        discount = line.discount or 0.0
+        if discount < 100.0:
+            return line.price_subtotal / (1.0 - discount / 100.0)
+        # 100% discount: the stored subtotal is 0, fall back to the tax engine.
+        taxes = line.tax_ids_after_fiscal_position
+        if taxes:
+            return taxes.compute_all(
+                line.price_unit, line.order_id.currency_id, line.qty,
+                product=line.product_id, partner=line.order_id.partner_id,
+            )["total_excluded"]
+        return line.price_unit * line.qty
+
     def _order_row(self, order, sequence):
+        """Formula of the October report:
+
+            dasar      = Total Kotor - Diskon   (stored price_subtotal, before tax)
+            PB1 / PNBP = dasar x tax rate       (Odoo taxes on the order line)
+            Pendapatan = dasar + Biaya Penanganan + PB1 + PNBP
+            Netto      = Pendapatan - PB1 - PNBP
+        """
         currency = order.currency_id
         partner = order.partner_id
 
-        gross = subtotal = handling = pb1 = pnbp = 0.0
+        gross = base = handling = pb1 = pnbp = 0.0
         for line in order.lines:
-            taxes = line.tax_ids_after_fiscal_position
+            line_base = line.price_subtotal
             if line.product_id in self.handling_product_ids:
-                handling += line.price_subtotal
+                handling += line_base
             else:
-                subtotal += line.price_subtotal
+                base += line_base
                 if not self._is_discount_line(line):
-                    if taxes:
-                        gross += taxes.compute_all(
-                            line.price_unit, currency, line.qty,
-                            product=line.product_id, partner=partner,
-                        )["total_excluded"]
-                    else:
-                        gross += line.price_unit * line.qty
-            if taxes:
-                price = line.price_unit * (1 - (line.discount or 0.0) / 100.0)
+                    gross += self._line_gross(line)
+            taxes = line.tax_ids_after_fiscal_position
+            if taxes and line_base:
+                # The stored subtotal is already before tax: never treat it as tax-included.
                 res = taxes.compute_all(
-                    price, currency, line.qty, product=line.product_id, partner=partner)
+                    line_base, currency, 1.0, product=line.product_id, partner=partner,
+                    handle_price_include=False,
+                )
                 for tax in res["taxes"]:
                     kind = tax_kind(tax["name"])
                     if kind == "pb1":
@@ -161,7 +187,7 @@ class PosTenantReportWizard(models.TransientModel):
                     elif kind == "pnbp":
                         pnbp += tax["amount"]
 
-        pendapatan = order.amount_total
+        pendapatan = base + handling + pb1 + pnbp
         payments = order.payment_ids
         method_names = list(dict.fromkeys(payments.mapped("payment_method_id.name")))
         payment_dates = [d for d in payments.mapped("payment_date") if d]
@@ -187,7 +213,7 @@ class PosTenantReportWizard(models.TransientModel):
             "waktu": order_dt.strftime("%H:%M:%S") if order_dt else "",
             "jenis_pembayaran": ", ".join(method_names),
             "total_kotor": gross,
-            "diskon": gross - subtotal,
+            "diskon": gross - base,
             "biaya_penanganan": handling,
             "pb1": pb1,
             "pnbp": pnbp,
@@ -196,6 +222,8 @@ class PosTenantReportWizard(models.TransientModel):
             "tanggal_pembayaran": payment_dt.date() if payment_dt else False,
             "pendapatan_minus_pb1": pendapatan - pb1,
             "netto": pendapatan - pb1 - pnbp,
+            "amount_paid": order.amount_paid,
+            "selisih": pendapatan - order.amount_paid,
         }
         for key in MONEY_KEYS:
             row[key] = currency.round(row[key])
@@ -259,7 +287,7 @@ class PosTenantReportWizard(models.TransientModel):
 
         widths = {"int": 6, "text": 22, "date": 18, "money": 15}
         for col, (key, header, kind) in enumerate(COLUMNS):
-            sheet.set_column(col, col, 26 if key == "netto" else widths[kind])
+            sheet.set_column(col, col, 26 if key in ("netto", "selisih") else widths[kind])
             sheet.write(0, col, header, header_fmt)
         sheet.set_row(0, 30)
         sheet.freeze_panes(1, 0)
@@ -317,6 +345,8 @@ class PosTenantReportLine(models.TransientModel):
     tanggal_pembayaran = fields.Date(string="Tanggal Pembayaran")
     pendapatan_minus_pb1 = fields.Monetary(string="Pendapatan (-) Tax")
     netto = fields.Monetary(string="Netto")
+    amount_paid = fields.Monetary(string="Dibayar (Odoo)")
+    selisih = fields.Monetary(string="Selisih (Pendapatan - Dibayar)")
 
     def action_export_xlsx(self):
         wizard = self.env["pos.tenant.report.wizard"].browse(
