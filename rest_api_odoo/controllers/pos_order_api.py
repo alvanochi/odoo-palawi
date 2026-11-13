@@ -1329,13 +1329,27 @@ class PosOrderApi(http.Controller):
         if not taxes or not subtotal_incl:
             return product.taxes_id.browse(), subtotal_incl, subtotal_incl
 
-        res = taxes.compute_all(unit_incl, currency=currency, quantity=1.0, product=product)
-        excl = res["total_excluded"]
-        if not excl:
+        ratio = self._tax_ratio(taxes, product, company)
+        if not ratio:
             return taxes, subtotal_incl, subtotal_incl
-        ratio = res["total_included"] / excl
         subtotal = currency.round(subtotal_incl / ratio)
         return taxes, subtotal, subtotal_incl
+
+    # Basis besar untuk rasio pajak: pembulatan pajak per baris di compute_all
+    # (mis. 2,5% x 16.875 = 421,875 -> 421,88) jadi tidak berarti, sehingga
+    # 16.875 / rasio = tepat 15.000 dan hitungan ulang Odoo saat session ditutup
+    # sama persis dengan uang yang dibayar.
+    TAX_RATIO_BASE = 1000000000.0
+
+    def _tax_ratio(self, taxes, product, company):
+        """Rasio total incl / total excl pajak, tanpa efek pembulatan."""
+        res = taxes.compute_all(
+            self.TAX_RATIO_BASE, currency=company.currency_id, quantity=1.0, product=product)
+        excl = res["total_excluded"]
+        incl = res["total_included"]
+        if not excl or not incl:
+            return None
+        return incl / excl
 
     @staticmethod
     def _line_unit_incl(line):
@@ -1362,13 +1376,10 @@ class PosOrderApi(http.Controller):
         """
         if not taxes or not unit_incl or any(taxes.mapped("price_include")):
             return unit_incl
-        res = taxes.compute_all(
-            unit_incl, currency=company.currency_id, quantity=1.0, product=product)
-        excl = res["total_excluded"]
-        incl = res["total_included"]
-        if not excl or not incl:
+        ratio = self._tax_ratio(taxes, product, company)
+        if not ratio:
             return unit_incl
-        return unit_incl * excl / incl
+        return unit_incl / ratio
 
     LOYALTY_LINE_KEYS = (
         "reward_id", "coupon_id", "is_reward_line",
@@ -2039,8 +2050,12 @@ class PosOrderApi(http.Controller):
 
 
     def _sql_insert_pos_payment(self, env, order, pm, amount, ref=None):
-        from odoo import fields
+        """Fallback kalau add_payment gagal.
 
+        INSERT langsung melewati ORM, jadi field related yang tersimpan
+        (session_id, partner_id, currency_id, company_id) harus diisi sendiri.
+        Tanpa session_id, pembayaran tidak terlihat di session (Payments = 0).
+        """
         now = fields.Datetime.now()
         uid = env.uid
         company_id = order.company_id.id if getattr(order, "company_id", False) else env.company.id
@@ -2048,44 +2063,17 @@ class PosOrderApi(http.Controller):
         cols = ["pos_order_id", "payment_method_id", "amount", "create_uid", "write_uid", "create_date", "write_date"]
         vals = [order.id, pm.id, amount, uid, uid, now, now]
 
-        # optional kolom (kompatibel berbagai DB schema)
-        if self._sql_has_col(env, "pos_payment", "company_id"):
-            cols.append("company_id")
-            vals.append(company_id)
-
-        if self._sql_has_col(env, "pos_payment", "payment_date"):
-            cols.append("payment_date")
-            vals.append(now)
-
-        if ref:
-            for c in ("payment_reference", "ref", "name", "payment_name"):
-                if self._sql_has_col(env, "pos_payment", c):
-                    cols.append(c)
-                    vals.append(ref)
-                    break
-
-        q = f'INSERT INTO pos_payment ({",".join(cols)}) VALUES ({",".join(["%s"]*len(cols))}) RETURNING id'
-        env.cr.execute(q, tuple(vals))
-        return env.cr.fetchone()[0]
-
-
-    def _sql_insert_pos_payment(self, env, order, pm, amount, ref=None):
-        now = fields.Datetime.now()
-        uid = env.uid
-        company_id = order.company_id.id if getattr(order, "company_id", False) else env.company.id
-
-        cols = ["pos_order_id", "payment_method_id", "amount", "create_uid", "write_uid", "create_date", "write_date"]
-        vals = [order.id, pm.id, amount, uid, uid, now, now]
-
-        # optional columns kalau ada di DB
-        if self._sql_has_col(env, "pos_payment", "company_id"):
-            cols.append("company_id")
-            vals.append(company_id)
-
-        # beberapa versi punya "payment_date"
-        if self._sql_has_col(env, "pos_payment", "payment_date"):
-            cols.append("payment_date")
-            vals.append(now)
+        optional = {
+            "company_id": company_id,
+            "session_id": order.session_id.id if order.session_id else None,
+            "partner_id": order.partner_id.id if order.partner_id else None,
+            "currency_id": order.currency_id.id if order.currency_id else None,
+            "payment_date": now,
+        }
+        for col, value in optional.items():
+            if value and self._sql_has_col(env, "pos_payment", col):
+                cols.append(col)
+                vals.append(value)
 
         # simpan ref kalau ada kolomnya
         if ref:
@@ -2097,8 +2085,7 @@ class PosOrderApi(http.Controller):
 
         q = f'INSERT INTO pos_payment ({",".join(cols)}) VALUES ({",".join(["%s"]*len(cols))}) RETURNING id'
         env.cr.execute(q, tuple(vals))
-        pid = env.cr.fetchone()[0]
-        return pid
+        return env.cr.fetchone()[0]
 
 
     def _find_payment_order_link_field(self, Payment):
