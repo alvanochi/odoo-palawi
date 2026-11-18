@@ -72,7 +72,7 @@ async function xid(module, name, model, res_id) { const e = await kw('ir.model.d
         <field name="x_start"/><field name="x_end"/><field name="x_duration" widget="float_time"/>
       </group>
       <group string="Target &amp; Hasil">
-        <field name="x_target" widget="monetary" options="{'currency_field': False}"/>
+        <field name="x_target"/>
         <field name="x_actual"/><field name="x_achievement" widget="progressbar"/>
         <field name="x_order_count"/><field name="x_sales_per_hour"/><field name="x_viewers"/>
         <field name="x_company_id" groups="base.group_multi_company"/>
