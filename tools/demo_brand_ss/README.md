@@ -31,6 +31,8 @@ export DEMO_PW=...                             # password user demo ss.*
 | `pos2.js closed` / `pos2.js open` | Sesi POS Toko Kemang |
 | `b2b.js` | Order distributor besar |
 | `payfix2.js` | Perbaikan pembayaran tanpa jurnal (akun Outstanding) |
+| `hide.js` | Sembunyikan menu PALAWI (Rest API, Marketing Order, Apps, Dashboards) untuk user `ss.*` via `menu_visibility` |
+| `prule.js`, `pdedup.js`, `pdup2.js` | Grup "SS Demo / Kontak hanya PT ShellaSaukia" + record rule `res.partner` (hanya kontak company 13, sesama user SS, OdooBot), dan rapikan kontak karyawan dobel. Admin utama **tidak** boleh masuk grup ini |
 
 `ids.json` dan `approval_ids.json` menyimpan id record yang dibuat, dipakai antar skrip.
 
