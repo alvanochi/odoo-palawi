@@ -1,0 +1,20 @@
+{
+ "SA": {
+  "submit": 998,
+  "approve": 999,
+  "reject": 1000,
+  "revise": 1001,
+  "make_po": 1002,
+  "done": 1003
+ },
+ "U": {
+  "ss.shella": 267,
+  "ss.dewi": 268,
+  "ss.reza": 269,
+  "ss.budi": 270,
+  "ss.joko": 271,
+  "ss.maya": 272,
+  "ss.eko": 273
+ },
+ "M": 1048
+}

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_ss_executive_dashboard" model="ir.actions.client">
+        <field name="name">Executive Dashboard</field>
+        <field name="tag">ss_executive_dashboard</field>
+    </record>
+    <menuitem id="menu_ss_executive_root" name="Executive Dashboard" sequence="1"
+              action="action_ss_executive_dashboard"
+              web_icon="spreadsheet_dashboard,static/description/icon.png"
+              groups="ss_demo.group_brand_ss_demo"/>
+</odoo>

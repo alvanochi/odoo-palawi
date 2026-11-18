@@ -1,0 +1,484 @@
+<title>Skema Demo Brand SS</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: sticky table of contents on the left (desktop), one column of demo cards on the right; stacks on phones. */
+:root {
+  --bg: #f7f4f1; --surface: #ffffff; --ink: #231c18; --muted: #6f625a; --line: #e6ddd5;
+  --brand: #8a5a44; --brand-soft: #f3e8e1;
+  --ok: #1f7a46; --ok-soft: #e3f3ea; --cfg: #2f5f9e; --cfg-soft: #e5eef9; --cus: #7a4bb0; --cus-soft: #efe7f8; --gap: #b5452f; --gap-soft: #fbe8e3;
+  --f-display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Inter", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #1a1513; --surface: #241d1a; --ink: #f1e9e4; --muted: #b3a49a; --line: #3a302b;
+  --brand: #d79a7c; --brand-soft: #3a2a22;
+  --ok: #6fd39b; --ok-soft: #173326; --cfg: #8fb6ec; --cfg-soft: #1b2a3f; --cus: #c7a3f0; --cus-soft: #2c2140; --gap: #f0947f; --gap-soft: #3d221c; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #1a1513; --surface: #241d1a; --ink: #f1e9e4; --muted: #b3a49a; --line: #3a302b;
+  --brand: #d79a7c; --brand-soft: #3a2a22;
+  --ok: #6fd39b; --ok-soft: #173326; --cfg: #8fb6ec; --cfg-soft: #1b2a3f; --cus: #c7a3f0; --cus-soft: #2c2140; --gap: #f0947f; --gap-soft: #3d221c; color-scheme: dark }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.6; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 28px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 32px; }
+@media (max-width: 860px) { .wrap { grid-template-columns: 1fr; } nav.toc { position: static !important; max-height: none !important; } }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; line-height: 1.2; margin: 0; }
+h1 { font-size: clamp(1.8rem, 3.2vw, 2.4rem); }
+h2 { font-size: 1.35rem; }
+h3 { font-size: 1rem; }
+a { color: var(--brand); }
+code, .mono { font-family: var(--f-mono); font-size: .86em; }
+code { background: var(--brand-soft); padding: 1px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+nav.toc { position: sticky; top: calc(16px + env(safe-area-inset-top, 0px)); align-self: start; max-height: calc(100vh - 32px); overflow: auto; font-size: .88rem; }
+nav.toc .lbl { text-transform: uppercase; letter-spacing: .08em; font-size: .72rem; color: var(--muted); font-weight: 600; margin: 14px 0 6px; }
+nav.toc a { display: block; padding: 3px 8px; border-radius: 6px; color: var(--ink); text-decoration: none; }
+nav.toc a:hover, nav.toc a:focus-visible { background: var(--brand-soft); outline: none; }
+main { min-width: 0; display: grid; gap: 22px; }
+.hero { display: grid; gap: 10px; padding-bottom: 6px; }
+.eyebrow { text-transform: uppercase; letter-spacing: .1em; font-size: .75rem; font-weight: 600; color: var(--brand); }
+.lead { color: var(--muted); max-width: 70ch; margin: 0; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; min-width: 0; }
+.panel > h2 { margin-bottom: 10px; }
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; font-size: .74rem; font-weight: 600; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+.p-ok { background: var(--ok-soft); color: var(--ok); }
+.p-cfg { background: var(--cfg-soft); color: var(--cfg); }
+.p-cus { background: var(--cus-soft); color: var(--cus); }
+.p-gap { background: var(--gap-soft); color: var(--gap); }
+.section-title { display: flex; align-items: baseline; gap: 12px; margin-top: 14px; }
+.section-title h2 { font-size: 1.15rem; color: var(--brand); }
+.section-title span { color: var(--muted); font-size: .85rem; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; display: grid; gap: 12px; min-width: 0; scroll-margin-top: 16px; }
+.card-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 16px; align-items: flex-start; }
+.card-head h3 { font-size: 1.12rem; }
+.card-head .ref { color: var(--muted); font-size: .8rem; font-weight: 500; display: block; font-family: var(--f-body); margin-top: 2px; }
+.badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 8px 18px; font-size: .88rem; }
+.meta div { min-width: 0; }
+.meta b { display: block; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+ol.steps { margin: 0; padding-left: 1.3em; display: grid; gap: 4px; }
+ol.steps li::marker { color: var(--brand); font-weight: 700; }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.box { border-radius: 8px; padding: 10px 12px; font-size: .9rem; min-width: 0; }
+.box b { display: block; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 2px; }
+.box.say { background: var(--brand-soft); }
+.box.say b { color: var(--brand); }
+.box.gapnote { background: var(--gap-soft); }
+.box.gapnote b { color: var(--gap); }
+.box ul { margin: 2px 0 0; padding-left: 1.1em; }
+.timeline { display: grid; gap: 0; }
+.tl { display: grid; grid-template-columns: 74px minmax(0, 1fr) auto; gap: 12px; padding: 9px 0; border-bottom: 1px dashed var(--line); align-items: baseline; }
+.tl:last-child { border-bottom: 0; }
+.tl .t { font-family: var(--f-mono); font-size: .8rem; color: var(--muted); }
+.tl .who { font-size: .8rem; color: var(--muted); white-space: nowrap; }
+@media (max-width: 520px) { .tl { grid-template-columns: 60px minmax(0, 1fr); } .tl .who { grid-column: 2; white-space: normal; } }
+.note { font-size: .85rem; color: var(--muted); }
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+
+<div class="wrap">
+<nav class="toc" aria-label="Daftar isi">
+  <div class="lbl">Persiapan</div>
+  <a href="#akses">Akses &amp; login</a>
+  <a href="#alur">Alur presentasi 60 menit</a>
+  <div class="lbl">Lintas divisi</div>
+  <a href="#dashboard">§5 Executive Dashboard</a>
+  <a href="#approval">§4 Approval berjenjang</a>
+  <a href="#integrasi">§7 Integrasi end-to-end</a>
+  <div class="lbl">Tahap 1</div>
+  <a href="#H">H. Marketplace</a>
+  <a href="#I">I. Sales &amp; Live Streaming</a>
+  <a href="#G">G. Gudang &amp; Inventory</a>
+  <a href="#E">E. Purchasing</a>
+  <a href="#F">F. Produksi</a>
+  <a href="#B">B. Finance</a>
+  <a href="#C">C. Pajak</a>
+  <a href="#D">D. Budget Control</a>
+  <div class="lbl">Tahap 2</div>
+  <a href="#N">N. Offline Retail</a>
+  <a href="#O">O. Reseller &amp; Distributor</a>
+  <a href="#J">J. Marketing, KOL &amp; Affiliate</a>
+  <a href="#K">K. Creative &amp; Media</a>
+  <a href="#P">P. Customer Experience</a>
+  <a href="#A">A. HR &amp; GA</a>
+  <div class="lbl">Tahap 3</div>
+  <a href="#M">M. Product Development</a>
+  <a href="#L">L. Brand Activation</a>
+  <a href="#Q">Q. Legal &amp; BD</a>
+  <a href="#S6">§6 Decision Making</a>
+  <a href="#S10">§10 Keamanan &amp; Akses</a>
+  <div class="lbl">Penutup</div>
+  <a href="#gap">Gap &amp; roadmap</a>
+</nav>
+
+<main>
+  <header class="hero">
+    <div class="eyebrow">Odoo 18 Community · PT ShellaSaukia</div>
+    <h1>Skema Demo ERP Brand SS</h1>
+    <p class="lead">Panduan presentasi per poin brief “Pengembangan Sistem ERP Terintegrasi Brand SS”. Tiap kartu berisi user login, menu, langkah klik, data contoh yang sudah disiapkan, pesan kunci untuk klien, dan batasan yang perlu disampaikan jujur.</p>
+    <div class="legend" aria-label="Keterangan status">
+      <span class="pill p-ok">Standar Odoo</span>
+      <span class="pill p-cfg">Konfigurasi</span>
+      <span class="pill p-cus">Custom tanpa coding (demo)</span>
+      <span class="pill p-gap">Belum ada · roadmap</span>
+    </div>
+  </header>
+
+  <section class="panel" id="akses">
+    <h2>Akses &amp; login</h2>
+    <p class="note" style="margin:0 0 10px">URL: <code>https://palawi.rutekebangsaan.com/odoo</code> · database <code>odoo18_palawi</code> · semua user demo hanya melihat company <b>PT ShellaSaukia</b>. Password user demo dibagikan terpisah (tidak ditulis di halaman ini).</p>
+    <div class="tbl"><table>
+      <thead><tr><th>Login</th><th>Nama</th><th>Peran demo</th><th>Hak akses utama</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">ss.shella</td><td>Shella Saukia</td><td>Direksi / Owner</td><td>Executive Dashboard, approval final, semua modul (manager)</td></tr>
+        <tr><td class="mono">ss.dewi</td><td>Dewi Anggraini</td><td>Finance Manager</td><td>Accounting (manager), budget, approval finance</td></tr>
+        <tr><td class="mono">ss.maya</td><td>Maya Puspita</td><td>Marketplace Manager</td><td>Sales (manager), Live Streaming, pengajuan</td></tr>
+        <tr><td class="mono">ss.reza</td><td>Reza Firmansyah</td><td>Digital Marketing Lead</td><td>Sales (lihat), Project, pengajuan campaign</td></tr>
+        <tr><td class="mono">ss.budi</td><td>Budi Santoso</td><td>Purchasing</td><td>Purchase, penerimaan barang, pengajuan</td></tr>
+        <tr><td class="mono">ss.joko</td><td>Joko Susilo</td><td>Kepala Gudang</td><td>Inventory, Manufacturing (user)</td></tr>
+        <tr><td class="mono">ss.eko</td><td>Eko Kurniawan</td><td>Store Supervisor</td><td>Point of Sale (kasir Toko Kemang)</td></tr>
+        <tr><td class="mono">admin</td><td>Administrator</td><td>Cadangan presenter</td><td>Semua company. Pilih company PT ShellaSaukia di kanan atas</td></tr>
+      </tbody>
+    </table></div>
+    <p class="note" style="margin:10px 0 0">Tips: buka 2–3 browser/profil (misal Chrome biasa, Incognito, Edge) supaya bisa pindah user tanpa logout saat demo approval.</p>
+  </section>
+
+  <section class="panel" id="alur">
+    <h2>Alur presentasi 60 menit</h2>
+    <div class="timeline">
+      <div class="tl"><span class="t">00–05</span><span>Buka dengan <a href="#dashboard">Executive Dashboard</a>: “satu layar untuk direksi”. Klik 1–2 alert.</span><span class="who">ss.shella</span></div>
+      <div class="tl"><span class="t">05–15</span><span>Order TikTok Shop end-to-end: order → gudang pick/pack/ship → invoice → settlement dipotong biaya admin (<a href="#integrasi">§7</a>, <a href="#H">H</a>, <a href="#G">G</a>).</span><span class="who">ss.maya → ss.joko → ss.dewi</span></div>
+      <div class="tl"><span class="t">15–20</span><span><a href="#I">Live streaming</a>: kalender host, target vs realisasi per sesi, sesi yang sedang live.</span><span class="who">ss.maya</span></div>
+      <div class="tl"><span class="t">20–30</span><span><a href="#approval">Approval berjenjang</a> live: fee KOL kecil tapi melebihi anggaran → Finance → Direksi. Lalu pengajuan pembelian → Buat PO otomatis.</span><span class="who">ss.reza → ss.dewi → ss.shella · ss.budi</span></div>
+      <div class="tl"><span class="t">30–38</span><span><a href="#E">Purchasing</a> &amp; <a href="#F">Produksi</a>: PO terlambat, MO berjalan, batch + kedaluwarsa, QC reject dengan lampiran.</span><span class="who">ss.budi · ss.joko</span></div>
+      <div class="tl"><span class="t">38–46</span><span><a href="#B">Finance</a>, <a href="#C">Pajak</a>, <a href="#D">Budget</a>: laba rugi, piutang jatuh tempo, budget vs realisasi.</span><span class="who">ss.dewi</span></div>
+      <div class="tl"><span class="t">46–52</span><span><a href="#N">POS toko</a> + <a href="#O">reseller</a> (harga khusus, credit limit).</span><span class="who">ss.eko · ss.maya</span></div>
+      <div class="tl"><span class="t">52–57</span><span>Divisi pendukung singkat: Creative, CS tiket, KOL, R&amp;D, Legal, HR.</span><span class="who">ss.shella</span></div>
+      <div class="tl"><span class="t">57–60</span><span><a href="#gap">Gap &amp; roadmap</a>: yang standar, yang dikonfigurasi, yang perlu dikembangkan (integrasi API marketplace &amp; ads).</span><span class="who">—</span></div>
+    </div>
+  </section>
+
+  <!-- ================= LINTAS DIVISI ================= -->
+  <div class="section-title"><h2>Lintas divisi</h2><span>poin yang paling ditunggu direksi</span></div>
+
+  <article class="card" id="dashboard">
+    <div class="card-head"><h3>§5 Executive Dashboard<span class="ref">Brief bagian 5 A–F</span></h3><div class="badges"><span class="pill p-cus">Custom tanpa coding (modul data)</span></div></div>
+    <div class="meta"><div><b>Login</b>ss.shella</div><div><b>Menu</b>App <b style="display:inline;text-transform:none;letter-spacing:0;color:inherit">Executive Dashboard</b></div><div><b>Data</b>live dari Odoo, filter Bulan ini / 30 hari / Bulan lalu</div></div>
+    <ol class="steps">
+      <li>Tunjukkan strip KPI: penjualan, pencapaian target, penjualan hari ini, laba bersih, posisi kas, ROAS iklan.</li>
+      <li>Panel <i>Masalah yang membutuhkan keputusan</i>: penjualan di bawah target, biaya marketing melewati anggaran, approval menunggu, supplier terlambat (P00023), produksi telat (SSGU/MO/00009), batch hampir kedaluwarsa, piutang jatuh tempo.</li>
+      <li>Klik alert <i>Butuh approval APV/2026/0004</i>: langsung terbuka form pengajuan campaign.</li>
+      <li>Kembali, scroll: penjualan per channel vs target, tren 30 hari, produk terlaris, performa host live, laba rugi, kas/piutang/utang, budget, marketing, operasional gudang, stok menipis, HR.</li>
+      <li>Ganti periode ke <i>Bulan lalu</i> untuk perbandingan.</li>
+    </ol>
+    <div class="cols">
+      <div class="box say"><b>Pesan kunci</b>Direksi tidak perlu minta laporan ke tiap divisi. Semua angka diambil langsung dari transaksi, dan setiap kartu bisa diklik sampai ke dokumen sumbernya.</div>
+      <div class="box gapnote"><b>Batasan</b>Proyeksi keuangan &amp; status pengiriman ekspedisi belum ada. Dashboard per jabatan (selain direksi) masuk tahap 3.</div>
+    </div>
+  </article>
+
+  <article class="card" id="approval">
+    <div class="card-head"><h3>§4 Sistem approval &amp; monitoring pekerjaan<span class="ref">Brief bagian 4, 3D (approval berdasarkan anggaran), 10.4</span></h3><div class="badges"><span class="pill p-cus">Custom tanpa coding</span><span class="pill p-ok">PO approval standar</span></div></div>
+    <div class="meta"><div><b>Login</b>ss.reza → ss.dewi → ss.shella</div><div><b>Menu</b>App Pengajuan &amp; Approval</div><div><b>Aturan</b>&lt; Rp10 jt atasan · Rp10–50 jt + Finance · &gt; Rp50 jt atau melebihi anggaran + Direksi</div></div>
+    <ol class="steps">
+      <li><b>ss.reza</b> → Pengajuan Saya → buka draft <i>Fee KOL @glowwithkirana – video Desember</i> (Rp5 jt, pos anggaran DIV – Digital Marketing) → klik <b>Ajukan</b>.</li>
+      <li>Muncul banner merah <b>Melebihi anggaran</b> (sisa budget marketing bulan ini minus) → alur otomatis naik: Finance (Dewi) → Direksi (Shella), walau nominal kecil.</li>
+      <li><b>ss.dewi</b> → Menunggu Approval Saya (ada activity To-Do) → <b>Setujui</b>. Chatter mencatat “Disetujui oleh Dewi sebagai Finance Manager”.</li>
+      <li><b>ss.shella</b> → Menunggu Approval Saya: tampil pengajuan campaign 12.12 (APV/2026/0004), pembayaran supplier (0007), produksi serum (0008), dan fee KOL tadi → setujui satu, untuk satu lagi isi tab <i>Penolakan / Revisi</i> lalu klik <b>Kembalikan untuk Revisi</b>.</li>
+      <li>Alur pembelian: <b>ss.dewi</b> setujui APV/2026/0003 (botol pump) → <b>ss.budi</b> buka → tombol <b>Buat Purchase Order</b> → PO otomatis terbuat &amp; terkonfirmasi dengan origin nomor pengajuan. Contoh yang sudah selesai: APV/2026/0002 → P00026.</li>
+      <li>Tunjukkan contoh ditolak: APV/2026/0006 (pop-up store) beserta alasan penolakan, dan tampilan kanban per status.</li>
+      <li>Approval cuti: <b>ss.maya</b> → Time Off → Management → setujui cuti Nadia (22–26 Des) &amp; Wulan; <b>ss.shella</b> setujui cuti Dimas.</li>
+      <li>Approval PO standar Odoo: P00024 (Rp60,5 jt) berstatus <i>To Approve</i> → login manajer → Approve Order.</li>
+    </ol>
+    <div class="cols">
+      <div class="box say"><b>Pesan kunci</b>Setiap pengajuan punya PIC, nominal, deadline, status, dan riwayat aktivitas. Tidak perlu lagi tanya progres manual: approver mendapat notifikasi, direksi melihatnya di dashboard.</div>
+      <div class="box gapnote"><b>Batasan</b>Di sistem final dibuat sebagai modul resmi (atau OCA <i>base_tier_validation</i>): blokir pembayaran sebelum approval, approval via mobile/email, delegasi saat cuti.</div>
+    </div>
+  </article>
+
+  <article class="card" id="integrasi">
+    <div class="card-head"><h3>§7 Integrasi antar divisi (end-to-end)<span class="ref">Brief bagian 7: contoh TikTok Shop &amp; contoh PO</span></h3><div class="badges"><span class="pill p-ok">Standar Odoo</span><span class="pill p-gap">API marketplace: roadmap</span></div></div>
+    <div class="meta"><div><b>Login</b>ss.maya → ss.joko → ss.dewi</div><div><b>Data</b>Order TikTok 16–18 Nov masih di gudang</div></div>
+    <ol class="steps">
+      <li><b>Pesanan masuk:</b> Sales → Orders, filter tim <i>SS – TikTok Shop</i>. Order punya nomor marketplace di <i>Customer Reference</i> (mis. S00300 / TTS-5783120086, tag <i>SS Live Streaming</i>).</li>
+      <li><b>Stok dialokasikan:</b> buka order 18 Nov (mis. S00330 group) → smart button Delivery → stok sudah ter-reserve, batch beauty dipilih otomatis FEFO.</li>
+      <li><b>Instruksi gudang:</b> <b>ss.joko</b> → Inventory → Operations → Transfers: antrian <i>SSGU/PICK</i> (order 17–18 Nov), <i>SSGU/PACK</i> (16 Nov), <i>SSGU/OUT</i> (siap kirim). Validasi satu PICK → otomatis muncul di PACK.</li>
+      <li><b>Status &amp; invoice:</b> order lama sudah <i>Fully Invoiced</i>. Tunjukkan invoice yang tercipta dari pengiriman.</li>
+      <li><b>Settlement:</b> <b>ss.dewi</b> → Accounting → jurnal <i>Saldo TikTok Shop (Settlement)</i>: pembayaran mingguan; selisihnya dibukukan sebagai <i>Biaya Admin &amp; Layanan Marketplace</i> (8% TikTok, 9,5% Shopee).</li>
+      <li><b>Masuk laporan:</b> kembali ke Executive Dashboard → penjualan per channel &amp; laba rugi.</li>
+      <li>Contoh PO end-to-end: APV/2026/0002 → P00026 (dikonfirmasi) → penerimaan barang → tagihan → pembayaran (lihat P00020 sebagai contoh yang sudah lunas).</li>
+    </ol>
+    <div class="cols">
+      <div class="box say"><b>Pesan kunci</b>Satu data dipakai bersama: order yang sama menggerakkan stok, instruksi gudang, invoice, settlement, dan laporan manajemen. Tidak ada input ulang.</div>
+      <div class="box gapnote"><b>Batasan</b>Di demo, order marketplace adalah data dummy. Sistem final menarik order, update status, sinkron stok, dan settlement langsung lewat TikTok Shop Partner API &amp; Shopee Open Platform.</div>
+    </div>
+  </article>
+
+  <!-- ================= TAHAP 1 ================= -->
+  <div class="section-title"><h2>Tahap 1 · Sistem operasional utama</h2><span>transaksi, stok, produksi, keuangan</span></div>
+
+  <article class="card" id="H">
+    <div class="card-head"><h3>H. Marketplace &amp; E-Commerce</h3><div class="badges"><span class="pill p-cfg">Konfigurasi</span><span class="pill p-gap">Integrasi API: roadmap</span></div></div>
+    <div class="meta"><div><b>Login</b>ss.maya / ss.dewi</div><div><b>Menu</b>Sales → Orders · Sales → Reporting</div><div><b>Data</b>±270 order TikTok/Shopee 20 Sep–18 Nov, 25 dibatalkan, 5 retur</div></div>
+    <ol class="steps">
+      <li>Sales → Reporting → Sales, group by <i>Sales Team</i>: omzet TikTok Shop vs Shopee (setiap toko = 1 sales team, target bulanan terisi).</li>
+      <li>Monitoring pembatalan: Orders → filter status <i>Cancelled</i> (catatan “Dibatalkan pembeli di marketplace”).</li>
+      <li>Retur &amp; refund: S00267, S00094, S00246, S00170, S00091 → smart button Delivery menampilkan retur, dan credit note RINV/2026/00001–00005.</li>
+      <li>Penjualan per produk: Reporting → group by Product.</li>
+      <li>Biaya admin &amp; settlement: lihat <a href="#integrasi">§7 langkah 5</a>. Settlement yang belum cair muncul di dashboard (“settlement pending”).</li>
+    </ol>
+    <div class="cols"><div class="box say"><b>Pesan kunci</b>Setiap toko marketplace sudah punya channel, target, jurnal saldo, dan akun biaya admin sendiri, jadi profit per channel bisa dihitung.</div><div class="box gapnote"><b>Batasan</b>Konektor API, sinkron stok multi-toko, dan pemetaan SKU marketplace perlu dikembangkan (perlu demo &amp; cek akses API, sesuai catatan brief).</div></div>
+  </article>
+
+  <article class="card" id="I">
+    <div class="card-head"><h3>I. Sales, Revenue &amp; Live Streaming</h3><div class="badges"><span class="pill p-cus">Custom tanpa coding</span><span class="pill p-ok">Target sales standar</span></div></div>
+    <div class="meta"><div><b>Login</b>ss.maya</div><div><b>Menu</b>Sales → Live Streaming</div><div><b>Data</b>134 sesi (2 shift/hari, 4 host), 1 sesi sedang live, 14 terjadwal</div></div>
+    <ol class="steps">
+      <li>Tampilan kalender (minggu ini): jadwal host per shift Pagi 09.00–12.00 &amp; Malam 19.00–22.00, warna per host.</li>
+      <li>Buka sesi <i>LIVE 2026-11-18 Malam</i> (status Sedang Live): host, akun, durasi, target, produk dipromosikan, tab <i>Pesanan dari Live</i>.</li>
+      <li>Buka sesi 11.11 (flash sale): target 2,5× dan realisasi.</li>
+      <li>List view: baris merah = di bawah 80% target, hijau = tercapai. Filter <i>Di bawah target</i>.</li>
+      <li>Pivot: host × minggu → penjualan vs target; Graph: performa per host.</li>
+      <li>Target harian/bulanan per channel: Sales → Configuration → Sales Teams (field target).</li>
+    </ol>
+    <div class="cols"><div class="box say"><b>Pesan kunci</b>Sesuai contoh brief: “Host A live 09.00–12.00 target Rp100 jt”. Sistem menampilkan durasi, produk, jumlah pesanan, hasil, dan pencapaian per sesi.</div><div class="box gapnote"><b>Batasan</b>Order dihubungkan ke sesi berdasarkan jam &amp; tag. Versi final mengambil data live (viewer, GMV) dari API TikTok.</div></div>
+  </article>
+
+  <article class="card" id="G">
+    <div class="card-head"><h3>G. Warehouse &amp; Inventory</h3><div class="badges"><span class="pill p-ok">Standar Odoo</span><span class="pill p-cfg">Konfigurasi</span></div></div>
+    <div class="meta"><div><b>Login</b>ss.joko</div><div><b>Menu</b>Inventory</div><div><b>Gudang</b>SSGU Gudang Utama (terima 2 langkah, kirim pick→pack→ship) · SSTK Toko Kemang</div></div>
+    <ol class="steps">
+      <li>Inventory → Overview: kartu operasi (Receipts, Pick, Pack, Delivery) dengan jumlah antrian.</li>
+      <li>Stok per SKU &amp; barcode: Products → buka <i>SS Gamis Syari Premium</i> → 16 varian (warna × ukuran) dengan SKU <code>SS-GMS-HIT-M</code> dan barcode EAN-13.</li>
+      <li>Stok per gudang &amp; lokasi: Reporting → Stock, group by Warehouse/Location.</li>
+      <li>Picking &amp; packing: validasi SSGU/PICK → SSGU/PACK → SSGU/OUT.</li>
+      <li>Retur: SSGU/IN/00005–00009 (retur pelanggan) lalu putaway SSGU/STOR.</li>
+      <li>Stock opname: Operations → Physical Inventory → ubah qty terhitung 1 SKU → Apply → selisih tercatat (riwayat <i>Saldo Awal Stok Brand SS</i> sebagai contoh).</li>
+      <li>Batch kedaluwarsa: Products → Lots/Serial Numbers → FWS-2512Z, LTN-2601Z, SRM-2602Q (alert aktif), disimpan di lokasi <i>SSGU/Karantina Expiry</i> supaya tidak ikut terjual.</li>
+      <li>Notifikasi stok menipis: Operations → <b>Replenishment</b> → 15 aturan min/max (bahan baku via <i>Buy</i> ke supplier, barang jadi via <i>Manufacture</i>) → pilih baris → <b>Order Once</b> → RFQ/MO otomatis terbuat.</li>
+    </ol>
+    <div class="cols"><div class="box say"><b>Pesan kunci</b>Stok terhubung ke marketplace, purchasing, produksi, dan finance (valuasi real-time AVCO), jadi nilai stok di neraca selalu sesuai. Stok minimum langsung jadi usulan pembelian/produksi.</div><div class="box gapnote"><b>Belum ada</b>Laporan stok lambat laku &amp; produktivitas gudang (custom), aplikasi scan barcode mobile (Barcode app = Enterprise).</div></div>
+  </article>
+
+  <article class="card" id="E">
+    <div class="card-head"><h3>E. Purchasing, Procurement &amp; Supplier</h3><div class="badges"><span class="pill p-ok">Standar Odoo</span><span class="pill p-cus">Pengajuan: custom</span></div></div>
+    <div class="meta"><div><b>Login</b>ss.budi</div><div><b>Menu</b>Purchase → Orders</div><div><b>Data</b>P00020–P00026</div></div>
+    <ol class="steps">
+      <li>List PO: P00020 &amp; P00021 lunas · P00022 diterima, tagihan belum dibayar · <b>P00023 terlambat</b> (jadwal 10 Nov, belum datang, ada catatan supplier) · P00024 menunggu approval · P00025 RFQ · P00026 dari pengajuan.</li>
+      <li>Buka P00023 → tab produk, tanggal jadwal, smart button Receipt (belum datang) → bahan untuk pembahasan keterlambatan supplier.</li>
+      <li>Monitoring harga pembelian: Reporting → Purchase, group by Product / Vendor.</li>
+      <li>Database supplier: Vendors → CV Tekstil Bandung Jaya → riwayat PO &amp; tagihan.</li>
+      <li>Pengajuan pembelian → approval → PO: lihat <a href="#approval">§4</a>.</li>
+    </ol>
+    <div class="cols"><div class="box say"><b>Pesan kunci</b>Setiap PO bisa dipantau dari pengajuan, approval, supplier, penerimaan barang, tagihan, sampai pembayaran.</div><div class="box gapnote"><b>Belum disiapkan</b>Skor evaluasi supplier (tepat waktu / kualitas), purchase agreement/tender.</div></div>
+  </article>
+
+  <article class="card" id="F">
+    <div class="card-head"><h3>F. Manufacturing &amp; Production</h3><div class="badges"><span class="pill p-ok">Standar Odoo</span><span class="pill p-cfg">Konfigurasi</span></div></div>
+    <div class="meta"><div><b>Login</b>ss.joko</div><div><b>Menu</b>Manufacturing</div><div><b>Data</b>11 MO, 7 BoM, 2 scrap QC</div></div>
+    <ol class="steps">
+      <li>Manufacturing Orders: selesai (7) · <b>SSGU/MO/00008</b> berjalan 32/80 · <b>SSGU/MO/00009</b> terlambat (deadline 14 Nov) · 00010 terjadwal · 00011 draft untuk campaign 12.12.</li>
+      <li>Fashion per model/warna/ukuran: MO Gamis Dusty Pink M (00008), dan BoM kain wolfis 3,5 m + label.</li>
+      <li>Beauty per batch + kedaluwarsa: MO serum SSGU/MO/00005 → lot SRM-2610C, exp 2028-10-08.</li>
+      <li>QC &amp; reject: Inventory → Operations → Scrap: SP/00001 (gamis, jahitan miring), SP/00002 (serum, botol retak). Wajib lampiran laporan QC. Coba buat scrap tanpa lampiran → ditolak.</li>
+      <li>Kebutuhan bahan baku: buka MO 00010 → komponen &amp; ketersediaan.</li>
+      <li>Biaya produksi: MO selesai → valuasi (Cost Analysis via jurnal stok).</li>
+    </ol>
+    <div class="cols"><div class="box say"><b>Pesan kunci</b>Manajemen tahu apa yang sedang diproduksi, jumlahnya, progres, kendala (telat/reject), dan kapan barang siap dijual.</div><div class="box gapnote"><b>Belum disiapkan</b>Tahapan produksi per work center (potong-jahit-QC), produksi di maklon (subcontracting), modul Quality (Enterprise).</div></div>
+  </article>
+
+  <article class="card" id="B">
+    <div class="card-head"><h3>B. Finance &amp; Accounting</h3><div class="badges"><span class="pill p-ok">Standar Odoo</span><span class="pill p-cfg">Konfigurasi</span></div></div>
+    <div class="meta"><div><b>Login</b>ss.dewi</div><div><b>Menu</b>Accounting (Invoicing)</div><div><b>Data</b>Bagan akun Indonesia, jurnal BCA / Saldo TikTok / Saldo Shopee</div></div>
+    <ol class="steps">
+      <li>Customer Invoices: filter Overdue → <b>INV/2026/00165</b> Toko Hijab Medan (jatuh tempo 6 Nov, belum dibayar).</li>
+      <li>Vendor Bills: tagihan TikTok Ads, Meta Ads, KOL, sewa toko, supplier. P00022 belum dibayar (hubungkan ke APV/2026/0007).</li>
+      <li>Laporan: Accounting → Reporting → Profit and Loss, Balance Sheet, General Ledger (analytic per channel/divisi).</li>
+      <li>Saldo kas &amp; rekening: Dashboard Accounting, kartu per jurnal bank.</li>
+      <li>Analisis profit per channel: Reporting analitik, plan <i>SS – Channel Penjualan</i> (TikTok, Shopee, Reseller, Offline).</li>
+    </ol>
+    <div class="cols"><div class="box say"><b>Pesan kunci</b>Penjualan, HPP, biaya iklan, dan biaya admin marketplace masuk otomatis ke laporan keuangan, bisa dipecah per channel dan per divisi.</div><div class="box gapnote"><b>Belum disiapkan</b>Rekonsiliasi mutasi bank (import statement), approval sebelum pembayaran diblokir sistem, laporan arus kas belum dicek format demonya.</div></div>
+  </article>
+
+  <article class="card" id="C">
+    <div class="card-head"><h3>C. Tax &amp; Perpajakan</h3><div class="badges"><span class="pill p-ok">Standar Odoo</span><span class="pill p-gap">Sebagian belum</span></div></div>
+    <div class="meta"><div><b>Login</b>ss.dewi</div><div><b>Menu</b>Accounting → Configuration → Taxes</div></div>
+    <ol class="steps">
+      <li>Tunjukkan daftar pajak PPN Indonesia (localisasi l10n_id) dan modul e-Faktur / Coretax yang sudah terpasang.</li>
+      <li>Buka satu invoice/PO yang memakai PPN (mis. P00026: subtotal Rp48,2 jt, total Rp53,5 jt) → baris pajak otomatis.</li>
+      <li>Rekap PPN keluaran/masukan: Reporting → General Ledger akun <i>VAT Sales / VAT Purchase</i>.</li>
+      <li>PPh 23 dipotong otomatis: Vendor Bills → BILL/2026/11/0005 &amp; 0006 (fee KOL) → baris <i>PPh 23 Jasa (2%)</i> masuk akun utang PPh 23. Tersedia juga <i>PPh 4(2) Sewa (10%)</i>.</li>
+      <li>PPh 21 &amp; BPJS dari payroll: slip gaji Oktober memindahkan potongan ke akun utang PPh 21 &amp; BPJS (lihat <a href="#A">A</a>).</li>
+      <li>Pengingat jadwal pajak: Project → <i>SS – Kalender &amp; Kewajiban Pajak</i> (setor PPh 21, lapor SPT Masa PPN, setor PPh 23, upload e-Faktur), lengkap dengan deadline dan PIC Dewi.</li>
+    </ol>
+    <div class="cols"><div class="box say"><b>Pesan kunci</b>Tim finance &amp; tax memakai transaksi yang sama: PPN, PPh 23, dan PPh 21 tercatat otomatis, dan jadwal setor/lapor punya pengingat.</div><div class="box gapnote"><b>Belum ada</b>Contoh ekspor e-Faktur/Coretax (butuh NPWP valid perusahaan &amp; pelanggan), perhitungan PPh 21 TER lengkap (di demo disederhanakan), penyimpanan dokumen pajak.</div></div>
+  </article>
+
+  <article class="card" id="D">
+    <div class="card-head"><h3>D. Financial Planning &amp; Budget Control</h3><div class="badges"><span class="pill p-cfg">Konfigurasi</span><span class="pill p-cus">Cek anggaran di approval</span></div></div>
+    <div class="meta"><div><b>Login</b>ss.dewi</div><div><b>Menu</b>Accounting → Management → Budgets</div><div><b>Data</b>Budget Q4 2026 – Brand SS (Sep–Des)</div></div>
+    <ol class="steps">
+      <li>Buka budget: baris per bulan untuk <i>Biaya Marketing &amp; Iklan</i> dan <i>Biaya Operasional Toko</i>, dengan planned vs practical vs theoretical.</li>
+      <li>Tunjukkan: Oktober marketing terpakai 118%, November sudah lewat anggaran pertengahan bulan.</li>
+      <li>Hubungkan ke approval: pengajuan baru pada pos anggaran yang habis otomatis naik ke Direksi (<a href="#approval">§4</a>).</li>
+    </ol>
+    <div class="cols"><div class="box say"><b>Pesan kunci</b>Budget tidak hanya jadi laporan. Budget ikut menentukan siapa yang harus menyetujui pengeluaran.</div><div class="box gapnote"><b>Roadmap</b>Proyeksi arus kas, perencanaan modal, simulasi target &amp; profit (tahap 3).</div></div>
+  </article>
+
+  <!-- ================= TAHAP 2 ================= -->
+  <div class="section-title"><h2>Tahap 2 · Manajemen divisi</h2><span>demo singkat, 1–2 menit per poin</span></div>
+
+  <article class="card" id="N">
+    <div class="card-head"><h3>N. Offline Retail</h3><div class="badges"><span class="pill p-ok">Standar Odoo</span></div></div>
+    <div class="meta"><div><b>Login</b>ss.eko</div><div><b>Menu</b>Point of Sale → SS – Kasir Toko Kemang</div><div><b>Pembayaran</b>Tunai, QRIS / Kartu Debit (BCA)</div></div>
+    <ol class="steps">
+      <li>Open Register → pilih kategori SS Fashion / SS Beauty → scan atau klik produk → bayar QRIS → struk.</li>
+      <li>Stok toko berkurang dari gudang SSTK (Toko Kemang), terpisah dari gudang utama.</li>
+      <li>Permintaan stok ke gudang: Inventory → transfer internal SSGU → SSTK (buat live).</li>
+      <li>Performa toko: tim <i>SS – Offline Store Kemang</i> di dashboard (target vs realisasi, termasuk transaksi kasir).</li>
+      <li>Riwayat kasir: Point of Sale → Sessions → <b>POS/00006</b> (17 Nov, 9 transaksi, sudah ditutup &amp; dijurnal) dan <b>POS/00007</b> (hari ini, masih terbuka, 5 transaksi). Login ss.eko langsung melanjutkan sesi yang terbuka.</li>
+      <li>Permintaan stok toko: Inventory → Transfers → <i>REQ-TOKO-KEMANG-2026-11-18</i> (siap dikirim gudang) dan <i>…-2026-11-10</i> (sudah diterima toko).</li>
+    </ol>
+    <div class="cols"><div class="box say"><b>Pesan kunci</b>Kasir toko memakai stok dan harga yang sama dengan online, dan penjualan toko langsung masuk laporan.</div><div class="box gapnote"><b>Belum ada</b>Pencatatan pengeluaran kas kecil toko (bisa via Cash In/Out POS).</div></div>
+  </article>
+
+  <article class="card" id="O">
+    <div class="card-head"><h3>O. Reseller &amp; Distributor</h3><div class="badges"><span class="pill p-ok">Standar Odoo</span></div></div>
+    <div class="meta"><div><b>Login</b>ss.maya / ss.dewi</div><div><b>Menu</b>Sales → Customers · Orders</div></div>
+    <ol class="steps">
+      <li>Customer: Butik Aisyah Bandung (pricelist −25%, credit limit Rp50 jt), CV Berkah Distribusi Surabaya &amp; PT Grosir Busana Muslim Tanah Abang (−35%, Rp400 jt), Toko Hijab Medan Indah.</li>
+      <li>Order grosir besar: S00331–S00334 (Rp75–121 jt per order), dikirim lewat pick → pack → ship.</li>
+      <li>Buat quotation baru untuk distributor → harga otomatis −35%.</li>
+      <li>Piutang: Medan INV/2026/00165 jatuh tempo; CV Berkah dibayar sebagian (partial).</li>
+      <li>Riwayat &amp; performa: Sales → Reporting group by Customer, tim <i>SS – Reseller &amp; Distributor</i> (63% dari target berjalan).</li>
+    </ol>
+    <div class="cols"><div class="box say"><b>Pesan kunci</b>Harga khusus, batas kredit, piutang, dan target B2B ada di satu tempat.</div></div>
+  </article>
+
+  <article class="card" id="J">
+    <div class="card-head"><h3>J. Digital Marketing, Ads, KOL &amp; Affiliate</h3><div class="badges"><span class="pill p-cfg">Konfigurasi</span><span class="pill p-gap">Integrasi ads: roadmap</span></div></div>
+    <div class="meta"><div><b>Login</b>ss.reza</div><div><b>Menu</b>Project → SS – Campaign, KOL &amp; Affiliate · Contacts (tag SS KOL)</div></div>
+    <ol class="steps">
+      <li>Kanban campaign: Campaign 12.12 (Approval Budget), jadwal posting KOL @glowwithkirana, evaluasi KOL @dailyoutfit.ayu (ROAS 5,1×).</li>
+      <li>Database KOL: Contacts dengan tag <i>SS KOL / Influencer</i>, beserta riwayat tagihan fee.</li>
+      <li>Pengeluaran iklan: tagihan TikTok Ads mingguan &amp; Meta Ads → akun biaya iklan + analytic DIV – Digital Marketing.</li>
+      <li>Order affiliate ditandai tag <i>SS Affiliate</i> di sales order.</li>
+      <li>ROAS &amp; rasio biaya: Executive Dashboard → kartu Marketing.</li>
+    </ol>
+    <div class="cols"><div class="box say"><b>Pesan kunci</b>Biaya marketing, kontrak KOL, dan hasil penjualan terlihat berdampingan, ditambah kontrol budget lewat approval.</div><div class="box gapnote"><b>Roadmap</b>Tarik biaya &amp; performa dari TikTok Ads/Meta Ads API, atribusi penjualan per kode affiliate/KOL, perhitungan komisi otomatis.</div></div>
+  </article>
+
+  <article class="card" id="K">
+    <div class="card-head"><h3>K. Brand, Creative &amp; Media</h3><div class="badges"><span class="pill p-ok">Standar Odoo</span></div></div>
+    <div class="meta"><div><b>Login</b>ss.reza / ss.shella</div><div><b>Menu</b>Project → SS – Creative Request (Desain &amp; Konten)</div></div>
+    <ol class="steps">
+      <li>Kanban: Request Masuk → Briefing → Produksi Konten → Review/Approval → Revisi → Selesai.</li>
+      <li>Kartu terlambat: <i>Foto katalog Gamis Dusty Pink</i> (revisi ke-2, lewat deadline).</li>
+      <li>Approval desain/video: pindahkan <i>Video review SS Glow Serum</i> dari Review ke Selesai; lampirkan file hasil di chatter.</li>
+    </ol>
+    <div class="cols"><div class="box say"><b>Pesan kunci</b>Setiap pekerjaan kreatif punya PIC, deadline, status, dan file hasil yang bisa dipantau.</div></div>
+  </article>
+
+  <article class="card" id="P">
+    <div class="card-head"><h3>P. Customer Experience</h3><div class="badges"><span class="pill p-cfg">Konfigurasi (Project sebagai tiket)</span></div></div>
+    <div class="meta"><div><b>Login</b>ss.maya</div><div><b>Menu</b>Project → SS – Customer Service (Tiket)</div></div>
+    <ol class="steps">
+      <li>Tiket per tahap: Baru → Diproses → Menunggu Pelanggan → Eskalasi → Selesai, dengan tag (Komplain, Pengiriman, Retur/Refund).</li>
+      <li>Tiket eskalasi <i>#CS-1038 Iritasi setelah pakai lip cream</i> → telusuri batch LIP-2610B di Inventory (traceability).</li>
+      <li>Hubungkan retur ke sales order (S00267 dan credit note).</li>
+    </ol>
+    <div class="cols"><div class="box say"><b>Pesan kunci</b>Komplain bisa ditelusuri sampai ke batch produksinya, sehingga QC dan R&amp;D bisa bertindak.</div><div class="box gapnote"><b>Batasan</b>SLA &amp; waktu penyelesaian otomatis butuh Helpdesk (Enterprise) atau OCA helpdesk_mgmt.</div></div>
+  </article>
+
+  <article class="card" id="A">
+    <div class="card-head"><h3>A. HR &amp; General Affairs</h3><div class="badges"><span class="pill p-ok">Standar Odoo</span><span class="pill p-cfg">Konfigurasi</span></div></div>
+    <div class="meta"><div><b>Login</b>ss.shella</div><div><b>Menu</b>Employees · Attendances · Time Off · Payroll · Accounting → Assets</div><div><b>Data</b>17 departemen, 22 karyawan + kontrak, absensi 9–18 Nov, payroll Okt &amp; Nov</div></div>
+    <ol class="steps">
+      <li>Employees → tampilan Org Chart / hierarki: Direksi → manager divisi → staf.</li>
+      <li>Kontrak kerja: Employees → Contracts. PKWTT &amp; PKWT, dengan 2 PKWT berakhir 14 Des 2026 (Andi, Dimas) → bahan pengingat perpanjangan.</li>
+      <li>Attendances: rekap kehadiran (termasuk terlambat &amp; jam lebih), kehadiran hari ini di dashboard.</li>
+      <li>Time Off: tipe <i>SS Cuti Tahunan</i> (alokasi 12 hari), <i>SS Sakit</i> (wajib surat dokter), <i>SS Izin</i> (setengah hari). 4 sudah disetujui, 3 menunggu atasan.</li>
+      <li>Payroll → Payslip Batches: <b>Payroll Oktober 2026</b> (selesai, dijurnal ke akun gaji, BPJS, PPh 21; gaji bersih ditransfer dari BCA) dan <b>Payroll November 2026</b> (sudah dihitung, tinggal Confirm). Buka satu slip: gaji pokok, tunjangan, BPJS Kes/JHT/JP, PPh 21, THP.</li>
+      <li>Aset perusahaan: Accounting → Assets → 4 aset (kamera studio live, rak gudang, laptop editing, printer barcode dari APV/2026/0005) dengan jadwal penyusutan 48 bulan.</li>
+      <li>Hubungan ke approval: atasan di struktur organisasi = approver tahap pertama &amp; approver cuti.</li>
+    </ol>
+    <div class="cols"><div class="box say"><b>Pesan kunci</b>Data karyawan, kontrak, absensi, cuti, dan gaji ada di satu tempat. Biaya tenaga kerja langsung masuk laporan keuangan.</div><div class="box gapnote"><b>Belum ada</b>KPI &amp; penilaian kinerja (Appraisal = Enterprise / custom), perhitungan lembur ke slip gaji, laporan HR bulanan khusus. PPh 21 di demo disederhanakan.</div></div>
+  </article>
+
+  <!-- ================= TAHAP 3 ================= -->
+  <div class="section-title"><h2>Tahap 3 · Manajemen lanjutan</h2><span>tunjukkan sebagai fondasi</span></div>
+
+  <article class="card" id="M">
+    <div class="card-head"><h3>M. Personal Care &amp; Product Development</h3><div class="badges"><span class="pill p-cfg">Konfigurasi</span></div></div>
+    <div class="meta"><div><b>Menu</b>Project → SS – Product Development</div></div>
+    <ol class="steps">
+      <li>Tahapan: Ide &amp; Riset → Formulasi → Sampel &amp; Revisi → Uji Stabilitas &amp; Notifikasi BPOM → Kemasan → Siap Launching.</li>
+      <li>Kartu <i>SS Glow Serum Gen 2</i>: maklon, biaya R&amp;D, target launching; <i>Lip Cream 4 shade</i>: kendala sampel.</li>
+    </ol>
+    <div class="cols"><div class="box gapnote"><b>Roadmap</b>Biaya pengembangan per produk (analytic), dokumen regulasi dengan masa berlaku, approval produk.</div></div>
+  </article>
+
+  <article class="card" id="L">
+    <div class="card-head"><h3>L. Brand Activation &amp; Partnership</h3><div class="badges"><span class="pill p-cfg">Konfigurasi</span><span class="pill p-cus">Approval budget event</span></div></div>
+    <div class="meta"><div><b>Menu</b>Project → SS – Event &amp; Partnership · Pengajuan &amp; Approval</div></div>
+    <ol class="steps">
+      <li>Event: Pop-up store Muslim Fashion Festival (persiapan), meet &amp; greet Bandung (evaluasi: 1.200 pengunjung, Rp38 jt).</li>
+      <li>Pengajuan budget event yang ditolak: APV/2026/0006 beserta alasannya.</li>
+    </ol>
+  </article>
+
+  <article class="card" id="Q">
+    <div class="card-head"><h3>Q. Legal &amp; Business Development</h3><div class="badges"><span class="pill p-cfg">Konfigurasi</span></div></div>
+    <div class="meta"><div><b>Menu</b>Project → SS – Legal &amp; Perizinan</div></div>
+    <ol class="steps">
+      <li>Kontrak &amp; izin per tahap: Draft → Review Legal → Approval Direksi → Aktif → Perlu Perpanjangan.</li>
+      <li>Notifikasi BPOM SS Glow Serum (berlaku s/d 31 Des 2026, deadline perpanjangan 1 Des); kontrak maklon 2027 di Review Legal.</li>
+    </ol>
+    <div class="cols"><div class="box gapnote"><b>Roadmap</b>Database kontrak dengan tanggal berakhir &amp; pengingat otomatis, penyimpanan dokumen (Documents = Enterprise).</div></div>
+  </article>
+
+  <article class="card" id="S6">
+    <div class="card-head"><h3>§6 Financial Planning &amp; Decision Making</h3><div class="badges"><span class="pill p-gap">Roadmap</span></div></div>
+    <p style="margin:0">Yang bisa ditunjukkan sekarang: perbandingan profit per channel (analytic), ROAS, budget vs realisasi, tren penjualan untuk perkiraan stok. Simulasi “jika biaya marketing naik X%”, proyeksi arus kas, dan prioritas pembelian/produksi dikembangkan bertahap di tahap 3, sesuai brief (“dimulai dari laporan dan simulasi sederhana”).</p>
+  </article>
+
+  <article class="card" id="S10">
+    <div class="card-head"><h3>§10 Keamanan &amp; akses sistem</h3><div class="badges"><span class="pill p-ok">Standar Odoo</span></div></div>
+    <ol class="steps">
+      <li>Login sebagai <b>ss.joko</b>: menu Accounting &amp; Executive Dashboard tidak terlihat (hak akses sesuai jabatan).</li>
+      <li>Login <b>ss.reza</b>: hanya bisa membuat pengajuan, tidak bisa approve milik orang lain (coba klik Setujui → pesan “hanya … yang dapat menyetujui”).</li>
+      <li>Riwayat perubahan: chatter di PO / pengajuan / sesi live mencatat siapa mengubah apa dan kapan.</li>
+      <li>Multi-company: user Brand SS hanya melihat data PT ShellaSaukia.</li>
+      <li>Mobile: buka Odoo dari HP (web responsif) untuk approval di jalan.</li>
+    </ol>
+    <div class="cols"><div class="box gapnote"><b>Catatan</b>Backup terjadwal, 2FA wajib, dan hosting terpisah dibahas di proposal (sistem final sebaiknya di database/server sendiri, bukan database demo ini).</div></div>
+  </article>
+
+  <section class="panel" id="gap">
+    <h2>Gap &amp; roadmap untuk disampaikan</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>Area</th><th>Status di demo</th><th>Pendekatan sistem final</th></tr></thead>
+      <tbody>
+        <tr><td>Integrasi TikTok Shop &amp; Shopee</td><td><span class="pill p-gap">Dummy</span></td><td>Konektor API: order, status, stok, retur, settlement &amp; biaya admin otomatis</td></tr>
+        <tr><td>TikTok Ads &amp; Meta Ads</td><td><span class="pill p-gap">Input manual</span></td><td>Tarik biaya &amp; performa campaign harian, ROAS per campaign</td></tr>
+        <tr><td>Atribusi KOL/affiliate</td><td><span class="pill p-gap">Tag order</span></td><td>Kode affiliate per order, komisi otomatis</td></tr>
+        <tr><td>Approval engine</td><td><span class="pill p-cus">Custom tanpa coding</span></td><td>Modul resmi: blokir pembayaran, delegasi, approval mobile</td></tr>
+        <tr><td>Live streaming</td><td><span class="pill p-cus">Custom tanpa coding</span></td><td>Modul resmi + data live dari API</td></tr>
+        <tr><td>Executive dashboard</td><td><span class="pill p-cus">Modul data</span></td><td>Dashboard per jabatan, proyeksi, notifikasi</td></tr>
+        <tr><td>HR: KPI &amp; appraisal, lembur</td><td><span class="pill p-gap">Belum</span></td><td>Modul KPI/appraisal + aturan lembur ke payroll (payroll, kontrak, cuti sudah ada)</td></tr>
+        <tr><td>Pajak: PPh 21 TER penuh, e-Faktur</td><td><span class="pill p-gap">Sebagian</span></td><td>Tabel TER lengkap, ekspor Coretax dengan NPWP valid (PPN, PPh 23, kalender pajak sudah ada)</td></tr>
+        <tr><td>Helpdesk, Quality, Barcode, Documents, Studio</td><td><span class="pill p-gap">Enterprise</span></td><td>Pilih: lisensi Enterprise atau alternatif OCA/custom</td></tr>
+      </tbody>
+    </table></div>
+    <p class="note" style="margin:10px 0 0">Data demo bersifat contoh (dummy) untuk periode 20 Sep – 18 Nov 2026. Angka penjualan sengaja dibuat bervariasi supaya ada channel yang tercapai dan yang di bawah target.</p>
+  </section>
+</main>
+</div>
