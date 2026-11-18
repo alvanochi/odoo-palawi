@@ -88,6 +88,7 @@ ol.steps li::marker { color: var(--brand); font-weight: 700; }
 <nav class="toc" aria-label="Daftar isi">
   <div class="lbl">Persiapan</div>
   <a href="#akses">Akses &amp; login</a>
+  <a href="#aturan">Aturan main saat demo</a>
   <a href="#alur">Alur presentasi 60 menit</a>
   <div class="lbl">Lintas divisi</div>
   <a href="#dashboard">§5 Executive Dashboard</a>
@@ -149,6 +150,28 @@ ol.steps li::marker { color: var(--brand); font-weight: 700; }
       </tbody>
     </table></div>
     <p class="note" style="margin:10px 0 0">Tips: buka 2–3 browser/profil (misal Chrome biasa, Incognito, Edge) supaya bisa pindah user tanpa logout saat demo approval.</p>
+  </section>
+
+  <section class="panel" id="aturan">
+    <h2>Aturan main saat demo &amp; latihan</h2>
+    <p class="note" style="margin:0 0 10px">Smoke test 18 Nov 2026 dengan login user demo: sales order → pick/pack/ship → invoice → Register Payment, PO → terima 2 tahap → tagihan → bayar, MO dengan lot, dan sesi POS. <b>Semua lolos.</b> Hasil uji (S00335, P00027, SSGU/MO/00012) dibiarkan sebagai transaksi demo.</p>
+    <div class="cols">
+      <div class="box say"><b>Boleh</b><ul>
+        <li>Membuat, mengonfirmasi, memvalidasi, dan membatalkan dokumen apa pun di PT ShellaSaukia. Data hanya bertambah di company ini.</li>
+        <li>Mengubah Aturan Approval saat demo. <b>Kembalikan angka semula</b> setelahnya.</li>
+        <li>Membuka 2–3 browser/profil dengan login berbeda untuk memperagakan approval bergantian.</li>
+        <li>Saat menyelesaikan MO produk beauty, mengetik nomor lot rapi (mis. <code>LIP-2611A</code>). Tombol generate menghasilkan <code>0000001</code>.</li>
+      </ul></div>
+      <div class="box gapnote"><b>Jangan</b><ul>
+        <li><b>Mengubah centang di menu Settings</b> (General, Inventory, Accounting, Sales, …). Database dipakai bersama PALAWI; banyak setting berlaku untuk semua perusahaan.</li>
+        <li>Klik <i>Send by Email</i> ke customer/supplier. Kontaknya dummy. Gunakan Print/Preview.</li>
+        <li>Berharap ada tombol reset: tidak ada. Backup/restore database tidak bisa dipakai karena ikut mengembalikan data PALAWI. Rapikan dengan membatalkan dokumen latihan.</li>
+      </ul></div>
+    </div>
+    <div class="cols" style="margin-top:12px">
+      <div class="box say"><b>Tanggal data</b>Data dibangun s/d 18 Nov 2026. Jika demo dilakukan beberapa hari kemudian, “Penjualan hari ini” bernilai 0 dan sesi live terjadwal sudah lewat. Jika sudah masuk Desember, gunakan tombol <b>Bulan lalu</b> di Executive Dashboard, atau minta data disegarkan H-1.</div>
+      <div class="box gapnote"><b>Pertanyaan hak akses</b>Menu sudah disesuaikan per jabatan, tetapi aturan bawaan Odoo masih mengizinkan beberapa peran membaca data lain lewat link langsung (mis. user Sales membaca invoice). Jawaban untuk §10: di sistem final, akses dikunci dengan record rules per jabatan di database Brand SS sendiri.</div>
+    </div>
   </section>
 
   <section class="panel" id="alur">
@@ -291,6 +314,7 @@ ol.steps li::marker { color: var(--brand); font-weight: 700; }
       <li>Beauty per batch + kedaluwarsa: MO serum SSGU/MO/00005 → lot SRM-2610C, exp 2028-10-08.</li>
       <li>QC &amp; reject: Inventory → Operations → Scrap: SP/00001 (gamis, jahitan miring), SP/00002 (serum, botol retak). Wajib lampiran laporan QC. Coba buat scrap tanpa lampiran → ditolak.</li>
       <li>Kebutuhan bahan baku: buka MO 00010 → komponen &amp; ketersediaan.</li>
+      <li>Demo live: buat MO baru (mis. Lip Cream 20 pcs) → Confirm → isi nomor lot <code>LIP-2611A</code> → Produce All → Mark as Done. Contoh hasil uji: SSGU/MO/00012.</li>
       <li>Biaya produksi: MO selesai → valuasi (Cost Analysis via jurnal stok).</li>
     </ol>
     <div class="cols"><div class="box say"><b>Pesan kunci</b>Manajemen tahu apa yang sedang diproduksi, jumlahnya, progres, kendala (telat/reject), dan kapan barang siap dijual.</div><div class="box gapnote"><b>Belum disiapkan</b>Tahapan produksi per work center (potong-jahit-QC), produksi di maklon (subcontracting), modul Quality (Enterprise).</div></div>
@@ -460,7 +484,7 @@ ol.steps li::marker { color: var(--brand); font-weight: 700; }
       <li>Multi-company: user Brand SS hanya melihat data PT ShellaSaukia.</li>
       <li>Mobile: buka Odoo dari HP (web responsif) untuk approval di jalan.</li>
     </ol>
-    <div class="cols"><div class="box gapnote"><b>Catatan</b>Backup terjadwal, 2FA wajib, dan hosting terpisah dibahas di proposal (sistem final sebaiknya di database/server sendiri, bukan database demo ini).</div></div>
+    <div class="cols"><div class="box gapnote"><b>Catatan</b>Di demo, pembatasan utamanya ada di menu. Beberapa data masih bisa dibaca peran lain lewat link langsung (aturan bawaan Odoo). Sistem final: record rules per jabatan, backup terjadwal, 2FA wajib, dan database/server sendiri, bukan database demo ini.</div></div>
   </article>
 
   <section class="panel" id="gap">
