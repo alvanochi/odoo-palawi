@@ -1369,17 +1369,21 @@ class PosOrderApi(http.Controller):
     def _price_unit_excl(self, taxes, product, company, unit_incl):
         """price_unit yang disimpan di baris order.
 
-        Semua pajak tax-excluded -> harga FE dikembalikan ke harga tanpa pajak
-        (tidak dibulatkan, supaya hitungan ulang Odoo = subtotal yang dibayar).
-        Ada pajak price-included -> harga FE disimpan apa adanya, karena Odoo
-        sendiri yang mengekstrak pajak itu dari harga.
+        Dipilih supaya hitungan ulang Odoo saat session ditutup menghasilkan
+        total incl pajak = harga FE (uang yang dibayar), untuk kombinasi pajak
+        apa pun: semua excluded (16.875 -> 15.000), semua included (harga tetap),
+        atau campuran (PNBP included + PBJT excluded: 45.000 -> 41.000).
+        Pajak persen linear terhadap harga, jadi faktornya diambil dari basis
+        besar: price_unit = harga FE x basis / total_included(basis).
         """
-        if not taxes or not unit_incl or any(taxes.mapped("price_include")):
+        if not taxes or not unit_incl:
             return unit_incl
-        ratio = self._tax_ratio(taxes, product, company)
-        if not ratio:
+        res = taxes.compute_all(
+            self.TAX_RATIO_BASE, currency=company.currency_id, quantity=1.0, product=product)
+        incl = res["total_included"]
+        if not incl:
             return unit_incl
-        return unit_incl / ratio
+        return unit_incl * self.TAX_RATIO_BASE / incl
 
     LOYALTY_LINE_KEYS = (
         "reward_id", "coupon_id", "is_reward_line",
