@@ -338,14 +338,16 @@ ol.steps li::marker { color: var(--brand); font-weight: 700; }
     <div class="card-head"><h3>C. Tax &amp; Perpajakan</h3><div class="badges"><span class="pill p-ok">Standar Odoo</span><span class="pill p-gap">Sebagian belum</span></div></div>
     <div class="meta"><div><b>Login</b>ss.dewi</div><div><b>Menu</b>Accounting → Configuration → Taxes</div></div>
     <ol class="steps">
-      <li>Tunjukkan daftar pajak PPN Indonesia (localisasi l10n_id) dan modul e-Faktur / Coretax yang sudah terpasang.</li>
+      <li>Daftar pajak: Accounting → <b>Configuration → Taxes</b>: PPN 12% (DPP 11/12 untuk barang non-mewah), PPN pemungut, 0%/ekspor/bebas, PPh 23 Jasa 2%, PPh 4(2) Sewa 10%.</li>
+      <li>e-Faktur Coretax: Customers → Invoices → buka <b>INV/2026/00292</b> (CV Berkah Distribusi, PKP, Kode Transaksi 04) → menu <b>Action (⚙) → Download e-Faktur</b> → file XML siap diunggah ke Coretax DJP. Bisa juga pilih banyak invoice sekaligus dari list. Dokumen e-Faktur tersimpan di field <i>e-Faktur Document (Coretax)</i> pada invoice.</li>
+      <li>Data pendukung: NPWP perusahaan (Settings company), dan di kontak reseller/distributor: centang <i>Is PKP</i>, NPWP, Kode Transaksi (tab Sales &amp; Purchase / Accounting).</li>
       <li>Buka satu invoice/PO yang memakai PPN (mis. P00026: subtotal Rp48,2 jt, total Rp53,5 jt) → baris pajak otomatis.</li>
       <li>Rekap PPN keluaran/masukan: Reporting → General Ledger akun <i>VAT Sales / VAT Purchase</i>.</li>
       <li>PPh 23 dipotong otomatis: Vendor Bills → BILL/2026/11/0005 &amp; 0006 (fee KOL) → baris <i>PPh 23 Jasa (2%)</i> masuk akun utang PPh 23. Tersedia juga <i>PPh 4(2) Sewa (10%)</i>.</li>
       <li>PPh 21 &amp; BPJS dari payroll: slip gaji Oktober memindahkan potongan ke akun utang PPh 21 &amp; BPJS (lihat <a href="#A">A</a>).</li>
       <li>Pengingat jadwal pajak: Project → <i>SS – Kalender &amp; Kewajiban Pajak</i> (setor PPh 21, lapor SPT Masa PPN, setor PPh 23, upload e-Faktur), lengkap dengan deadline dan PIC Dewi.</li>
     </ol>
-    <div class="cols"><div class="box say"><b>Pesan kunci</b>Tim finance &amp; tax memakai transaksi yang sama: PPN, PPh 23, dan PPh 21 tercatat otomatis, dan jadwal setor/lapor punya pengingat.</div><div class="box gapnote"><b>Belum ada</b>Contoh ekspor e-Faktur/Coretax (butuh NPWP valid perusahaan &amp; pelanggan), perhitungan PPh 21 TER lengkap (di demo disederhanakan), penyimpanan dokumen pajak.</div></div>
+    <div class="cols"><div class="box say"><b>Pesan kunci</b>Tim finance &amp; tax memakai transaksi yang sama: PPN, PPh 23, dan PPh 21 tercatat otomatis, dan jadwal setor/lapor punya pengingat.</div><div class="box gapnote"><b>Catatan</b>NPWP di demo adalah nomor dummy yang lolos validasi format, bukan NPWP asli. Pembeli marketplace (TikTok/Shopee) belum diset PKP. PPh 21 TER di demo disederhanakan; penyimpanan dokumen pajak belum ada.</div></div>
   </article>
 
   <article class="card" id="D">
