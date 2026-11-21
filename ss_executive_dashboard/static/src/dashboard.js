@@ -200,7 +200,7 @@ class SSExecutiveDashboard extends Component {
         // ---- Decision alerts ----
         const alerts = [];
         for (const c of channels) if (c.target && c.ach < 90) alerts.push({ level: c.ach < 70 ? "danger" : "warning", icon: "fa-line-chart", text: `Penjualan ${c.name} ${pct(c.ach)} dari target berjalan (${rp(c.actual)} / ${rp(c.target)})`, act: () => this.openList("sale.order", [["team_id", "=", c.id], ["state", "=", "sale"]], `Penjualan ${c.name}`) });
-        for (const b of budgets) if (b.over) alerts.push({ level: "danger", icon: "fa-money", text: `${b.name} melewati anggaran: ${rp(b.actual)} dari budget ${rp(b.planned)} (${pct(b.used)})`, act: () => this.openList("crossovered.budget.lines", [], "Budget vs Realisasi") });
+        for (const b of budgets) if (b.over) alerts.push({ level: "danger", icon: "fa-money", text: `${b.name} melewati anggaran: ${rp(b.actual)} dari budget ${rp(b.planned)} (${pct(b.used)})`, act: () => this.openBudgetActuals() });
         for (const p of lowStock.filter((x) => x.best)) alerts.push({ level: "danger", icon: "fa-cubes", text: `Stok bestseller hampir habis: ${p.display_name} (sisa ${p.qty_available})`, act: () => this.openRecord("product.product", p.id) });
         for (const a of approvals) alerts.push({ level: a.x_over_budget ? "danger" : "warning", icon: "fa-check-square-o", text: `Butuh approval ${a.x_number}: ${a.x_name} (${rp(a.x_amount)})${a.x_over_budget ? " · MELEBIHI ANGGARAN" : ""} · menunggu ${a.x_approver_id ? a.x_approver_id[1] : "-"}`, act: () => this.openRecord("x_ss_approval", a.id) });
         for (const p of poApprove) alerts.push({ level: "warning", icon: "fa-check-square-o", text: `Butuh approval: ${p.name} - ${p.partner_id[1]} (${rp(p.amount_total)})`, act: () => this.openRecord("purchase.order", p.id) });
@@ -242,6 +242,7 @@ class SSExecutiveDashboard extends Component {
     openMO() { return this.openList("mrp.production", [["state", "not in", ["done", "cancel"]]], "Produksi Berjalan"); }
     openPO() { return this.openList("purchase.order", [["state", "in", ["to approve", "purchase"]], ["receipt_status", "!=", "full"]], "Status PO"); }
     openPickings(typeId) { return this.openList("stock.picking", [["picking_type_id", "=", typeId], ["state", "in", ["assigned", "waiting", "confirmed"]]], "Aktivitas Gudang"); }
+    openBudgetActuals() { return this.openList("account.analytic.line", [["date", ">=", this.state.data.filters.fromD], ["date", "<", this.state.data.filters.toD], ["account_id", "!=", false], ["amount", "<", 0]], "Realisasi Biaya per Divisi"); }
     openApprovals() { return this.openList("x_ss_approval", [["x_state", "=", "submitted"]], "Pengajuan Menunggu Approval"); }
     openStock() { return this.openList("stock.quant", [["location_id.usage", "=", "internal"]], "Stok Tersedia"); }
 }
