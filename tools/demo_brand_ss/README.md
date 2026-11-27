@@ -24,6 +24,8 @@ export DEMO_PW=...                             # password user demo ss.*
 | `t9.js` | Proyek CS tiket & Campaign/KOL |
 | `t11.js` | User demo per jabatan + model custom **Pengajuan & Approval** (`x_ss_approval`) + server action |
 | `t13.js` | **Aturan Approval** yang bisa diatur dari layar (`x_ss_approval_rule`, menu Pengajuan & Approval → Konfigurasi) dan server action Ajukan/Setujui yang membaca aturan tersebut. Jalankan setelah `t11.js` (menimpa logika batas nominal yang tertanam) |
+| `t14.js model` / `t14.js data` | **Budget Proyek** (`x_ss_project_budget`) + jenis pengajuan *Budget Proyek / Riset* dengan alur Researcher → Approval Direktur → Mengetahui Finance → Transfer Dana (Finance), user `ss.yuni`, 3 proyek R&D. Jalankan setelah `t13.js` |
+| `t15.js` | Contoh pengajuan dana riset lewat alur sebenarnya (per user) |
 | `t12.js` | Contoh pengajuan, dijalankan sebagai masing-masing user |
 | `t10.js settlement,resellers,returns,recentFlow,live,targets` | Settlement marketplace, pembayaran reseller, retur, alur gudang 3 langkah, sesi live, target |
 | `hr2.js payroll` / `hr2.js leave` | Struktur gaji Indonesia, kontrak, slip gaji, cuti |

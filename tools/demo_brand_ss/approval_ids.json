@@ -5,7 +5,8 @@
   "reject": 1000,
   "revise": 1001,
   "make_po": 1002,
-  "done": 1003
+  "done": 1003,
+  "transfer": 1009
  },
  "U": {
   "ss.shella": 267,

@@ -93,6 +93,7 @@ ol.steps li::marker { color: var(--brand); font-weight: 700; }
   <div class="lbl">Lintas divisi</div>
   <a href="#dashboard">§5 Executive Dashboard</a>
   <a href="#approval">§4 Approval berjenjang</a>
+  <a href="#riset">Budget Proyek &amp; dana riset</a>
   <a href="#integrasi">§7 Integrasi end-to-end</a>
   <div class="lbl">Tahap 1</div>
   <a href="#H">H. Marketplace</a>
@@ -143,6 +144,7 @@ ol.steps li::marker { color: var(--brand); font-weight: 700; }
         <tr><td class="mono">ss.dewi</td><td>Dewi Anggraini</td><td>Finance Manager</td><td>Accounting (manager), budget, approval finance</td></tr>
         <tr><td class="mono">ss.rina</td><td>Rina Kartika</td><td>HR &amp; GA Manager</td><td>Employees, kontrak, absensi, cuti, payroll, expenses (manager)</td></tr>
         <tr><td class="mono">ss.maya</td><td>Maya Puspita</td><td>Marketplace Manager</td><td>Sales (manager), Live Streaming, pengajuan</td></tr>
+        <tr><td class="mono">ss.yuni</td><td>Yuni Astuti</td><td>Researcher (R&amp;D Formulator)</td><td>Pengajuan dana riset, lihat Budget Proyek, Project</td></tr>
         <tr><td class="mono">ss.reza</td><td>Reza Firmansyah</td><td>Digital Marketing Lead</td><td>Sales (lihat), Project, pengajuan campaign</td></tr>
         <tr><td class="mono">ss.budi</td><td>Budi Santoso</td><td>Purchasing</td><td>Purchase, penerimaan barang, pengajuan</td></tr>
         <tr><td class="mono">ss.joko</td><td>Joko Susilo</td><td>Kepala Gudang</td><td>Inventory, Manufacturing (user)</td></tr>
@@ -226,6 +228,24 @@ ol.steps li::marker { color: var(--brand); font-weight: 700; }
     <div class="cols">
       <div class="box say"><b>Pesan kunci</b>Setiap pengajuan punya PIC, nominal, deadline, status, dan riwayat aktivitas. Tidak perlu lagi tanya progres manual: approver mendapat notifikasi, direksi melihatnya di dashboard. Kebijakan approval diatur admin sendiri lewat list aturan, tanpa developer.</div>
       <div class="box gapnote"><b>Batasan</b>Di sistem final dibuat sebagai modul resmi (atau OCA <i>base_tier_validation</i>): blokir pembayaran sebelum approval, approval via mobile/email, delegasi saat cuti.</div>
+    </div>
+  </article>
+
+  <article class="card" id="riset">
+    <div class="card-head"><h3>Budget Proyek &amp; pengajuan dana riset<span class="ref">Brief 3D, 3M, bagian 4 · alur: Researcher → Approval Direktur → Mengetahui Finance → Transfer oleh Finance → Selesai</span></h3><div class="badges"><span class="pill p-cus">Custom tanpa coding</span></div></div>
+    <div class="meta"><div><b>Login</b>ss.yuni → ss.shella → ss.dewi</div><div><b>Menu</b>Pengajuan &amp; Approval → Budget Proyek · Pengajuan Saya · Menunggu Approval Saya</div><div><b>Data</b>3 proyek R&amp;D (Glow Serum Gen 2 Rp35 jt, Lip Cream Rp15 jt, Sunscreen Rp20 jt)</div></div>
+    <ol class="steps">
+      <li><b>ss.dewi</b> → <b>Budget Proyek</b>: per proyek terlihat Budget, Realisasi (dana yang sudah ditransfer), Sedang Diajukan, Sisa, dan % terpakai. Sunscreen merah: pengajuan uji SPF Rp22 jt melebihi budget Rp20 jt. Buka Glow Serum Gen 2 → tab <i>Pengajuan Dana</i> berisi semua permintaan dana proyek itu.</li>
+      <li><b>ss.yuni</b> → Pengajuan Saya → buka draft <i>Kemasan prototipe airless pump – Glow Serum Gen 2</i> (Rp2,5 jt, jenis <i>Budget Proyek / Riset</i>, proyek Glow Serum) → <b>Ajukan</b>. Alur otomatis: <b>Approval Direktur (Shella) → Mengetahui (Finance) (Dewi)</b>; sisa budget proyek ikut tercatat.</li>
+      <li><b>ss.shella</b> → Menunggu Approval Saya → <b>Setujui</b>. Chatter: “Disetujui oleh Shella Saukia sebagai Approval Direktur”. Tunjukkan juga APV/2026/0016 (Sunscreen) dengan banner <b>Melebihi anggaran</b>: Direktur bisa menolak atau minta revisi.</li>
+      <li><b>ss.dewi</b> → Menunggu Approval Saya → <b>Setujui</b> (tahap Mengetahui). Chatter: “Diketahui oleh Dewi Anggraini (Mengetahui (Finance))”. Status jadi <i>Disetujui</i>.</li>
+      <li><b>ss.dewi</b> → tombol <b>Transfer Dana (Finance)</b> → konfirmasi → jurnal transfer dari Bank BCA terbuat (biaya R&amp;D dengan analitik proyek), status <b>Selesai Diproses</b>, Yuni mendapat activity untuk melampirkan bukti penggunaan dana. Contoh siap transfer: APV/2026/0014 (Notifikasi BPOM, Rp6 jt).</li>
+      <li>Kembali ke <b>Budget Proyek</b>: Realisasi Glow Serum naik, Sedang Diajukan turun. Contoh yang sudah selesai: APV/2026/0011–0013 (Okt–Nov).</li>
+      <li>Alurnya diatur di <b>Konfigurasi → Aturan Approval</b>: dua aturan jenis <i>Budget Proyek / Riset</i> dengan centang <i>Ganti aturan umum</i>, sehingga pengajuan riset hanya melewati Direktur lalu Finance, berapa pun nominalnya.</li>
+    </ol>
+    <div class="cols">
+      <div class="box say"><b>Pesan kunci</b>Setiap rupiah dana riset punya pengaju, persetujuan Direktur, sepengetahuan Finance, bukti transfer, dan langsung mengurangi budget proyeknya. Direksi tahu sisa budget tiap proyek tanpa rekap manual.</div>
+      <div class="box gapnote"><b>Catatan</b>Transfer dicatat sebagai jurnal bank langsung (tanpa tagihan vendor). Di sistem final bisa diganti menjadi tagihan vendor / reimbursement karyawan dengan bukti. Layar Accounting → Budgets bawaan menunggu perbaikan modul dideploy; Budget Proyek ini tidak bergantung pada perbaikan itu.</div>
     </div>
   </article>
 
