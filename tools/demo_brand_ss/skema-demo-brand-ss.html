@@ -245,7 +245,7 @@ ol.steps li::marker { color: var(--brand); font-weight: 700; }
     </ol>
     <div class="cols">
       <div class="box say"><b>Pesan kunci</b>Setiap rupiah dana riset punya pengaju, persetujuan Direktur, sepengetahuan Finance, bukti transfer, dan langsung mengurangi budget proyeknya. Direksi tahu sisa budget tiap proyek tanpa rekap manual.</div>
-      <div class="box gapnote"><b>Catatan</b>Transfer dicatat sebagai jurnal bank langsung (tanpa tagihan vendor). Di sistem final bisa diganti menjadi tagihan vendor / reimbursement karyawan dengan bukti. Layar Accounting → Budgets bawaan menunggu perbaikan modul dideploy; Budget Proyek ini tidak bergantung pada perbaikan itu.</div>
+      <div class="box gapnote"><b>Catatan</b>Transfer dicatat sebagai jurnal bank langsung (tanpa tagihan vendor). Di sistem final bisa diganti menjadi tagihan vendor / reimbursement karyawan dengan bukti. Budget per divisi (bulanan, akun biaya) ada di Accounting → Budgets; Budget Proyek dipakai untuk dana riset per proyek lintas periode.</div>
     </div>
   </article>
 
@@ -374,11 +374,15 @@ ol.steps li::marker { color: var(--brand); font-weight: 700; }
     <div class="card-head"><h3>D. Financial Planning &amp; Budget Control</h3><div class="badges"><span class="pill p-cfg">Konfigurasi</span><span class="pill p-cus">Cek anggaran di approval</span></div></div>
     <div class="meta"><div><b>Login</b>ss.dewi</div><div><b>Menu</b>Accounting → Management → Budgets</div><div><b>Data</b>Budget Q4 2026 – Brand SS (Sep–Des)</div></div>
     <ol class="steps">
-      <li>Buka budget: baris per bulan untuk <i>Biaya Marketing &amp; Iklan</i> dan <i>Biaya Operasional Toko</i>, dengan planned vs practical vs theoretical.</li>
+      <li>Buka <b>Budget Q4 2026 – Brand SS</b>: baris per bulan untuk <i>Biaya Marketing &amp; Iklan</i> (DIV – Digital Marketing) dan <i>Biaya Operasional Toko</i> (DIV – Operasional Kantor), dengan Planned vs Practical vs Theoretical vs Achievement; baris yang lewat anggaran berwarna merah.</li>
       <li>Tunjukkan: Oktober marketing terpakai 118%, November sudah lewat anggaran pertengahan bulan.</li>
       <li>Hubungkan ke approval: pengajuan baru pada pos anggaran yang habis otomatis naik ke Direksi (<a href="#approval">§4</a>).</li>
     </ol>
-    <div class="box gapnote"><b>Penting sebelum demo</b>Layar <i>Accounting → Budgets</i> error (“KeyError: account.analytic.group”) sampai perbaikan modul <code>om_account_budget</code> (branch <code>fix/om-account-budget-analytic-plan</code>) dideploy ke server. Selama belum dideploy, tunjukkan budget lewat <b>Executive Dashboard → Penggunaan budget</b>, dan klik alert “melewati anggaran” untuk membuka rincian realisasi biaya per divisi.</div>
+    <ol class="steps" start="4">
+      <li>Klik <b>Entries…</b> di baris Marketing November → daftar jurnal biaya (TikTok Ads, Meta Ads, KOL) yang membentuk realisasi 132%.</li>
+      <li>Accounting → Management → <b>Budgets Analysis</b> → tampilan pivot/grafik: planned vs practical per divisi per bulan.</li>
+      <li>Dari Executive Dashboard: klik alert “melewati anggaran” → rincian realisasi biaya per divisi bulan berjalan.</li>
+    </ol>
     <div class="cols"><div class="box say"><b>Pesan kunci</b>Budget tidak hanya jadi laporan. Budget ikut menentukan siapa yang harus menyetujui pengeluaran.</div><div class="box gapnote"><b>Roadmap</b>Proyeksi arus kas, perencanaan modal, simulasi target &amp; profit (tahap 3).</div></div>
   </article>
 
