@@ -40,10 +40,11 @@ export DEMO_PW=...                             # password user demo ss.*
 
 ## Executive Dashboard
 
-Modul `ss_executive_dashboard` (root repo) adalah modul data tanpa Python, jadi
-bisa di-deploy biasa **atau** diimpor lewat Apps → Import Module (`imp.js`
-mengimpor `ss_executive_dashboard.zip` dari folder kerja). Menu hanya untuk grup
-"Brand SS Demo".
+Modul `ss_executive_dashboard` ada di `tools/demo_brand_ss/ss_executive_dashboard`, sengaja **bukan** di root repo:
+modul ini sudah terpasang di database lewat Apps → Import Module (`imp.js` mengimpor
+`ss_executive_dashboard.zip` dari folder kerja). Kalau foldernya ada di addons path, Odoo memuatnya dua kali
+dan action dashboard terdaftar ganda. Untuk update: zip folder ini (path di dalam zip pakai "/") lalu jalankan `imp.js`.
+Menu hanya untuk grup "Brand SS Demo".
 
 ## Catatan
 
