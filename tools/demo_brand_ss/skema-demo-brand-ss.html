@@ -215,7 +215,7 @@ ol.steps li::marker { color: var(--brand); font-weight: 700; }
     <div class="card-head"><h3>§4 Sistem approval &amp; monitoring pekerjaan<span class="ref">Brief bagian 4, 3D (approval berdasarkan anggaran), 10.4</span></h3><div class="badges"><span class="pill p-cus">Custom tanpa coding</span><span class="pill p-ok">PO approval standar</span></div></div>
     <div class="meta"><div><b>Login</b>ss.reza → ss.dewi → ss.shella</div><div><b>Menu</b>App Pengajuan &amp; Approval · Konfigurasi → Aturan Approval</div><div><b>Aturan default</b>&lt; Rp10 jt atasan · Rp10–50 jt + Finance · &gt; Rp50 jt atau melebihi anggaran + Direksi · pembayaran selalu Finance</div></div>
     <ol class="steps">
-      <li><b>ss.shella</b> → Pengajuan &amp; Approval → <b>Konfigurasi → Aturan Approval</b>: tunjukkan 5 aturan (Atasan; Pembayaran selalu Finance; Finance ≥ Rp10 jt; Direksi &gt; Rp50 jt; Direksi jika melebihi anggaran). Aturan bisa difilter per jenis &amp; divisi, diurutkan dengan drag, dan dinonaktifkan. Opsional: ubah batas Finance jadi Rp5 jt, lalu ajukan pengajuan baru untuk melihat efeknya langsung.</li>
+      <li><b>admin</b> (hanya Administrator yang bisa membuka menu ini; Direktur &amp; Finance tidak) → Pengajuan &amp; Approval → <b>Konfigurasi → Aturan Approval</b>: tunjukkan 5 aturan (Atasan; Pembayaran selalu Finance; Finance ≥ Rp10 jt; Direksi &gt; Rp50 jt; Direksi jika melebihi anggaran). Aturan bisa difilter per jenis &amp; divisi, diurutkan dengan drag, dan dinonaktifkan. Opsional: ubah batas Finance jadi Rp5 jt, lalu ajukan pengajuan baru untuk melihat efeknya langsung.</li>
       <li><b>ss.reza</b> → Pengajuan Saya → buka draft <i>Fee KOL @glowwithkirana – video Desember</i> (Rp5 jt, pos anggaran DIV – Digital Marketing) → klik <b>Ajukan</b>.</li>
       <li>Muncul banner merah <b>Melebihi anggaran</b> (sisa budget marketing bulan ini minus) → alur otomatis naik: Finance (Dewi) → Direksi (Shella), walau nominal kecil.</li>
       <li><b>ss.dewi</b> → Menunggu Approval Saya (ada activity To-Do) → <b>Setujui</b>. Chatter mencatat “Disetujui oleh Dewi sebagai Finance Manager”.</li>
@@ -226,7 +226,7 @@ ol.steps li::marker { color: var(--brand); font-weight: 700; }
       <li>Approval PO standar Odoo: P00024 (Rp60,5 jt) berstatus <i>To Approve</i> → login manajer → Approve Order.</li>
     </ol>
     <div class="cols">
-      <div class="box say"><b>Pesan kunci</b>Setiap pengajuan punya PIC, nominal, deadline, status, dan riwayat aktivitas. Tidak perlu lagi tanya progres manual: approver mendapat notifikasi, direksi melihatnya di dashboard. Kebijakan approval diatur admin sendiri lewat list aturan, tanpa developer.</div>
+      <div class="box say"><b>Pesan kunci</b>Setiap pengajuan punya PIC, nominal, deadline, status, dan riwayat aktivitas. Tidak perlu lagi tanya progres manual: approver mendapat notifikasi, direksi melihatnya di dashboard. Kebijakan approval diatur Administrator lewat list aturan, tanpa developer; Direktur dan Finance hanya bisa melihat.</div>
       <div class="box gapnote"><b>Batasan</b>Di sistem final dibuat sebagai modul resmi (atau OCA <i>base_tier_validation</i>): blokir pembayaran sebelum approval, approval via mobile/email, delegasi saat cuti.</div>
     </div>
   </article>
@@ -241,7 +241,7 @@ ol.steps li::marker { color: var(--brand); font-weight: 700; }
       <li><b>ss.dewi</b> → Menunggu Approval Saya → <b>Setujui</b> (tahap Mengetahui). Chatter: “Diketahui oleh Dewi Anggraini (Mengetahui (Finance))”. Status jadi <i>Disetujui</i>.</li>
       <li><b>ss.dewi</b> → tombol <b>Transfer Dana (Finance)</b> → konfirmasi → jurnal transfer dari Bank BCA terbuat (biaya R&amp;D dengan analitik proyek), status <b>Selesai Diproses</b>, Yuni mendapat activity untuk melampirkan bukti penggunaan dana. Contoh siap transfer: APV/2026/0014 (Notifikasi BPOM, Rp6 jt).</li>
       <li>Kembali ke <b>Budget Proyek</b>: Realisasi Glow Serum naik, Sedang Diajukan turun. Contoh yang sudah selesai: APV/2026/0011–0013 (Okt–Nov).</li>
-      <li>Alurnya diatur di <b>Konfigurasi → Aturan Approval</b>: dua aturan jenis <i>Budget Proyek / Riset</i> dengan centang <i>Ganti aturan umum</i>, sehingga pengajuan riset hanya melewati Direktur lalu Finance, berapa pun nominalnya.</li>
+      <li>Alurnya diatur Administrator di <b>Konfigurasi → Aturan Approval</b>: dua aturan jenis <i>Budget Proyek / Riset</i> dengan centang <i>Ganti aturan umum</i>, sehingga pengajuan riset hanya melewati Direktur lalu Finance, berapa pun nominalnya.</li>
     </ol>
     <div class="cols">
       <div class="box say"><b>Pesan kunci</b>Setiap rupiah dana riset punya pengaju, persetujuan Direktur, sepengetahuan Finance, bukti transfer, dan langsung mengurangi budget proyeknya. Direksi tahu sisa budget tiap proyek tanpa rekap manual.</div>
