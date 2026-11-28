@@ -1,0 +1,408 @@
+<title>Test Case ERP Brand SS</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: sticky summary + filter bar, then one column of collapsible test-case cards grouped by module. */
+:root {
+  --bg: #f6f4f2; --surface: #ffffff; --ink: #1f1a17; --muted: #6c625b; --line: #e5ddd6; --brand: #8a5a44; --brand-soft: #f2e7e0;
+  --pass: #1d7a45; --pass-soft: #e2f3e9; --fail: #b3412c; --fail-soft: #fbe6e1; --block: #a5700f; --block-soft: #fbf0dc; --todo: #7b7069; --todo-soft: #efebe8;
+  --f-display: "Space Grotesk", "Segoe UI", system-ui, sans-serif; --f-body: "Inter", "Segoe UI", system-ui, sans-serif; --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #181412; --surface: #221c19; --ink: #f0e8e3; --muted: #b1a39a; --line: #3a302b; --brand: #d89c7e; --brand-soft: #3a2a22;
+  --pass: #6fd49b; --pass-soft: #163325; --fail: #f19580; --fail-soft: #3d211b; --block: #e8bd62; --block-soft: #392c12; --todo: #b1a39a; --todo-soft: #2c2522; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #181412; --surface: #221c19; --ink: #f0e8e3; --muted: #b1a39a; --line: #3a302b; --brand: #d89c7e; --brand-soft: #3a2a22;
+  --pass: #6fd49b; --pass-soft: #163325; --fail: #f19580; --fail-soft: #3d211b; --block: #e8bd62; --block-soft: #392c12; --todo: #b1a39a; --todo-soft: #2c2522; color-scheme: dark }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 14.5px; line-height: 1.55; }
+.wrap { max-width: 1100px; margin: 0 auto; padding-block: 24px 60px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 16px; }
+h1, h2, h3 { font-family: var(--f-display); margin: 0; line-height: 1.2; text-wrap: balance; }
+h1 { font-size: clamp(1.6rem, 3vw, 2.1rem); }
+.eyebrow { text-transform: uppercase; letter-spacing: .1em; font-size: .72rem; font-weight: 600; color: var(--brand); }
+.muted { color: var(--muted); }
+code, .mono { font-family: var(--f-mono); font-size: .85em; }
+code { background: var(--brand-soft); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; min-width: 0; }
+.panel h2 { font-size: 1rem; margin-bottom: 8px; }
+.rules { margin: 0; padding-left: 1.1em; display: grid; gap: 3px; }
+.logins { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.logins span { background: var(--brand-soft); border-radius: 6px; padding: 2px 8px; font-size: .82rem; }
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 8px; display: grid; gap: 10px; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.summary { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: .8rem; font-weight: 600; font-variant-numeric: tabular-nums; border: 1px solid transparent; }
+.s-pass { background: var(--pass-soft); color: var(--pass); } .s-fail { background: var(--fail-soft); color: var(--fail); }
+.s-blocked { background: var(--block-soft); color: var(--block); } .s-todo { background: var(--todo-soft); color: var(--todo); }
+.progress { flex: 1 1 200px; height: 10px; border-radius: 5px; background: var(--todo-soft); overflow: hidden; display: flex; min-width: 120px; }
+.progress i { display: block; height: 100%; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; }
+.filters select, .filters input { font: inherit; font-size: .88rem; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); min-width: 0; }
+.filters input { flex: 1 1 200px; }
+button { font: inherit; cursor: pointer; }
+.btn { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 8px; padding: 6px 12px; font-size: .85rem; font-weight: 600; }
+.btn:hover { border-color: var(--brand); }
+.notice { font-size: .85rem; border-radius: 8px; padding: 8px 12px; background: var(--block-soft); color: var(--ink); }
+.group-title { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-top: 8px; }
+.group-title h2 { font-size: 1.05rem; color: var(--brand); }
+.list { display: grid; gap: 8px; }
+.tc { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--todo); border-radius: 10px; min-width: 0; }
+.tc[data-status="pass"] { border-left-color: var(--pass); } .tc[data-status="fail"] { border-left-color: var(--fail); } .tc[data-status="blocked"] { border-left-color: var(--block); }
+.tc summary { list-style: none; cursor: pointer; padding: 10px 14px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; }
+.tc summary::-webkit-details-marker { display: none; }
+.tc .id { font-family: var(--f-mono); font-size: .8rem; color: var(--muted); }
+.tc .title { font-weight: 600; }
+.tc .meta { grid-column: 2 / 4; display: flex; flex-wrap: wrap; gap: 6px; font-size: .78rem; color: var(--muted); }
+.prio { font-size: .72rem; font-weight: 700; padding: 1px 7px; border-radius: 5px; background: var(--brand-soft); color: var(--brand); }
+.prio.High { background: var(--fail-soft); color: var(--fail); }
+.body { padding: 0 14px 14px; display: grid; gap: 10px; }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; }
+.box { border-radius: 8px; padding: 8px 12px; background: var(--bg); min-width: 0; }
+.box b { display: block; font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 2px; }
+.box ol, .box ul { margin: 0; padding-left: 1.2em; display: grid; gap: 2px; }
+.result { display: grid; gap: 8px; border-top: 1px dashed var(--line); padding-top: 10px; }
+.status-btns { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.status-btns button { border-radius: 8px; padding: 5px 12px; font-size: .82rem; font-weight: 700; border: 1px solid var(--line); background: var(--surface); color: var(--muted); }
+.status-btns button[aria-pressed="true"].b-pass { background: var(--pass); border-color: var(--pass); color: #fff; }
+.status-btns button[aria-pressed="true"].b-fail { background: var(--fail); border-color: var(--fail); color: #fff; }
+.status-btns button[aria-pressed="true"].b-blocked { background: var(--block); border-color: var(--block); color: #1f1a17; }
+.status-btns button[aria-pressed="true"].b-todo { background: var(--todo-soft); color: var(--ink); }
+.status-btns button:disabled { cursor: not-allowed; opacity: .6; }
+textarea { font: inherit; font-size: .88rem; width: 100%; min-height: 56px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 8px 10px; resize: vertical; }
+.who { font-size: .78rem; color: var(--muted); }
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+@media (max-width: 560px) { .tc summary { grid-template-columns: minmax(0, 1fr) auto; } .tc .id { grid-column: 1 / 3; } .tc .meta { grid-column: 1 / 3; } }
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:6px">
+    <div class="eyebrow">QA · Odoo 18 · PT ShellaSaukia</div>
+    <h1>Test Case ERP Brand SS</h1>
+    <p class="muted" style="margin:0;max-width:75ch">Uji fungsi demo ERP Brand SS. Untuk setiap test case, ikuti langkahnya, bandingkan dengan hasil yang diharapkan, lalu pilih <b>Pass</b>, <b>Fail</b> atau <b>Blocked</b> dan tulis catatan (wajib untuk Fail/Blocked: apa yang terjadi, nomor dokumen, screenshot di chat tim).</p>
+  </header>
+
+  <section class="panel">
+    <h2>Sebelum mulai</h2>
+    <ul class="rules">
+      <li>URL: <code>https://saukia.rutekebangsaan.com/odoo</code> (atau <code>palawi.rutekebangsaan.com</code>, server sama). Password user demo dibagikan terpisah.</li>
+      <li>Database ini dipakai bersama PALAWI. <b>Jangan mengubah centang di menu Settings</b> dan jangan klik <i>Send by Email</i>.</li>
+      <li>Data yang QA buat beri awalan <b>"QA-"</b> di judul/nama (mis. <i>QA-Beli botol</i>), supaya mudah dibedakan dari data demo. Jangan memakai draft demo yang sudah disiapkan untuk presentasi kecuali disebut di langkah.</li>
+      <li>Kalau mengubah pengaturan (Aturan Approval, Pengaturan Jenis Pengajuan), kembalikan nilai semula setelah tes.</li>
+      <li>Gunakan 2–3 browser/profil (mis. Chrome, Incognito, Edge) untuk login bergantian.</li>
+    </ul>
+    <div class="logins" aria-label="User demo">
+      <span><b>ss.shella</b> Direktur</span><span><b>ss.dewi</b> Finance</span><span><b>ss.rina</b> HR</span><span><b>ss.yuni</b> Researcher</span>
+      <span><b>ss.budi</b> Purchasing</span><span><b>ss.joko</b> Gudang</span><span><b>ss.maya</b> Marketplace</span><span><b>ss.reza</b> Marketing</span><span><b>ss.eko</b> Kasir</span><span><b>admin</b> Administrator</span>
+    </div>
+  </section>
+
+  <div class="bar">
+    <div class="summary" id="summary" aria-live="polite"></div>
+    <div class="filters">
+      <select id="fModule" aria-label="Filter modul"><option value="">Semua modul</option></select>
+      <select id="fStatus" aria-label="Filter status"><option value="">Semua status</option><option value="todo">Belum dites</option><option value="pass">Pass</option><option value="fail">Fail</option><option value="blocked">Blocked</option></select>
+      <select id="fPrio" aria-label="Filter prioritas"><option value="">Semua prioritas</option><option>High</option><option>Medium</option><option>Low</option></select>
+      <input id="fText" type="search" placeholder="Cari ID, judul, login…" aria-label="Cari">
+      <button class="btn" id="expandAll" type="button">Buka semua</button>
+      <button class="btn" id="csvBtn" type="button" hidden>Unduh hasil (CSV)</button>
+    </div>
+    <div class="notice" id="notice" hidden></div>
+  </div>
+
+  <main id="groups"></main>
+</div>
+
+<script>
+const TC = [
+ // ---------------- Akses & keamanan ----------------
+ ["AKS-01","Akses & Keamanan","High","User demo hanya melihat PT ShellaSaukia","ss.maya","—",
+  ["Login sebagai ss.maya.","Lihat nama company di kanan atas.","Buka Sales → Orders."],
+  "Hanya ada PT ShellaSaukia (tidak ada pilihan company lain). Semua order milik PT ShellaSaukia."],
+ ["AKS-02","Akses & Keamanan","High","Menu PALAWI tersembunyi untuk user Brand SS","ss.joko","—",
+  ["Login sebagai ss.joko.","Lihat daftar aplikasi di halaman utama."],
+  "Tidak ada menu Rest API, Marketing Order, Apps, Dashboards. Yang tampil hanya aplikasi sesuai peran (Pengajuan & Approval, Inventory, Manufacturing, Employees, dst.)."],
+ ["AKS-03","Akses & Keamanan","High","Contacts hanya milik PT ShellaSaukia","ss.maya","—",
+  ["Buka Contacts.","Cari kata \"Teras\" lalu \"Kopi\".","Cari \"TikTok Shop - SS Official\"."],
+  "Pencarian Teras/Kopi tidak menemukan kontak (kontak PALAWI tersembunyi). TikTok Shop - SS Official ditemukan."],
+ ["AKS-04","Akses & Keamanan","High","Menu Konfigurasi sesuai peran","ss.shella, ss.dewi, admin","—",
+  ["Login ss.shella → buka Pengajuan & Approval.","Login ss.dewi → buka Pengajuan & Approval → Konfigurasi.","Login admin → buka Pengajuan & Approval → Konfigurasi."],
+  "Shella: tidak ada menu Konfigurasi. Dewi: Konfigurasi hanya berisi Pengaturan Jenis Pengajuan. Admin: Aturan Approval dan Pengaturan Jenis Pengajuan."],
+ ["AKS-05","Akses & Keamanan","Medium","Executive Dashboard hanya untuk Direksi & Marketplace","ss.shella, ss.maya, ss.budi","—",
+  ["Login ss.shella dan ss.maya: cari aplikasi Executive Dashboard.","Login ss.budi: cari aplikasi yang sama."],
+  "Shella dan Maya melihat & bisa membuka dashboard. Budi tidak melihat aplikasinya."],
+ ["AKS-06","Akses & Keamanan","Medium","Hanya HR & Admin yang bisa menambah Peran (Role)","ss.shella, ss.rina","—",
+  ["Login ss.shella → Employees → buka karyawan mana saja → klik field Peran (Role) → ketik \"QA-Peran Uji\".","Login ss.rina → lakukan hal yang sama."],
+  "Shella: tidak ada opsi Create (hanya bisa memilih peran yang ada). Rina: ada opsi Create \"QA-Peran Uji\" dan berhasil tersimpan. (Arsipkan peran uji setelahnya di Employees → Configuration → Peran (Role).)"],
+
+ // ---------------- Pengajuan & Approval ----------------
+ ["APV-01","Pengajuan & Approval","High","Pengajuan < Rp10 jt hanya ke atasan","ss.budi","Supplier PT Kemasan Prima Indonesia ada",
+  ["Pengajuan & Approval → Pengajuan Saya → New.","Judul \"QA-Beli botol pipet\", Jenis Pembelian Barang, Supplier PT Kemasan Prima Indonesia, Pos Anggaran DIV - Produksi.","Tab Rincian Barang: Botol Kaca Pipet 30ml, qty 100, harga 7.400.","Klik Ajukan."],
+  "Nomor APV/2026/xxxx terbit, status Menunggu Approval, Nominal Rp740.000, Alur \"Atasan (Dewi Anggraini)\", Peran Pengaju = Purchasing, Dewi mendapat activity To-Do."],
+ ["APV-02","Pengajuan & Approval","High","Pengajuan Rp10–50 jt: atasan lalu Finance","ss.reza","—",
+  ["New pengajuan \"QA-Campaign Desember\", Jenis Campaign / Iklan / KOL, Nominal 15.000.000, Pos Anggaran dikosongkan.","Ajukan."],
+  "Alur \"Atasan (Shella Saukia) → Finance Manager (Dewi Anggraini)\"; menunggu Shella."],
+ ["APV-03","Pengajuan & Approval","High","Pengajuan > Rp50 jt sampai Direksi","ss.maya","—",
+  ["New pengajuan \"QA-Event besar\", Jenis Event & Partnership, Nominal 60.000.000, tanpa Pos Anggaran.","Ajukan."],
+  "Alur \"Finance Manager (Dewi Anggraini) → Direksi (Shella Saukia)\" (Shella sebagai atasan sekaligus Direksi hanya approve sekali, di akhir)."],
+ ["APV-04","Pengajuan & Approval","High","Melebihi anggaran wajib Direksi","ss.reza","Budget Marketing November sudah terlampaui",
+  ["New pengajuan \"QA-Fee KOL kecil\", Jenis Campaign, Nominal 2.000.000, Pos Anggaran DIV - Digital Marketing.","Ajukan."],
+  "Banner merah \"Melebihi anggaran\", centang Melebihi Anggaran, Sisa Budget negatif, Alur \"Direksi (Shella Saukia)\" walaupun nominal kecil."],
+ ["APV-05","Pengajuan & Approval","High","Pengaju tidak bisa menyetujui pengajuannya sendiri","ss.budi","APV-01 sudah diajukan",
+  ["Login ss.budi → buka pengajuan dari APV-01."],
+  "Tombol Setujui, Kembalikan untuk Revisi dan Tolak TIDAK tampil. Hanya status & alur approval yang terlihat."],
+ ["APV-06","Pengajuan & Approval","High","Approver tahap berikutnya belum bisa approve","ss.dewi, ss.shella","APV-02 menunggu Shella",
+  ["Login ss.dewi → buka pengajuan APV-02.","Login ss.shella → buka pengajuan yang sama."],
+  "Dewi: tombol approve tidak tampil. Shella: tombol Setujui/Kembalikan/Tolak tampil."],
+ ["APV-07","Pengajuan & Approval","High","Setujui pengajuan","ss.dewi","APV-01 menunggu Dewi",
+  ["Login ss.dewi → Menunggu Approval Saya → buka pengajuan APV-01 → Setujui."],
+  "Status Disetujui. Chatter: \"Disetujui oleh Dewi Anggraini sebagai Atasan\" dan \"Pengajuan DISETUJUI penuh\". Budi mendapat activity \"Disetujui: lanjutkan …\"."],
+ ["APV-08","Pengajuan & Approval","High","Buat Purchase Order dari pengajuan","ss.budi","APV-07 selesai",
+  ["Login ss.budi → buka pengajuan APV-01 → klik Buat Purchase Order."],
+  "PO terbuka dengan status Purchase Order (sudah terkonfirmasi), Source Document = nomor APV, baris PO punya analytic DIV - Produksi. Pengajuan berstatus Selesai Diproses dan menautkan PO-nya."],
+ ["APV-09","Pengajuan & Approval","Medium","Tolak wajib alasan","ss.shella","APV-02 menunggu Shella",
+  ["Buka pengajuan APV-02 → klik Tolak tanpa mengisi alasan.","Isi tab Penolakan / Revisi: \"QA-uji tolak\" → klik Tolak."],
+  "Langkah 1: muncul pesan \"Isi kolom Alasan Ditolak / Revisi terlebih dahulu\". Langkah 2: status Ditolak, alasan tercatat di chatter, Reza mendapat activity."],
+ ["APV-10","Pengajuan & Approval","Medium","Kembalikan untuk revisi lalu ajukan ulang","ss.dewi, ss.maya","APV-03 menunggu Dewi",
+  ["Login ss.dewi → buka APV-03 → isi alasan \"QA-revisi nominal\" → Kembalikan untuk Revisi.","Login ss.maya → ubah nominal jadi 45.000.000 → Ajukan."],
+  "Setelah langkah 1 status kembali Draft dan Maya mendapat activity. Setelah langkah 2 nomor APV tetap sama, alur dihitung ulang: \"Atasan (Shella) → Finance Manager (Dewi)\"."],
+ ["APV-11","Pengajuan & Approval","Medium","Validasi nominal kosong","ss.budi","—",
+  ["New pengajuan \"QA-Tanpa nominal\", Jenis Kebutuhan Operasional Kantor, nominal 0, tanpa rincian → Ajukan."],
+  "Muncul pesan \"Isi nominal pengajuan atau rincian barang terlebih dahulu.\" dan status tetap Draft."],
+ ["APV-12","Pengajuan & Approval","Medium","Aturan Approval dinamis","admin, ss.budi","—",
+  ["Login admin → Pengajuan & Approval → Konfigurasi → Aturan Approval → ubah \"Finance untuk nominal ≥ Rp10 juta\": Nominal Minimal jadi 5.000.000.","Login ss.budi → pengajuan baru \"QA-Aturan dinamis\", Kebutuhan Operasional Kantor, nominal 6.000.000 → Ajukan.","Kembalikan Nominal Minimal ke 10.000.000."],
+  "Alur pengajuan langkah 2 memuat Finance Manager (Dewi). Aturan kembali ke 10.000.000 setelah tes."],
+ ["APV-13","Pengajuan & Approval","Low","List, filter & group by","ss.shella","—",
+  ["Semua Pengajuan → tampilan list → Group By Peran Pengaju.","Filter Melebihi Anggaran."],
+  "Pengajuan terkelompok per peran (Researcher, Purchasing, Digital Marketing, …). Filter menampilkan hanya pengajuan yang melebihi anggaran."],
+
+ // ---------------- Budget Proyek & dana riset ----------------
+ ["RND-01","Budget Proyek & Dana Riset","High","Alur riset: Direktur → Mengetahui Finance","ss.yuni","—",
+  ["Login ss.yuni → New pengajuan \"QA-Bahan uji riset\", Jenis Budget Proyek / Riset, Proyek R&D - SS Glow Serum Gen 2, Nominal 1.500.000 → Ajukan."],
+  "Alur \"Approval Direktur (Shella Saukia) → Mengetahui (Finance) (Dewi Anggraini)\", Peran Pengaju = Researcher, Sisa Budget proyek tercatat."],
+ ["RND-02","Budget Proyek & Dana Riset","High","Direktur setuju, Finance mengetahui","ss.shella, ss.dewi","RND-01 diajukan",
+  ["Login ss.shella → Setujui pengajuan RND-01.","Login ss.dewi → Setujui (tahap Mengetahui)."],
+  "Chatter: \"Disetujui oleh Shella Saukia sebagai Approval Direktur\" lalu \"Diketahui oleh Dewi Anggraini (Mengetahui (Finance))\". Status Disetujui. Field Bayar dari (Bank/Kas) terisi Bank BCA Operasional (terlihat oleh Dewi)."],
+ ["RND-03","Budget Proyek & Dana Riset","High","Transfer dana oleh Finance dari rekening pilihan","ss.dewi","RND-02 selesai",
+  ["Catat Realisasi proyek Glow Serum di Pengajuan & Approval → Budget Proyek.","Buka pengajuan RND-01 → ubah Bayar dari ke Cash → Transfer Dana (Finance) → Ok.","Klik Jurnal Transfer Dana."],
+  "Status Selesai Diproses. Jurnal dari Cash: Debit 63110100 Research & Development (analitik proyek), Kredit Cash Rp1.500.000. Yuni mendapat activity untuk melampirkan bukti."],
+ ["RND-04","Budget Proyek & Dana Riset","High","Direktur tidak bisa transfer dana","ss.shella","Ada pengajuan riset berstatus Disetujui (mis. APV/2026/0014)",
+  ["Login ss.shella → buka pengajuan riset yang Disetujui."],
+  "Tombol Transfer Dana (Finance) dan field Bayar dari TIDAK tampil."],
+ ["RND-05","Budget Proyek & Dana Riset","High","Realisasi Budget Proyek ter-update","ss.dewi","RND-03 selesai",
+  ["Buka Budget Proyek → R&D - SS Glow Serum Gen 2."],
+  "Realisasi naik Rp1.500.000 dibanding catatan RND-03 langkah 1; pengajuan QA muncul di tab Pengajuan Dana."],
+ ["RND-06","Budget Proyek & Dana Riset","Medium","Proyek terlampaui ditandai","ss.dewi","—",
+  ["Buka Budget Proyek.","Buka pengajuan APV/2026/0016 (Uji SPF Sunscreen)."],
+  "Baris R&D - SS Sunscreen SPF 50 merah, Sisa Budget negatif. APV/2026/0016 menampilkan banner Melebihi anggaran."],
+ ["RND-07","Budget Proyek & Dana Riset","Medium","Researcher hanya bisa melihat Budget Proyek","ss.yuni","—",
+  ["Login ss.yuni → Pengajuan & Approval → Budget Proyek → buka satu proyek."],
+  "Data terlihat, tidak ada tombol New dan field tidak bisa diubah."],
+
+ // ---------------- Pengaturan pembayaran ----------------
+ ["CFG-01","Pengaturan Pembayaran","Medium","Rekening default per jenis pengajuan","ss.dewi, ss.joko, ss.rina","—",
+  ["Login ss.dewi → Konfigurasi → Pengaturan Jenis Pengajuan → Kebutuhan Operasional Kantor: ubah rekening ke Bank BCA Operasional.","Login ss.joko → pengajuan \"QA-ATK gudang\", Kebutuhan Operasional Kantor, nominal 500.000 → Ajukan; minta Dewi menyetujui.","Login ss.dewi → buka pengajuan tersebut.","Kembalikan rekening Kebutuhan Operasional Kantor ke Cash."],
+  "Langkah 3: Bayar dari (Bank/Kas) = Bank BCA Operasional. Pengaturan kembali ke Cash setelah tes."],
+ ["CFG-02","Pengaturan Pembayaran","Low","Pilihan rekening hanya Bank/Kas","ss.dewi","Ada pengajuan Disetujui jenis Riset/Kantor/Event/Campaign",
+  ["Buka pengajuan → klik dropdown Bayar dari (Bank/Kas)."],
+  "Pilihan hanya jurnal Bank/Kas PT ShellaSaukia (Bank BCA Operasional, Cash, Saldo TikTok Shop, Saldo Shopee, Bank); tidak ada jurnal penjualan/pembelian."],
+
+ // ---------------- Budget akuntansi ----------------
+ ["BUD-01","Budget Akuntansi","High","Budget per divisi tampil benar","ss.dewi","—",
+  ["Accounting → Management → Budgets → Budget Q4 2026 - Brand SS."],
+  "Baris per bulan Marketing & Operasional dengan Planned, Practical, Theoretical, Achievement. Marketing Oktober & November berwarna merah (>100%)."],
+ ["BUD-02","Budget Akuntansi","High","Pembelian mengurangi budget Goreng Sosis","ss.budi, ss.dewi","Budget Goreng Sosis (DIV - Produksi) aktif",
+  ["Catat Practical Amount kedua baris budget Goreng Sosis.","ss.budi: pengajuan \"QA-Belanja dapur\", Pembelian Barang, supplier Toko Bahan Makanan Sumber Rejeki, Pos DIV - Produksi, rincian: Sosis Sapi 500 gr ×2 @45.000, Spatula Stainless ×1 @20.000 → Ajukan.","ss.dewi: Setujui. ss.budi: Buat Purchase Order.","ss.dewi: di PO → Create Bill → isi Bill Date hari ini → Confirm → Register Payment (Bank BCA Operasional)."],
+  "Practical Amount baris SS - Bahan Baku bertambah −90.000 dan SS - Alat Masak −20.000 dibanding langkah 1. Bill berstatus Paid / In Payment."],
+ ["BUD-03","Budget Akuntansi","Medium","Rincian realisasi dari baris budget","ss.dewi","BUD-02 selesai",
+  ["Di budget Goreng Sosis klik Entries… pada baris SS - Bahan Baku."],
+  "Daftar jurnal memuat baris tagihan Sosis Sapi dari BUD-02 dengan akun 51000040 dan analitik DIV - Produksi."],
+
+ // ---------------- Penjualan, gudang, pembelian, produksi ----------------
+ ["SAL-01","Penjualan & Gudang","High","Order TikTok end-to-end","ss.maya, ss.joko, ss.dewi","—",
+  ["ss.maya: Sales → New, Customer TikTok Shop - SS Official, Sales Team SS - TikTok Shop, Customer Reference QA-TTS-001, produk SS Glow Serum Niacinamide 30ml ×2 → Confirm.","ss.joko: Inventory → validasi transfer PICK, lalu PACK, lalu OUT untuk order tersebut.","ss.maya: Create Invoice. ss.dewi: Confirm invoice → Register Payment journal Saldo TikTok Shop (Settlement)."],
+  "Tiga transfer berurutan berstatus Done; invoice Paid / In Payment; order Fully Invoiced."],
+ ["SAL-02","Penjualan & Gudang","Medium","Harga khusus reseller & distributor","ss.maya","—",
+  ["Quotation baru untuk CV Berkah Distribusi Surabaya (Distributor), tambahkan SS Pashmina Silk Signature.","Ganti customer ke Butik Aisyah Bandung (Reseller) → Update Prices.","Discard quotation."],
+  "Harga distributor = 35% di bawah harga jual (Rp83.850 dari Rp129.000). Reseller = 25% di bawah (Rp96.750)."],
+ ["SAL-03","Penjualan & Gudang","Low","Peringatan piutang jatuh tempo","ss.maya","—",
+  ["Quotation baru untuk Toko Hijab Medan Indah (Reseller)."],
+  "Muncul informasi piutang / batas kredit pelanggan (ada invoice jatuh tempo)."],
+ ["INV-01","Penjualan & Gudang","Medium","FEFO & batch karantina","ss.joko","Ada order dengan SS Body Lotion",
+  ["Buka transfer pengiriman produk SS Body Lotion → lihat lot yang ter-reserve."],
+  "Lot yang dipilih berasal dari SSGU/Stock dengan kedaluwarsa paling awal; lot LTN-2601Z di SSGU/Karantina Expiry tidak dipakai."],
+ ["INV-02","Penjualan & Gudang","Medium","Replenishment stok minimum","ss.joko","—",
+  ["Inventory → Operations → Replenishment → pilih baris Kain Wolfis Premium → Order Once."],
+  "RFQ baru ke CV Tekstil Bandung Jaya terbentuk (lihat Purchase → RFQ). Batalkan RFQ setelah tes."],
+ ["INV-03","Penjualan & Gudang","Medium","Scrap wajib lampiran","ss.joko","—",
+  ["Inventory → Operations → Scrap → New: SS Pashmina Silk Signature (Navy) qty 1 → Validate tanpa lampiran.","Lampirkan file (foto/PDF) → Validate."],
+  "Langkah 1 ditolak dengan pesan wajib lampiran. Langkah 2 berhasil, status Done."],
+ ["PUR-01","Purchasing","Medium","PO di atas Rp50 jt butuh approval manajer","ss.budi, ss.shella","—",
+  ["ss.budi: Purchase → New RFQ ke PT Maklon Kosmetik Nusantara, Bulk Serum Niacinamide 60 kg @950.000 → Confirm Order.","ss.shella: buka PO tersebut → Approve Order.","Cancel PO setelah tes."],
+  "Setelah Budi konfirmasi status To Approve; setelah Shella approve status Purchase Order."],
+ ["MRP-01","Produksi","Medium","Produksi beauty dengan nomor batch","ss.joko","—",
+  ["Manufacturing → New: SS Lip Cream Velvet Matte qty 20 → Confirm.","Isi Lot/Serial Number \"QA-LIP-01\" → Produce All → Mark as Done."],
+  "MO Done, stok Lip Cream bertambah 20 dengan lot QA-LIP-01, bahan baku berkurang sesuai BoM."],
+
+ // ---------------- Live, POS, HR, pajak, dashboard ----------------
+ ["LIV-01","Live Streaming","Medium","Sesi live & pencapaian target","ss.maya","—",
+  ["Sales → Live Streaming → New: judul \"QA-Live uji\", host, platform TikTok, mulai & selesai hari ini, target 500.000 → Save.","Buka order SAL-01 → isi field Sesi Live Streaming dengan sesi QA → Save.","Kembali ke sesi QA."],
+  "Realisasi Penjualan dan Pencapaian (%) terisi dari order tersebut; order muncul di tab Pesanan dari Live."],
+ ["POS-01","Offline Retail (POS)","Medium","Transaksi kasir Toko Kemang","ss.eko","—",
+  ["Point of Sale → SS - Kasir Toko Kemang → Open Register / lanjutkan sesi.","Jual 1 SS Pashmina Silk Signature, bayar QRIS / Kartu Debit (BCA) → Validate.","Kembali ke backend → Point of Sale → Orders."],
+  "Order tercatat berstatus Paid pada sesi yang terbuka; stok Toko Kemang berkurang 1."],
+ ["HR-01","HR","Medium","Persetujuan cuti oleh atasan","ss.maya","Cuti Nadia/Wulan menunggu",
+  ["Time Off → Management → Time Off → buka cuti Wulan Sari (20 Nov) → Approve."],
+  "Status cuti Approved; saldo/ringkasan cuti Wulan ter-update."],
+ ["HR-02","HR","Medium","Konfirmasi payroll November","ss.rina","—",
+  ["Payroll → Payslip Batches → Payroll November 2026 → buka 1 slip (mis. Andi Saputra) → periksa komponen.","Confirm slip tersebut."],
+  "Slip memuat Gaji Pokok, Tunjangan, BPJS Kes/JHT/JP, PPh 21, Gaji Bersih; setelah Confirm terbentuk jurnal di Jurnal Gaji (Payroll)."],
+ ["TAX-01","Pajak","Medium","PPh 23 terpotong di tagihan KOL","ss.dewi","—",
+  ["Accounting → Vendors → Bills → BILL/2026/11/0005."],
+  "Ada baris pajak PPh 23 Jasa (2%) mengurangi total; masuk akun 21210020 Tax Payable Pph 23."],
+ ["TAX-02","Pajak","Medium","Download e-Faktur Coretax","ss.dewi","—",
+  ["Accounting → Customers → Invoices → INV/2026/00292 → ⚙ Action → Download e-Faktur."],
+  "File XML e-Faktur terunduh; invoice menampilkan e-Faktur Document (Coretax)."],
+ ["DSH-01","Executive Dashboard","High","Dashboard terbuka & interaktif","ss.shella","—",
+  ["Buka Executive Dashboard.","Klik Bulan lalu, lalu Bulan ini.","Klik satu alert \"Butuh approval …\"."],
+  "Semua kartu (KPI, alert, channel, tren, laba rugi, budget, operasional, HR) tampil tanpa error; angka berubah sesuai periode; alert membuka form pengajuan terkait."],
+ ["DSH-02","Executive Dashboard","Low","Alert approval hilang setelah diproses","ss.shella","Ada pengajuan QA yang baru disetujui penuh",
+  ["Refresh dashboard setelah salah satu pengajuan QA selesai disetujui."],
+  "Pengajuan tersebut tidak lagi muncul di \"Masalah yang membutuhkan keputusan\" maupun kartu Pengajuan menunggu approval."],
+].map(([id, mod, prio, title, login, pre, steps, expected]) => ({ id, mod, prio, title, login, pre, steps, expected }));
+
+const LABEL = { todo: "Belum dites", pass: "Pass", fail: "Fail", blocked: "Blocked" };
+const state = { results: {}, db: null, user: null, canWrite: null, myId: null, loaded: false, open: new Set() };
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+function notice(msg) { const n = $("#notice"); n.hidden = !msg; n.textContent = msg || ""; }
+
+const mods = [...new Set(TC.map(t => t.mod))];
+for (const m of mods) { const o = document.createElement("option"); o.value = m; o.textContent = m; $("#fModule").appendChild(o); }
+
+function statusOf(id) { return (state.results[id] && state.results[id].status) || "todo"; }
+
+function renderSummary() {
+  const c = { pass: 0, fail: 0, blocked: 0, todo: 0 };
+  TC.forEach(t => c[statusOf(t.id)]++);
+  const n = TC.length, done = n - c.todo;
+  const s = $("#summary");
+  s.innerHTML = `<span class="chip s-pass">Pass ${c.pass}</span><span class="chip s-fail">Fail ${c.fail}</span><span class="chip s-blocked">Blocked ${c.blocked}</span><span class="chip s-todo">Belum ${c.todo}</span>
+    <div class="progress" role="img" aria-label="Progres ${done} dari ${n}"><i style="width:${c.pass / n * 100}%;background:var(--pass)"></i><i style="width:${c.fail / n * 100}%;background:var(--fail)"></i><i style="width:${c.blocked / n * 100}%;background:var(--block)"></i></div>
+    <span class="muted mono">${done}/${n} dites</span>`;
+}
+
+async function render() {
+  renderSummary();
+  const fm = $("#fModule").value, fs = $("#fStatus").value, fp = $("#fPrio").value, q = $("#fText").value.trim().toLowerCase();
+  const list = TC.filter(t => (!fm || t.mod === fm) && (!fs || statusOf(t.id) === fs) && (!fp || t.prio === fp) &&
+    (!q || (t.id + " " + t.title + " " + t.login + " " + t.mod).toLowerCase().includes(q)));
+  const ids = [...new Set(list.map(t => state.results[t.id] && state.results[t.id].by).filter(Boolean))];
+  let profiles = {};
+  if (state.user && ids.length) { try { profiles = await state.user.profiles(ids); } catch (e) { profiles = {}; } }
+  const root = $("#groups"); root.innerHTML = "";
+  if (!list.length) { root.innerHTML = `<p class="muted">Tidak ada test case yang cocok dengan filter.</p>`; return; }
+  for (const m of mods) {
+    const items = list.filter(t => t.mod === m); if (!items.length) continue;
+    const sec = document.createElement("section");
+    sec.innerHTML = `<div class="group-title"><h2>${esc(m)}</h2><span class="muted mono">${items.filter(t => statusOf(t.id) !== "todo").length}/${items.length}</span></div>`;
+    const wrap = document.createElement("div"); wrap.className = "list";
+    for (const t of items) wrap.appendChild(card(t, profiles));
+    sec.appendChild(wrap); root.appendChild(sec);
+  }
+}
+
+function card(t, profiles) {
+  const r = state.results[t.id] || {};
+  const st = statusOf(t.id);
+  const d = document.createElement("details"); d.className = "tc"; d.dataset.status = st; d.open = state.open.has(t.id);
+  d.addEventListener("toggle", () => { d.open ? state.open.add(t.id) : state.open.delete(t.id); });
+  const ro = state.canWrite === false || !state.db;
+  d.innerHTML = `<summary><span class="id">${esc(t.id)}</span><span class="title">${esc(t.title)}</span><span class="chip s-${st}">${LABEL[st]}</span>
+    <span class="meta"><span class="prio ${esc(t.prio)}">${esc(t.prio)}</span><span>Login: ${esc(t.login)}</span></span></summary>
+    <div class="body">
+      <div class="cols">
+        <div class="box"><b>Prasyarat</b>${esc(t.pre)}</div>
+        <div class="box"><b>Hasil yang diharapkan</b>${esc(t.expected)}</div>
+      </div>
+      <div class="box"><b>Langkah</b><ol>${t.steps.map(s => `<li>${esc(s)}</li>`).join("")}</ol></div>
+      <div class="result">
+        <div class="status-btns" role="group" aria-label="Hasil ${esc(t.id)}">
+          ${["pass", "fail", "blocked", "todo"].map(s => `<button type="button" class="b-${s}" data-s="${s}" aria-pressed="${st === s}" ${ro ? "disabled" : ""}>${LABEL[s]}</button>`).join("")}
+        </div>
+        <label class="muted" for="note-${esc(t.id)}" style="font-size:.78rem">Catatan (wajib untuk Fail/Blocked)</label>
+        <textarea id="note-${esc(t.id)}" ${ro ? "readonly" : ""} placeholder="Apa yang terjadi, nomor dokumen, langkah yang gagal…"></textarea>
+        <div class="who"></div>
+      </div>
+    </div>`;
+  const ta = d.querySelector("textarea"); ta.value = r.note || "";
+  const who = d.querySelector(".who");
+  if (r.by || r.at) {
+    const p = profiles[r.by]; const name = (p && p.name) || "Tester";
+    who.textContent = `Terakhir diperbarui oleh ${name}` + (r.at ? ` · ${new Date(r.at).toLocaleString("id-ID")}` : "");
+  }
+  d.querySelectorAll(".status-btns button").forEach(b => b.addEventListener("click", () => save(t.id, b.dataset.s, ta.value)));
+  let timer = null;
+  ta.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(() => save(t.id, statusOf(t.id), ta.value), 900); });
+  ta.addEventListener("blur", () => { clearTimeout(timer); if ((ta.value || "") !== ((state.results[t.id] || {}).note || "")) save(t.id, statusOf(t.id), ta.value); });
+  return d;
+}
+
+const writing = {};
+async function save(id, status, note) {
+  if (!state.db) return;
+  const prev = state.results[id] || {};
+  if (prev.status === status && (prev.note || "") === (note || "")) return;
+  if (writing[id]) { writing[id].next = { status, note }; return; }
+  writing[id] = {};
+  const body = { status, note: note || "", by: state.myId || null, at: new Date().toISOString() };
+  state.results[id] = body; render();
+  try { await state.db.collection("results").doc(id).set(body); notice(""); }
+  catch (e) {
+    if (e && e.code === "invalid_argument") { state.canWrite = false; notice("Akun ini hanya bisa melihat hasil. Minta pemilik halaman memberi akses Contributor agar bisa mencatat hasil tes."); render(); }
+    else if (e && e.code === "quota_exceeded") notice("Penyimpanan penuh, hasil tidak tersimpan.");
+    else notice("Hasil belum tersimpan (koneksi). Coba klik lagi sebentar lagi.");
+  }
+  const next = writing[id].next; delete writing[id];
+  if (next) save(id, next.status, next.note);
+}
+
+$("#fModule").addEventListener("change", render); $("#fStatus").addEventListener("change", render); $("#fPrio").addEventListener("change", render);
+$("#fText").addEventListener("input", render);
+$("#expandAll").addEventListener("click", () => {
+  const all = state.open.size < TC.length; state.open = new Set(all ? TC.map(t => t.id) : []);
+  $("#expandAll").textContent = all ? "Tutup semua" : "Buka semua"; render();
+});
+
+render();
+
+(async () => {
+  const claude = window.claude;
+  if (!claude || !claude.use) { notice("Hasil tes hanya tersimpan bila halaman dibuka di claude.ai dalam keadaan login."); return; }
+  const [db, user, downloads] = await Promise.all([claude.use("db"), claude.use("user"), claude.use("downloads")]);
+  state.user = user;
+  if (user) { try { state.myId = await user.id(); state.canWrite = await user.can("data.write"); } catch (e) { } }
+  if (downloads) { const b = $("#csvBtn"); b.hidden = false; b.addEventListener("click", () => exportCsv(downloads)); }
+  if (!db) { notice("Hasil tes hanya tersimpan bila halaman dibuka di claude.ai dalam keadaan login."); render(); return; }
+  state.db = db;
+  if (state.canWrite === false) notice("Akun ini hanya bisa melihat hasil. Minta pemilik halaman memberi akses Contributor agar bisa mencatat hasil tes.");
+  const slow = setTimeout(() => { if (!state.loaded) notice("Hasil tes belum bisa dimuat. Data yang tampil mungkin belum terbaru."); }, 10000);
+  db.collection("results").onSnapshot(snap => {
+    const res = {}; snap.docs.forEach(d => { if (d.exists) res[d.id] = d.data(); });
+    for (const id in writing) if (state.results[id]) res[id] = state.results[id];
+    state.results = res;
+    if (!snap.metadata.fromCache) { state.loaded = true; clearTimeout(slow); if (state.canWrite !== false) notice(""); }
+    render();
+  }, err => { clearTimeout(slow); notice("Hasil tes tidak bisa dimuat (" + (err && err.code || "error") + ")."); });
+})();
+
+async function exportCsv(downloads) {
+  const ids = [...new Set(Object.values(state.results).map(r => r.by).filter(Boolean))];
+  let profiles = {}; if (state.user && ids.length) { try { profiles = await state.user.profiles(ids); } catch (e) { } }
+  const q = v => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
+  const rows = [["ID", "Modul", "Prioritas", "Judul", "Login", "Status", "Catatan", "Tester", "Waktu"]];
+  for (const t of TC) { const r = state.results[t.id] || {}; rows.push([t.id, t.mod, t.prio, t.title, t.login, LABEL[statusOf(t.id)], r.note || "", (r.by && profiles[r.by] && profiles[r.by].name) || "", r.at ? new Date(r.at).toLocaleString("id-ID") : ""]); }
+  const csv = "﻿" + rows.map(r => r.map(q).join(",")).join("\r\n");
+  try { await downloads.save({ filename: "hasil-test-case-brand-ss.csv", data: csv }); } catch (e) { notice("Unduhan dibatalkan atau tidak tersedia."); }
+}
+</script>
