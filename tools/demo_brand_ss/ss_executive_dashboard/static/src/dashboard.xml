@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+<t t-name="ss_executive_dashboard.Dashboard">
+<div class="o_action ss_dash">
+  <div class="ss_head">
+    <div>
+      <h1>Executive Dashboard</h1>
+      <div class="ss_sub">Brand SS · <t t-if="state.data" t-esc="state.data.label"/></div>
+    </div>
+    <div class="ss_periods">
+      <button t-att-class="'btn btn-sm ' + (state.period === 'month' ? 'btn-primary' : 'btn-light')" t-on-click="() => this.setPeriod('month')">Bulan ini</button>
+      <button t-att-class="'btn btn-sm ' + (state.period === '30d' ? 'btn-primary' : 'btn-light')" t-on-click="() => this.setPeriod('30d')">30 hari</button>
+      <button t-att-class="'btn btn-sm ' + (state.period === 'last_month' ? 'btn-primary' : 'btn-light')" t-on-click="() => this.setPeriod('last_month')">Bulan lalu</button>
+      <button class="btn btn-sm btn-light" t-on-click="() => this.load()" title="Muat ulang"><i class="fa fa-refresh"/></button>
+    </div>
+  </div>
+
+  <div t-if="state.loading and !state.data" class="ss_loading"><i class="fa fa-circle-o-notch fa-spin"/> Memuat data…</div>
+  <t t-if="state.data" t-set="d" t-value="state.data"/>
+  <div t-if="state.data" t-att-class="'ss_body' + (state.loading ? ' ss_dim' : '')">
+
+    <!-- KPI strip -->
+    <div class="ss_kpis">
+      <div class="ss_kpi" t-on-click="() => this.openSales()">
+        <div class="ss_kl">Penjualan</div><div class="ss_kv" t-esc="rp(d.sales.total)"/>
+        <div class="ss_ks"><t t-esc="d.sales.orders"/> pesanan · AOV <t t-esc="rp(d.sales.aov)"/></div>
+      </div>
+      <div class="ss_kpi">
+        <div class="ss_kl">Pencapaian target</div>
+        <div t-att-class="'ss_kv ' + (d.sales.ach &gt;= 100 ? 'ss_good' : d.sales.ach &gt;= 85 ? 'ss_warn' : 'ss_bad')" t-esc="pct(d.sales.ach)"/>
+        <div class="ss_ks">target berjalan <t t-esc="rp(d.sales.target)"/></div>
+      </div>
+      <div class="ss_kpi">
+        <div class="ss_kl">Penjualan hari ini</div><div class="ss_kv" t-esc="rp(d.sales.today)"/>
+        <div class="ss_ks"><t t-esc="d.sales.todayCount"/> pesanan</div>
+      </div>
+      <div class="ss_kpi" t-on-click="() => this.openPL()">
+        <div class="ss_kl">Laba bersih</div>
+        <div t-att-class="'ss_kv ' + (d.fin.net &gt;= 0 ? 'ss_good' : 'ss_bad')" t-esc="rp(d.fin.net)"/>
+        <div class="ss_ks">gross margin <t t-esc="pct(d.fin.grossMargin)"/></div>
+      </div>
+      <div class="ss_kpi">
+        <div class="ss_kl">Posisi kas &amp; bank</div><div class="ss_kv" t-esc="rp(d.fin.cashTotal)"/>
+        <div class="ss_ks">settlement pending <t t-esc="rp(d.fin.mpPending)"/></div>
+      </div>
+      <div class="ss_kpi">
+        <div class="ss_kl">ROAS iklan</div>
+        <div class="ss_kv"><t t-esc="d.mkt.roas.toFixed(1)"/>x</div>
+        <div class="ss_ks">biaya iklan <t t-esc="rp(d.mkt.total)"/></div>
+      </div>
+    </div>
+
+    <div class="ss_grid">
+      <!-- Alerts -->
+      <section class="ss_card ss_span2 ss_alerts">
+        <h3><i class="fa fa-bell"/> Masalah yang membutuhkan keputusan <span class="badge text-bg-danger" t-esc="d.alerts.length"/></h3>
+        <div t-if="!d.alerts.length" class="ss_empty">Tidak ada masalah kritis.</div>
+        <div class="ss_alert_list">
+          <div t-foreach="d.alerts" t-as="a" t-key="a_index" t-att-class="'ss_alert ss_' + a.level" t-on-click="a.act">
+            <i t-att-class="'fa ' + a.icon"/><span t-esc="a.text"/><i class="fa fa-angle-right ss_go"/>
+          </div>
+        </div>
+      </section>
+
+      <!-- Sales by channel -->
+      <section class="ss_card">
+        <h3>Penjualan per channel vs target</h3>
+        <div t-foreach="d.sales.channels" t-as="c" t-key="c.id" class="ss_row ss_click" t-on-click="() => this.openSales(c.id)">
+          <div class="ss_rl"><b t-esc="c.name"/><span class="ss_muted"> · <t t-esc="c.orders"/> pesanan</span></div>
+          <div class="ss_bar"><div t-att-class="'ss_fill ' + (c.ach &gt;= 100 ? 'ss_bg_good' : c.ach &gt;= 85 ? 'ss_bg_warn' : 'ss_bg_bad')" t-att-style="'width:' + Math.min(100, c.ach) + '%'"/></div>
+          <div class="ss_rv"><t t-esc="rp(c.actual)"/> <span class="ss_muted">/ <t t-esc="rp(c.target)"/> · <t t-esc="pct(c.ach)"/></span></div>
+        </div>
+      </section>
+
+      <!-- Trend -->
+      <section class="ss_card">
+        <h3>Tren penjualan harian (30 hari)</h3>
+        <div class="ss_trend">
+          <div t-foreach="d.sales.trendBars" t-as="b" t-key="b_index" class="ss_tb" t-att-title="b.label + ': ' + rp(b.value)">
+            <div class="ss_tbf" t-att-style="'height:' + b.h + '%'"/>
+          </div>
+        </div>
+        <div class="ss_trend_axis"><span t-if="d.sales.trendBars.length" t-esc="d.sales.trendBars[0].label"/><span t-if="d.sales.trendBars.length" t-esc="d.sales.trendBars[d.sales.trendBars.length-1].label"/></div>
+      </section>
+
+      <!-- Top products -->
+      <section class="ss_card">
+        <h3>Produk paling laku</h3>
+        <div t-foreach="d.sales.topProducts" t-as="p" t-key="p.id" class="ss_row">
+          <div class="ss_rl"><b t-esc="p.name"/><span class="ss_muted"> · <t t-esc="p.qty"/> pcs</span></div>
+          <div class="ss_bar"><div class="ss_fill ss_bg_brand" t-att-style="'width:' + p.w + '%'"/></div>
+          <div class="ss_rv" t-esc="rp(p.value)"/>
+        </div>
+      </section>
+
+      <!-- Live -->
+      <section class="ss_card ss_click" t-on-click="() => this.openLive()">
+        <h3>Performa live streaming</h3>
+        <div class="ss_mini">
+          <div><span class="ss_muted">Sesi</span><b t-esc="d.live.tot.sessions"/></div>
+          <div><span class="ss_muted">Durasi</span><b><t t-esc="Math.round(d.live.tot.hours)"/> jam</b></div>
+          <div><span class="ss_muted">Penjualan</span><b t-esc="rp(d.live.tot.actual)"/></div>
+          <div><span class="ss_muted">Target</span><b t-esc="pct(d.live.tot.ach)"/></div>
+        </div>
+        <table class="ss_table">
+          <thead><tr><th>Host</th><th>Sesi</th><th>Penjualan</th><th>Target</th></tr></thead>
+          <tbody><tr t-foreach="d.live.hosts" t-as="h" t-key="h.name">
+            <td t-esc="h.name"/><td t-esc="h.sessions"/><td t-esc="rp(h.actual)"/>
+            <td><span t-att-class="h.ach &gt;= 100 ? 'ss_good' : h.ach &gt;= 80 ? 'ss_warn' : 'ss_bad'" t-esc="pct(h.ach)"/></td>
+          </tr></tbody>
+        </table>
+        <div t-if="!d.live.hosts.length" class="ss_empty">Belum ada sesi live di periode ini.</div>
+      </section>
+
+      <!-- Finance -->
+      <section class="ss_card ss_click" t-on-click="() => this.openPL()">
+        <h3>Laba rugi</h3>
+        <div class="ss_pl"><span>Pendapatan</span><b t-esc="rp(d.fin.revenue)"/></div>
+        <div class="ss_pl"><span>HPP</span><b t-esc="rp(-d.fin.cogs)"/></div>
+        <div class="ss_pl ss_sep"><span>Laba kotor</span><b t-esc="rp(d.fin.gross)"/></div>
+        <div class="ss_pl"><span>Biaya operasional</span><b t-esc="rp(-d.fin.opex)"/></div>
+        <div class="ss_pl ss_sep ss_big"><span>Laba bersih</span><b t-att-class="d.fin.net &gt;= 0 ? 'ss_good' : 'ss_bad'" t-esc="rp(d.fin.net)"/></div>
+      </section>
+
+      <section class="ss_card">
+        <h3>Kas, piutang &amp; utang</h3>
+        <div t-foreach="d.fin.cash" t-as="c" t-key="c.name" class="ss_pl"><span t-esc="c.name"/><b t-esc="rp(c.value)"/></div>
+        <div class="ss_pl ss_sep ss_click" t-on-click="() => this.openReceivable()"><span>Piutang (incl. settlement marketplace)</span><b t-esc="rp(d.fin.receivable)"/></div>
+        <div class="ss_pl ss_click" t-on-click="() => this.openReceivable()"><span>· jatuh tempo</span><b class="ss_bad" t-esc="rp(d.fin.overdue)"/></div>
+        <div class="ss_pl ss_click" t-on-click="() => this.openPayable()"><span>Utang supplier</span><b t-esc="rp(d.fin.payable)"/></div>
+      </section>
+
+      <section class="ss_card">
+        <h3>Penggunaan budget (bulan berjalan)</h3>
+        <div t-foreach="d.budgets" t-as="b" t-key="b_index" class="ss_row">
+          <div class="ss_rl"><b t-esc="b.name"/></div>
+          <div class="ss_bar"><div t-att-class="'ss_fill ' + (b.used &gt; 100 ? 'ss_bg_bad' : b.used &gt; 85 ? 'ss_bg_warn' : 'ss_bg_good')" t-att-style="'width:' + Math.min(100, b.used) + '%'"/></div>
+          <div class="ss_rv"><t t-esc="rp(b.actual)"/> <span class="ss_muted">/ <t t-esc="rp(b.planned)"/> · <t t-esc="pct(b.used)"/></span></div>
+        </div>
+        <div t-if="!d.budgets.length" class="ss_empty">Belum ada budget aktif.</div>
+      </section>
+
+      <!-- Marketing -->
+      <section class="ss_card">
+        <h3>Marketing</h3>
+        <div t-foreach="d.mkt.rows" t-as="m" t-key="m.name" class="ss_pl"><span t-esc="m.name"/><b t-esc="rp(m.value)"/></div>
+        <div class="ss_pl ss_sep"><span>Total biaya marketing</span><b t-esc="rp(d.mkt.total)"/></div>
+        <div class="ss_pl"><span>Rasio terhadap penjualan</span><b t-esc="pct(d.mkt.ratio)"/></div>
+        <div class="ss_pl"><span>ROAS marketplace</span><b><t t-esc="d.mkt.roas.toFixed(1)"/>x</b></div>
+      </section>
+
+      <!-- Operations -->
+      <section class="ss_card">
+        <h3>Operasional</h3>
+        <div class="ss_mini">
+          <div class="ss_click" t-on-click="() => this.openStock()"><span class="ss_muted">Nilai stok</span><b t-esc="rp(d.ops.stockValue)"/></div>
+          <div class="ss_click" t-on-click="() => this.openPO()"><span class="ss_muted">PO berjalan</span><b><t t-esc="d.ops.poOpen.length"/> <small t-if="d.ops.poLate.length" class="ss_bad">(<t t-esc="d.ops.poLate.length"/> telat)</small></b></div>
+          <div class="ss_click" t-on-click="() => this.openMO()"><span class="ss_muted">Produksi aktif</span><b><t t-esc="d.ops.moOpen"/> <small t-if="d.ops.moLate.length" class="ss_bad">(<t t-esc="d.ops.moLate.length"/> telat)</small></b></div>
+          <div><span class="ss_muted">Batch hampir exp.</span><b t-esc="d.ops.expiring.length"/></div>
+        </div>
+        <h4>Aktivitas gudang</h4>
+        <div t-foreach="d.ops.warehouse" t-as="w" t-key="w.name" class="ss_pl ss_click" t-on-click="() => this.openPickings(w.id)">
+          <span t-esc="w.name"/><b><t t-esc="w.ready"/> siap <span class="ss_muted">· <t t-esc="w.waiting"/> menunggu</span></b>
+        </div>
+      </section>
+
+      <section class="ss_card">
+        <h3>Stok menipis</h3>
+        <div t-foreach="d.ops.lowStock" t-as="p" t-key="p.id" class="ss_pl ss_click" t-on-click="() => this.openRecord('product.product', p.id)">
+          <span><t t-esc="p.display_name"/> <span t-if="p.best" class="badge text-bg-warning">bestseller</span></span>
+          <b t-att-class="p.qty_available &lt;= 5 ? 'ss_bad' : 'ss_warn'" t-esc="p.qty_available"/>
+        </div>
+        <div t-if="!d.ops.lowStock.length" class="ss_empty">Semua stok aman.</div>
+      </section>
+
+      <!-- Approvals -->
+      <section class="ss_card">
+        <h3 class="ss_click" t-on-click="() => this.openApprovals()">Pengajuan menunggu approval <span class="badge text-bg-warning" t-esc="d.approvals.list.length"/></h3>
+        <div class="ss_pl"><span>Total nominal</span><b t-esc="rp(d.approvals.total)"/></div>
+        <div class="ss_pl"><span>Melebihi anggaran</span><b t-att-class="d.approvals.over ? 'ss_bad' : ''" t-esc="d.approvals.over"/></div>
+        <div t-foreach="d.approvals.list" t-as="a" t-key="a.id" class="ss_pl ss_click ss_sep" t-on-click="() => this.openRecord('x_ss_approval', a.id)">
+          <span><t t-esc="a.x_number"/> · <t t-esc="a.x_name"/><br/><small class="ss_muted">menunggu <t t-esc="a.x_approver_id ? a.x_approver_id[1] : '-'"/></small></span>
+          <b t-att-class="a.x_over_budget ? 'ss_bad' : ''" t-esc="rp(a.x_amount)"/>
+        </div>
+        <div t-if="!d.approvals.list.length" class="ss_empty">Tidak ada pengajuan yang menunggu.</div>
+      </section>
+
+      <!-- HR -->
+      <section class="ss_card">
+        <h3>HR &amp; produktivitas</h3>
+        <div class="ss_mini">
+          <div><span class="ss_muted">Karyawan</span><b t-esc="d.hr.employees"/></div>
+          <div><span class="ss_muted">Hadir hari ini</span><b t-esc="d.hr.present"/></div>
+          <div><span class="ss_muted">Kehadiran</span><b t-esc="pct(d.hr.employees ? d.hr.present / d.hr.employees * 100 : 0)"/></div>
+          <div><span class="ss_muted">Pekerjaan telat</span><b t-att-class="d.hr.lateTasks ? 'ss_bad' : ''" t-esc="d.hr.lateTasks"/></div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+</t>
+</templates>
