@@ -50,6 +50,8 @@
     .ss_bg_warn { background: var(--ss-warn); }
     .ss_bg_bad { background: var(--ss-bad); }
     .ss_bg_brand { background: var(--ss-brand); }
+    .ss_bg_pending { background: repeating-linear-gradient(45deg, var(--ss-warn), var(--ss-warn) 4px, rgba(183, 121, 31, .45) 4px, rgba(183, 121, 31, .45) 8px); border-radius: 0; }
+    .ss_stack { display: flex; }
     .ss_trend { display: flex; align-items: flex-end; gap: 3px; height: 150px; padding-top: 6px; }
     .ss_tb { flex: 1; height: 100%; display: flex; align-items: flex-end;
         .ss_tbf { width: 100%; background: var(--ss-brand); border-radius: 3px 3px 0 0; opacity: .85; }
