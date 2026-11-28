@@ -28,6 +28,7 @@ export DEMO_PW=...                             # password user demo ss.*
 | `t15.js` | Contoh pengajuan dana riset lewat alur sebenarnya (per user) |
 | `adminonly.js` | Menu **Konfigurasi → Aturan Approval** hanya untuk Administrator (`base.group_system`); grup *SS Approval / Manager* hanya baca. **Jalankan setelah `t13.js`** (t13 membuat menu dengan grup Manager). Cek per user: `adminchk.js` |
 | `t16.js` | **Konfigurasi → Pengaturan Jenis Pengajuan** (Finance + Administrator, grup *SS Approval / Finance*): rekening default Bank/Kas & akun biaya per jenis; field *Bayar dari (Bank/Kas)* di pengajuan (terisi otomatis saat disetujui, bisa diganti Finance) dipakai tombol Transfer Dana. Uji: `t16test.js` |
+| `role.js` → `t17.js` | **Peran (Role)** karyawan: `role.js` membuat versi awal (selection), `t17.js` mengubahnya jadi master data `x_ss_role` (Employees → Configuration → Peran (Role), bisa *Create* langsung dari field) yang hanya bisa ditambah/diubah grup *SS HR / Kelola Peran* (Rina) + Administrator, memigrasi data, dan menghapus field lama. Uji: `t17test.js` |
 | `t12.js` | Contoh pengajuan, dijalankan sebagai masing-masing user |
 | `t10.js settlement,resellers,returns,recentFlow,live,targets` | Settlement marketplace, pembayaran reseller, retur, alur gudang 3 langkah, sesi live, target |
 | `hr2.js payroll` / `hr2.js leave` | Struktur gaji Indonesia, kontrak, slip gaji, cuti |
