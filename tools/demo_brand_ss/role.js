@@ -22,7 +22,7 @@ async function inherit(name, model, parentXmlid, arch) {
   await field('hr.employee', { name: 'x_ss_role', field_description: 'Peran (Role)', ttype: 'selection', tracking: 1, selection_ids: sel, help: 'Peran karyawan Brand SS dalam alur kerja dan approval.' });
   const emps = await kw('hr.employee', 'search_read', [[['company_id', '=', CID]]], { fields: ['name'] });
   for (const e of emps) if (MAP[e.name]) await kw('hr.employee', 'write', [[e.id], { x_ss_role: MAP[e.name] }]);
-  await inherit('hr.employee.form.x_ss_role', 'hr.employee', 'hr.view_employee_form', `<data><xpath expr="//field[@name='job_title']" position="after"><field name="x_ss_role" placeholder="Peran (Role)" invisible="company_id != ${CID}"/></xpath></data>`);
+  await inherit('hr.employee.form.x_ss_role', 'hr.employee', 'hr.view_employee_form', `<data><xpath expr="//field[@name='job_id']" position="after"><field name="x_ss_role" string="Peran (Role)" invisible="company_id != ${CID}"/></xpath></data>`);
   await inherit('hr.employee.list.x_ss_role', 'hr.employee', 'hr.view_employee_tree', `<data><xpath expr="//field[@name='name']" position="after"><field name="x_ss_role" optional="hide"/></xpath></data>`).catch(e => console.log('list view', e.message));
   await inherit('hr.employee.search.x_ss_role', 'hr.employee', 'hr.view_employee_filter', `<data><xpath expr="//search" position="inside"><field name="x_ss_role"/><filter name="g_ss_role" string="Peran (Role)" context="{'group_by': 'x_ss_role'}"/></xpath></data>`).catch(e => console.log('search view', e.message));
   // 2) approval: requester role (stored, from requester's employee)
