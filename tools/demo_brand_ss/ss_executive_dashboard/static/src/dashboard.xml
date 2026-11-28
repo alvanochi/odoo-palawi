@@ -138,6 +138,15 @@
           <div class="ss_rv"><t t-esc="rp(b.actual)"/> <span class="ss_muted">/ <t t-esc="rp(b.planned)"/> · <t t-esc="pct(b.used)"/></span></div>
         </div>
         <div t-if="!d.budgets.length" class="ss_empty">Belum ada budget aktif.</div>
+        <h4 t-if="d.projects.length" class="ss_click" t-on-click="() => this.openProjects()">Budget Proyek</h4>
+        <div t-foreach="d.projects" t-as="p" t-key="p.id" class="ss_row ss_click" t-on-click="() => this.openRecord('x_ss_project_budget', p.id)">
+          <div class="ss_rl"><b t-esc="p.name"/></div>
+          <div class="ss_bar ss_stack">
+            <div t-att-class="'ss_fill ' + (p.over ? 'ss_bg_bad' : p.used &gt; 85 ? 'ss_bg_warn' : 'ss_bg_good')" t-att-style="'width:' + p.usedActual + '%'"/>
+            <div class="ss_fill ss_bg_pending" t-att-style="'width:' + p.usedCommitted + '%'"/>
+          </div>
+          <div class="ss_rv"><t t-esc="rp(p.actual)"/> terpakai<t t-if="p.committed"> + <t t-esc="rp(p.committed)"/> diajukan</t> <span class="ss_muted">/ <t t-esc="rp(p.amount)"/> · <t t-esc="pct(p.used)"/></span></div>
+        </div>
       </section>
 
       <!-- Marketing -->

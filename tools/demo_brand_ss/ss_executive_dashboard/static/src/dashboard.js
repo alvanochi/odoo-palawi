@@ -75,7 +75,7 @@ class SSExecutiveDashboard extends Component {
             byTeam, teams, trend, soLines, variants, live,
             income, cogs, opex, cash, recv, recvOverdue, pay, budget, ads,
             quants, products, lots, pos, mos, pickings,
-            empCount, attToday, lateTasks, todaySales, approvals, posByTeam, posToday,
+            empCount, attToday, lateTasks, todaySales, approvals, posByTeam, posToday, projBudgets,
         ] = await Promise.all([
             orm.readGroup("sale.order", soDom, ["amount_untaxed:sum"], ["team_id"], { lazy: false }),
             orm.searchRead("crm.team", [["name", "=like", "SS - %"]], ["name", "invoiced_target"]),
@@ -105,6 +105,7 @@ class SSExecutiveDashboard extends Component {
             this.safe(orm.searchRead("x_ss_approval", [["x_state", "=", "submitted"]], ["x_number", "x_name", "x_amount", "x_approver_id", "x_over_budget", "x_type", "x_requester_id", "x_deadline"], { order: "x_over_budget desc, x_amount desc" }), []),
             this.safe(orm.readGroup("pos.order", [["state", "in", ["paid", "done", "invoiced"]], ["date_order", ">=", fromDt], ["date_order", "<", toDt]], ["amount_total:sum", "amount_tax:sum"], ["crm_team_id"], { lazy: false }), []),
             this.safe(orm.readGroup("pos.order", [["state", "in", ["paid", "done", "invoiced"]], ["date_order", ">=", utc(r.today)]], ["amount_total:sum", "amount_tax:sum"], [], { lazy: false }), []),
+            this.safe(orm.searchRead("x_ss_project_budget", [["x_state", "=", "aktif"]], ["x_name", "x_amount", "x_actual", "x_committed", "x_remaining"]), []),
         ]);
         // POS sales count towards their sales team (Offline Store)
         for (const g of posByTeam) {
@@ -168,6 +169,13 @@ class SSExecutiveDashboard extends Component {
             name: (b.general_budget_id && b.general_budget_id[1] || "").replace("SS - ", ""),
             planned: Math.abs(b.planned_amount), actual: Math.abs(b.practical_amount), theo: Math.abs(b.theoritical_amount),
         })).map((b) => ({ ...b, used: b.planned ? (b.actual / b.planned) * 100 : 0, over: b.actual > b.planned || b.actual > b.theo * 1.1 }));
+        const projects = projBudgets.map((p) => {
+            const amount = p.x_amount || 0, actual = p.x_actual || 0, committed = p.x_committed || 0;
+            return { id: p.id, name: p.x_name, amount, actual, committed, remaining: amount - actual - committed,
+                usedActual: amount ? Math.min(100, (actual / amount) * 100) : 0,
+                usedCommitted: amount ? Math.min(100 - Math.min(100, (actual / amount) * 100), (committed / amount) * 100) : 0,
+                used: amount ? ((actual + committed) / amount) * 100 : 0, over: actual + committed > amount };
+        }).sort((a, b) => b.used - a.used);
 
         // ---- Marketing ----
         const adsTotal = sum(ads, (a) => a.balance);
@@ -201,6 +209,7 @@ class SSExecutiveDashboard extends Component {
         const alerts = [];
         for (const c of channels) if (c.target && c.ach < 90) alerts.push({ level: c.ach < 70 ? "danger" : "warning", icon: "fa-line-chart", text: `Penjualan ${c.name} ${pct(c.ach)} dari target berjalan (${rp(c.actual)} / ${rp(c.target)})`, act: () => this.openList("sale.order", [["team_id", "=", c.id], ["state", "=", "sale"]], `Penjualan ${c.name}`) });
         for (const b of budgets) if (b.over) alerts.push({ level: "danger", icon: "fa-money", text: `${b.name} melewati anggaran: ${rp(b.actual)} dari budget ${rp(b.planned)} (${pct(b.used)})`, act: () => this.openBudgetActuals() });
+        for (const p of projects) if (p.over) alerts.push({ level: "danger", icon: "fa-flask", text: `Budget proyek ${p.name} terlampaui: ${rp(p.actual)} terpakai + ${rp(p.committed)} diajukan dari ${rp(p.amount)} (${pct(p.used)})`, act: () => this.openRecord("x_ss_project_budget", p.id) });
         for (const p of lowStock.filter((x) => x.best)) alerts.push({ level: "danger", icon: "fa-cubes", text: `Stok bestseller hampir habis: ${p.display_name} (sisa ${p.qty_available})`, act: () => this.openRecord("product.product", p.id) });
         for (const a of approvals) alerts.push({ level: a.x_over_budget ? "danger" : "warning", icon: "fa-check-square-o", text: `Butuh approval ${a.x_number}: ${a.x_name} (${rp(a.x_amount)})${a.x_over_budget ? " · MELEBIHI ANGGARAN" : ""} · menunggu ${a.x_approver_id ? a.x_approver_id[1] : "-"}`, act: () => this.openRecord("x_ss_approval", a.id) });
         for (const p of poApprove) alerts.push({ level: "warning", icon: "fa-check-square-o", text: `Butuh approval: ${p.name} - ${p.partner_id[1]} (${rp(p.amount_total)})`, act: () => this.openRecord("purchase.order", p.id) });
@@ -216,7 +225,7 @@ class SSExecutiveDashboard extends Component {
             r, label: r.label,
             sales: { total: salesTotal, orders: ordersTotal, target: targetTotal, ach: targetTotal ? (salesTotal / targetTotal) * 100 : 0, today: g0(todaySales, "amount_untaxed") + g0(posToday, "amount_total") - g0(posToday, "amount_tax"), todayCount: g0(todaySales, "__count") + g0(posToday, "__count"), aov: ordersTotal ? salesTotal / ordersTotal : 0, channels, trendBars, topProducts },
             live: { hosts: liveHosts, tot: liveTot },
-            fin, budgets, mkt, ops, hr, alerts,
+            fin, budgets, projects, mkt, ops, hr, alerts,
             approvals: { list: approvals, total: sum(approvals, (a) => a.x_amount), over: approvals.filter((a) => a.x_over_budget).length },
             filters: { soDom, fromD, toD, nowDt, todayD },
         };
@@ -243,6 +252,7 @@ class SSExecutiveDashboard extends Component {
     openPO() { return this.openList("purchase.order", [["state", "in", ["to approve", "purchase"]], ["receipt_status", "!=", "full"]], "Status PO"); }
     openPickings(typeId) { return this.openList("stock.picking", [["picking_type_id", "=", typeId], ["state", "in", ["assigned", "waiting", "confirmed"]]], "Aktivitas Gudang"); }
     openBudgetActuals() { return this.openList("account.analytic.line", [["date", ">=", this.state.data.filters.fromD], ["date", "<", this.state.data.filters.toD], ["account_id", "!=", false], ["amount", "<", 0]], "Realisasi Biaya per Divisi"); }
+    openProjects() { return this.openList("x_ss_project_budget", [["x_state", "=", "aktif"]], "Budget Proyek"); }
     openApprovals() { return this.openList("x_ss_approval", [["x_state", "=", "submitted"]], "Pengajuan Menunggu Approval"); }
     openStock() { return this.openList("stock.quant", [["location_id.usage", "=", "internal"]], "Stok Tersedia"); }
 }
